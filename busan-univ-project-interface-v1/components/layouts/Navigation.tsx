@@ -31,6 +31,13 @@ const navigation = [
         href: "/hrv",
         tag: "",
       },
+      {
+        id: "002",
+        icon: PresentationChartLineIcon,
+        name: "D3.Js",
+        href: "/d3",
+        tag: "",
+      },
     ],
     subMenu: [
       // { id: "000", icon: UserIcon, name: "My Page", href: "/myPage", tag: "" },
