@@ -38,6 +38,13 @@ const navigation = [
         href: "/d3",
         tag: "",
       },
+      {
+        id: "003",
+        icon: PresentationChartLineIcon,
+        name: "Recharts",
+        href: "/Recharts",
+        tag: "",
+      },
     ],
     subMenu: [
       // { id: "000", icon: UserIcon, name: "My Page", href: "/myPage", tag: "" },
