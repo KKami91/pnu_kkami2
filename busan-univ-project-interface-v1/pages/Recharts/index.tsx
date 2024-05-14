@@ -3,7 +3,7 @@ import axios from 'axios';
 import dynamic from 'next/dynamic';
 import * as d3 from 'd3';
 import {LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, ResponsiveContainer} from 'recharts';
-import { BubbleChat } from 'flowise-embed-react'
+import { BubbleChat } from 'flowise-embed-react';
 
 interface Sample {
   beatsPerMinute: number;
