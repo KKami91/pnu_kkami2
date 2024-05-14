@@ -3,6 +3,7 @@ import axios from 'axios';
 import dynamic from 'next/dynamic';
 import * as d3 from 'd3';
 import {LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, ResponsiveContainer} from 'recharts';
+import { BubbleChat } from 'flowise-embed-react'
 
 interface Sample {
   beatsPerMinute: number;
@@ -35,6 +36,13 @@ export default function ReadJsonPage() {
   const [hourlyFeatures, setHourlyFeatures] = useState<{ hour: string; features: Record<string, number> }[]>([]);
   const chartRef = useRef<HTMLDivElement>(null);
   
+
+
+  const App = () => {
+      return (
+          <BubbleChat chatflowid="1352afdb-1933-4a3f-88ea-b55d560ea805" apiHost="https://flowise-6pxd.onrender.com/" />
+      );
+  };
 
   const ShowDataButton: React.FC<{ data: typeof hourlyFeatures }> = ({ data }) => {
     const handleClick = () => {
@@ -183,6 +191,7 @@ export default function ReadJsonPage() {
     console.log(hourlyFeaturesData );
   };
   return (
+    
     <div style={{ width: '99.5%', height: '400px' }}>
       <div>
         <label htmlFor="dateInput">Select Date: </label>
@@ -209,8 +218,7 @@ export default function ReadJsonPage() {
       </ResponsiveContainer>
         
       </div>
-
-
+      <App />
       <ShowDataButton data={hourlyFeatures} />
       <div ref={chartRef} style={{ width: '100%', height: '400px' }}></div>
 
