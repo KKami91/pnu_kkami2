@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     try {
       const params: AWS.DynamoDB.DocumentClient.ScanInput = {
-        TableName: 'MyMentos',
+        TableName: 'hrv_data2',
       };
 
       const result = await dynamoDB.scan(params).promise();
