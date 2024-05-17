@@ -11,8 +11,7 @@ AWS.config.update({
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   region: 'ap-northeast-2',
 });
-// vercel 배포에서 추가 줄
-AWS.config.update({ credential: null });
+
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
 interface DataItem {
