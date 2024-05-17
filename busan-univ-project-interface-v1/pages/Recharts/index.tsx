@@ -174,7 +174,7 @@ export default function ReadJsonPage() {
       }
       hourlyData[hourKey].push(...item.samples.map(sample => 60000 / sample.beatsPerMinute));
     });
-
+    console.log('hourlyData', hourlyData)
     const hourlyFeaturesData  = Object.entries(hourlyData).map(([hour, nnIntervals]) => {
       const [date, time] = hour.split(' ');
       const [hourStart, minuteStart] = time.split(':');

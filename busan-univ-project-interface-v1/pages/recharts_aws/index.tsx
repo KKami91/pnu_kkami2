@@ -6,9 +6,9 @@ import AWS from 'aws-sdk';
 
 // AWS 설정
 AWS.config.update({
-  region: 'YOUR_AWS_REGION', // 예: 'us-east-1'
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  region: 'ap-northeast-2',
 });
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
@@ -16,7 +16,7 @@ const dynamodb = new AWS.DynamoDB.DocumentClient();
 interface DataItem {
   'metadata.id': string;
   beatsPerMinute: number;
-  endTime: string;
+  time: string;
 }
 
 interface Sample {
@@ -69,18 +69,35 @@ export default function ReadJsonPage() {
   useEffect(() => {
     const fetchDataFromDynamoDB = async () => {
       try {
-        const params = {
-          TableName: 'hrv_data2',
-          FilterExpression: 'endTime >= :startDate AND endTime <= :endDate',
-          ExpressionAttributeValues: {
-            ':startDate': `${selectedDate}T00:00:00+0900`,
-            ':endDate': `${selectedDate}T23:59:59+0900`
-          }
-        };
+        console.log('Selected Date:', selectedDate); // selectedDate 값을 확인
 
-        const result = await dynamodb.scan(params).promise();
-        
-        setData(result.Items as DataItem[]);
+        let lastEvaluatedKey: AWS.DynamoDB.DocumentClient.Key | undefined = undefined;
+        let allItems: DataItem[] = [];
+
+        do {
+          const params: AWS.DynamoDB.DocumentClient.ScanInput = {
+            TableName: 'hrv_time',
+            FilterExpression: 'begins_with(#time, :datePrefix)',
+            ExpressionAttributeNames: {
+              '#time': 'time',
+            },
+            ExpressionAttributeValues: {
+              ':datePrefix': selectedDate,
+            },
+            ExclusiveStartKey: lastEvaluatedKey,
+          };
+
+          const scanResult: AWS.DynamoDB.DocumentClient.ScanOutput = await dynamodb.scan(params).promise();
+          const items = scanResult.Items as DataItem[];
+          allItems = allItems.concat(items);
+          lastEvaluatedKey = scanResult.LastEvaluatedKey;
+
+          console.log('Scan Result:', scanResult); // 스캔 결과를 확인
+
+        } while (lastEvaluatedKey);
+
+        setData(allItems);
+        console.log('All Items:', allItems); // 최종 결과를 확인
       } catch (error) {
         console.error('Error fetching data from DynamoDB:', error);
       }
@@ -90,6 +107,32 @@ export default function ReadJsonPage() {
       fetchDataFromDynamoDB();
     }
   }, [selectedDate]);
+  //   const fetchDataFromDynamoDB = async () => {
+  //     try {
+  //       const params: AWS.DynamoDB.DocumentClient.QueryInput = {
+  //         TableName: 'hrv_time',
+  //         KeyConditionExpression: '#time BETWEEN :startTime AND :endTime',
+  //         ExpressionAttributeNames: {
+  //           '#time': 'time',
+  //         },
+  //         ExpressionAttributeValues: {
+  //           ':startTime': `${selectedDate}T00:00:00+0900`,
+  //           ':endTime': `${selectedDate}T23:59:59+0900`,
+  //         },
+  //       };
+  
+  //       const queryResult: AWS.DynamoDB.DocumentClient.QueryOutput = await dynamodb.query(params).promise();
+  //       const items = queryResult.Items as DataItem[];
+  //       setData(items);
+  //     } catch (error) {
+  //       console.error('Error fetching data from DynamoDB:', error);
+  //     }
+  //   };
+  
+  //   if (selectedDate) {
+  //     fetchDataFromDynamoDB();
+  //   }
+  // }, [selectedDate]);
 
   const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedDate(event.target.value);
@@ -171,48 +214,88 @@ export default function ReadJsonPage() {
     return feature;
   }
 
-  const calculateHourlyData = () => {
-    const hourlyData: { [hour: string]: number[] } = {};
+  // const calculateHourlyData = () => {
+  //   const hourlyData: { [hour: string]: number[] } = {};
 
-    data.forEach(item => {
-      const itemDateTime = new Date(item.endTime);
-      const year = itemDateTime.getFullYear();
-      const month = String(itemDateTime.getMonth() + 1).padStart(2, '0');
-      const day = String(itemDateTime.getDate()).padStart(2, '0');
-      const hour = String(itemDateTime.getHours()).padStart(2, '0');
-      const hourKey = `${year}-${month}-${day} ${hour}:00:00`;
+  //   data.forEach(item => {
+  //     const itemDateTime = new Date(item.endTime);
+  //     const year = itemDateTime.getFullYear();
+  //     const month = String(itemDateTime.getMonth() + 1).padStart(2, '0');
+  //     const day = String(itemDateTime.getDate()).padStart(2, '0');
+  //     const hour = String(itemDateTime.getHours()).padStart(2, '0');
+  //     const hourKey = `${year}-${month}-${day} ${hour}:00:00`;
 
-      if (!hourlyData[hourKey]) {
-        hourlyData[hourKey] = [];
-      }
+  //     if (!hourlyData[hourKey]) {
+  //       hourlyData[hourKey] = [];
+  //     }
 
-      hourlyData[hourKey].push(60000 / item.beatsPerMinute);
+  //     hourlyData[hourKey].push(60000 / item.beatsPerMinute);
       
-    });
+      
+  //   });
+  //   console.log('hourlyData', hourlyData)
+  //   const hourlyAverageBpm = Object.entries(hourlyData).map(([hour, nnIntervals]) => ({
+  //     hour,
+  //     averageBpm: getMean(nnIntervals),
+  //   }));
 
-    const hourlyAverageBpm = Object.entries(hourlyData).map(([hour, nnIntervals]) => ({
-      hour,
-      averageBpm: getMean(nnIntervals),
-    }));
+  //   hourlyAverageBpm.sort((a, b) => {
+  //     const dateA = new Date(a.hour);
+  //     const dateB = new Date(b.hour);
+  //     return dateA.getTime() - dateB.getTime();
+  //   });
 
-    setHourlyAverageBpm(hourlyAverageBpm);
+  //   setHourlyAverageBpm(hourlyAverageBpm);
+
+    // const calculateHourlyAverageBpm = () => {
+    //   const startDateTime = new Date(`${selectedDate}T00:00:00+0900`);
+    //   const endDateTime = new Date(`${selectedDate}T23:59:59+0900`);
+
+    //   const filteredData = data.filter(item => {
+    //     const itemDateTime = new Date(item.time);
+        
+    //     return itemDateTime >= startDateTime && itemDateTime <= endDateTime;
+    //   });
+    // }
     
-    const hourlyFeaturesData: HourlyFeature[] = Object.entries(hourlyData).map(([hour, nnIntervals]) => {
-      const [date, time] = hour.split(' ');
-      const [hourStart, minuteStart] = time.split(':');
-      const hourEnd = String(Number(hourStart) + 1).padStart(2, '0');
-      const minuteEnd = String(Number(minuteStart) - 1).padStart(2, '0');
-      const formattedHour = `${date} ${hourStart}:${minuteStart}:00 ~ ${hourStart}:59:00`;
-      return {
-        hour: formattedHour,
-        features: getDomain(nnIntervals),
-      };
-    });
-    setHourlyFeatures(hourlyFeaturesData);
-    console.log('hourlyFeatures:', hourlyFeatures);
+    const calculateHourlyData = () => {
+      const hourlyData: { [hour: string]: number[] } = {};
     
-  };
-
+      data.forEach(item => {
+        const itemDateTime = new Date(item.time);
+        const year = itemDateTime.getFullYear();
+        const month = String(itemDateTime.getMonth() + 1).padStart(2, '0');
+        const day = String(itemDateTime.getDate()).padStart(2, '0');
+        const hour = String(itemDateTime.getHours()).padStart(2, '0');
+        const hourKey = `${year}-${month}-${day} ${hour}:00:00`;
+    
+        if (!hourlyData[hourKey]) {
+          hourlyData[hourKey] = [];
+        }
+    
+        hourlyData[hourKey].push(60000 / item.beatsPerMinute);
+      });
+    
+      const hourlyFeaturesData: HourlyFeature[] = Object.entries(hourlyData).map(([hour, nnIntervals]) => {
+        const [date, time] = hour.split(' ');
+        const [hourStart, minuteStart] = time.split(':');
+        const hourEnd = String(Number(hourStart) + 1).padStart(2, '0');
+        const minuteEnd = String(Number(minuteStart) - 1).padStart(2, '0');
+        const formattedHour = `${date} ${hourStart}:${minuteStart}:00 ~ ${hourStart}:59:59`;
+        return {
+          hour: formattedHour,
+          features: getDomain(nnIntervals),
+        };
+      });
+    
+      hourlyFeaturesData.sort((a, b) => {
+        const dateA = new Date(a.hour.split(' ~ ')[0]);
+        const dateB = new Date(b.hour.split(' ~ ')[0]);
+        return dateA.getTime() - dateB.getTime();
+      });
+    
+      setHourlyFeatures(hourlyFeaturesData);
+    };
   useEffect(() => {
     if (selectedDate) {
       calculateHourlyData();
@@ -232,19 +315,19 @@ export default function ReadJsonPage() {
             </li>
           ))}
         </ul>
-        <ResponsiveContainer width='100%' aspect={4.0 / 2.0}>
-          <LineChart
-            width={1200}
-            height={700}
-            data={hourlyFeatures}
-            margin={{ top: 20, right: 100, left: 60, bottom: 200 }}
-          >
-            <XAxis dataKey="hour" angle={-60} textAnchor="end" stroke="#eee" />
-            <YAxis />
-            <Tooltip contentStyle={{ fontWeight: 700, color: '#111' }} />
-            <Line type="monotone" dataKey="features.stressScore" stroke="#eee" />
-          </LineChart>
-        </ResponsiveContainer>
+    <ResponsiveContainer width='100%' aspect={4.0 / 2.0}>
+      <LineChart
+        width={1200}
+        height={700}
+        data={hourlyFeatures}
+        margin={{ top: 20, right: 100, left: 60, bottom: 200 }}
+      >
+        <XAxis dataKey="hour" stroke="#eee" angle={ -60 } textAnchor="end" />
+        <YAxis />
+        <Tooltip contentStyle={{ fontWeight: 700, color: '#111' }} />
+        <Line type="monotone" dataKey="features.stressScore" stroke="#eee" />
+      </LineChart>
+    </ResponsiveContainer>
       </div>
       <ShowDataButton data={hourlyFeatures} />
       <div ref={chartRef} style={{ width: '100%', height: '400px' }}></div>

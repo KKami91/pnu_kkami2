@@ -11,10 +11,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     try {
       const params: AWS.DynamoDB.DocumentClient.ScanInput = {
-        TableName: 'hrv_data2',
+        TableName: 'hrv_post',
       };
 
       const result = await dynamoDB.scan(params).promise();
+      console.log('Number of items:', result.Items?.length || 0);
       res.status(200).json(result.Items);
     } catch (error) {
       console.error('Error accessing DynamoDB:', error);

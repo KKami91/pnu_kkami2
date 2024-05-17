@@ -45,6 +45,13 @@ const navigation = [
         href: "/Recharts",
         tag: "",
       },
+      {
+        id: "004",
+        icon: PresentationChartLineIcon,
+        name: "DynamoDB Data Recharts",
+        href: "/recharts_aws",
+        tag: "",
+      },
     ],
     subMenu: [
       // { id: "000", icon: UserIcon, name: "My Page", href: "/myPage", tag: "" },
