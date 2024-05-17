@@ -10,6 +10,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import DefaultLayout from "../components/layouts/DefaultLayout";
 import { ThemeProvider } from "@/components/theme-provider";
 
+import { BubbleChat } from "flowise-embed-react";
+
 ///////////////////////////////////
 // Layout
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
@@ -32,6 +34,7 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {getLayout(<Component {...pageProps} />)}
         </ThemeProvider>
+        <BubbleChat chatflowid="1352afdb-1933-4a3f-88ea-b55d560ea805" apiHost="https://flowise-6pxd.onrender.com" />
       </QueryClientProvider>
     </RecoilRoot>
   );

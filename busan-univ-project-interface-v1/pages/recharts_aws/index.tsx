@@ -3,12 +3,13 @@ import axios from 'axios';
 import dynamic from 'next/dynamic';
 import { LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, ResponsiveContainer } from 'recharts';
 import AWS from 'aws-sdk';
+import { BubbleChat } from 'flowise-embed-react';
 
 // AWS 설정
 AWS.config.update({
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  region: 'ap-northeast-2',
+  region: process.env.AWS_REGION,
 });
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
