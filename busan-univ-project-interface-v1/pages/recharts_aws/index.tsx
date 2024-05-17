@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import axios from 'axios';
 import dynamic from 'next/dynamic';
 import { LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, ResponsiveContainer } from 'recharts';
@@ -259,9 +259,9 @@ export default function ReadJsonPage() {
     //   });
     // }
     
-    const calculateHourlyData = () => {
+    const calculateHourlyData = useCallback(() => {
       const hourlyData: { [hour: string]: number[] } = {};
-    
+
       data.forEach(item => {
         const itemDateTime = new Date(item.time);
         const year = itemDateTime.getFullYear();
@@ -296,7 +296,7 @@ export default function ReadJsonPage() {
       });
     
       setHourlyFeatures(hourlyFeaturesData);
-    };
+    }, [data]);
   useEffect(() => {
     if (selectedDate) {
       calculateHourlyData();
