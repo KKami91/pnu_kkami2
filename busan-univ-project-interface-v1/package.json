@@ -43,6 +43,7 @@
   "devDependencies": {
     "@types/aws-sdk": "^2.7.0",
     "@types/axios": "^0.14.0",
+    "@types/d3": "^7.4.3",
     "@types/node": "^20",
     "@types/plotly.js": "^2.29.3",
     "@types/react": "^18.3.1",
