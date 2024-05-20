@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import dynamic from 'next/dynamic';
-import * as d3 from 'd3';
 import {LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Line, ResponsiveContainer} from 'recharts';
 import { BubbleChat } from 'flowise-embed-react';
 
@@ -213,7 +212,8 @@ export default function ReadJsonPage() {
           <XAxis dataKey= "hour" angle={ -60 } textAnchor="end" stroke="#eee" />
           <YAxis />
           <Tooltip contentStyle={{fontWeight: 700, color: '#111' }} />
-          <Line type="monotone" dataKey="features.stressScore" stroke="#eee" />
+          <Legend verticalAlign="top" height={36} />
+          <Line type="monotone" dataKey="features.stressScore" stroke="#eee"  />
         </LineChart>
       </ResponsiveContainer>
         
