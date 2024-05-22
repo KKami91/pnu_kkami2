@@ -11,8 +11,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (status === 'PAID') {
       // 결제 완료 시 수행할 작업을 구현합니다.
       // 예: 주문 상태 업데이트, 이메일 발송 등
-      console.log('PAID!!!')
+      console.log('PAID!!!');
       console.log('Payment completed:', paymentId);
+      console.log('req.body', req.body);
 
       // 필요한 로직을 추가로 구현합니다.
     }
