@@ -52,6 +52,20 @@ const navigation = [
         href: "/recharts_aws",
         tag: "",
       },
+      {
+        id: "005",
+        icon: PresentationChartLineIcon,
+        name: "Payments",
+        href: "/payments",
+        tag: "",
+      },
+      {
+        id: "006",
+        icon: PresentationChartLineIcon,
+        name: "WEBHOOK TEST",
+        href: "/api/payments/webhook",
+        tag: "",
+      },
     ],
     subMenu: [
       // { id: "000", icon: UserIcon, name: "My Page", href: "/myPage", tag: "" },

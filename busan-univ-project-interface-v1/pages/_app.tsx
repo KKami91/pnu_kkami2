@@ -1,6 +1,6 @@
 import "../styles/globals.css";
 
-import { ReactElement, ReactNode } from "react";
+import { ReactElement, ReactNode, useEffect } from "react";
 import type { AppProps } from "next/app";
 import { NextPage } from "next";
 
@@ -11,6 +11,8 @@ import DefaultLayout from "../components/layouts/DefaultLayout";
 import { ThemeProvider } from "@/components/theme-provider";
 
 import { BubbleChat } from "flowise-embed-react";
+
+
 
 ///////////////////////////////////
 // Layout
