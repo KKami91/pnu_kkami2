@@ -1,6 +1,6 @@
 import "../styles/globals.css";
 
-import { ReactElement, ReactNode, useEffect } from "react";
+import { ReactElement, ReactNode } from "react";
 import type { AppProps } from "next/app";
 import { NextPage } from "next";
 
@@ -11,8 +11,6 @@ import DefaultLayout from "../components/layouts/DefaultLayout";
 import { ThemeProvider } from "@/components/theme-provider";
 
 import { BubbleChat } from "flowise-embed-react";
-
-
 
 ///////////////////////////////////
 // Layout
@@ -36,7 +34,11 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {getLayout(<Component {...pageProps} />)}
         </ThemeProvider>
-        <BubbleChat chatflowid="1352afdb-1933-4a3f-88ea-b55d560ea805" apiHost="https://flowise-6pxd.onrender.com" />
+        <BubbleChat
+          chatflowid="1352afdb-1933-4a3f-88ea-b55d560ea805"
+          apiHost="https://flowise-6pxd.onrender.com"
+          theme={{ chatWindow: { poweredByTextColor: "#fff" } }}
+        />
       </QueryClientProvider>
     </RecoilRoot>
   );
