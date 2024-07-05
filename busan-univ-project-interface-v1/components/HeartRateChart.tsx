@@ -1,6 +1,6 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area } from 'recharts';
-import { format, parseISO, subDays, isValid } from 'date-fns';
+import { format, parseISO, subDays, isValid, eachDayOfInterval } from 'date-fns';
 
 interface DataItem {
   ds: string;
@@ -30,7 +30,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
-  console.log('Received data:', data); // 데이터 로깅
+  console.log('Received data:', data);
 
   if (!Array.isArray(data) || data.length === 0) {
     return <div className="text-center text-red-500">No valid data available for the chart.</div>;
@@ -47,19 +47,24 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
     })
     .filter(item => item.ds !== 'Invalid Date');
 
-  console.log('Formatted data:', formattedData); // 포맷된 데이터 로깅
+  console.log('Formatted data:', formattedData);
 
   if (formattedData.length === 0) {
     return <div className="text-center text-red-500">No valid dates found in the data.</div>;
   }
 
-  const lastDate = parseISO(formattedData[formattedData.length - 1].ds);
-  const predictionStartDate = subDays(lastDate, 3);
+  const startDate = parseISO(formattedData[0].ds);
+  const endDate = parseISO(formattedData[formattedData.length - 1].ds);
+  const allDates = eachDayOfInterval({ start: startDate, end: endDate });
 
-  const historicalData = formattedData.filter(item => parseISO(item.ds) < predictionStartDate);
-  const predictedData = formattedData.filter(item => parseISO(item.ds) >= predictionStartDate);
+  const fullData = allDates.map(date => {
+    const existingData = formattedData.find(item => item.ds.startsWith(format(date, 'yyyy-MM-dd')));
+    return existingData || { ds: format(date, 'yyyy-MM-dd HH:mm'), yhat: null, yhat_lower: null, yhat_upper: null };
+  });
 
-  const renderChart = (chartData: any[], title: string, showHistorical: boolean = false) => (
+  const predictionStartDate = subDays(endDate, 3);
+
+  const renderChart = (chartData: any[], title: string) => (
     <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
       <h2 className="text-xl font-bold mb-4 text-center">{title}</h2>
       <ResponsiveContainer width="100%" height="100%">
@@ -95,16 +100,15 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
             fillOpacity={0.2}
             name="Upper Bound"
           />
-          {showHistorical && (
-            <Line
-              type="monotone"
-              dataKey="yhat"
-              stroke="#82ca9d"
-              name="Historical Data"
-              dot={false}
-              strokeWidth={2}
-            />
-          )}
+          <Line
+            type="monotone"
+            dataKey="yhat"
+            stroke="#82ca9d"
+            name="Historical Data"
+            dot={false}
+            strokeWidth={2}
+            connectNulls={true}
+          />
           <Line
             type="monotone"
             dataKey="yhat"
@@ -112,6 +116,8 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
             name="Predicted BPM"
             dot={false}
             strokeWidth={2}
+            connectNulls={true}
+            strokeDasharray="5 5"
           />
         </LineChart>
       </ResponsiveContainer>
@@ -120,10 +126,15 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
 
   return (
     <div>
-      {renderChart(formattedData, "ALL Data", true)}
-      {renderChart(predictedData, "Predicted Data (Last 3 Days)")}
+      {renderChart(fullData.map(item => ({
+        ...item,
+        yhat: parseISO(item.ds) < predictionStartDate ? item.yhat : null
+      })), "Historical Heart Rate Data")}
+      {renderChart(fullData.map(item => ({
+        ...item,
+        yhat: parseISO(item.ds) >= predictionStartDate ? item.yhat : null
+      })), "Predicted Heart Rate Data (Last 3 Days)")}
     </div>
   );
-};
-
+}
 export default HeartRateCharts;
