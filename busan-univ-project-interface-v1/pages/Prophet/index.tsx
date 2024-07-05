@@ -1,7 +1,7 @@
 import { useState, useEffect  } from 'react'
 import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import HeartRateChart from '../../components/HeartRateChart';
+import HeartRateChart from '../../components/HeartRateChart2';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';

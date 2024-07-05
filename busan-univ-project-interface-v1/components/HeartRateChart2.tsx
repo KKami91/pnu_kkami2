@@ -59,64 +59,72 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
   const historicalData = formattedData.filter(item => parseISO(item.ds) < predictionStartDate);
   const predictedData = formattedData.filter(item => parseISO(item.ds) >= predictionStartDate);
 
-  const renderChart = (chartData: any[], title: string, showHistorical: boolean = false) => (
-    <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
-      <h2 className="text-xl font-bold mb-4 text-center">{title}</h2>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis
-            dataKey="ds"
-            tick={{ fill: '#666', fontSize: 12 }}
-            tickFormatter={(tick) => format(new Date(tick), 'MM-dd')}
-          />
-          <YAxis
-            tick={{ fill: '#666', fontSize: 12 }}
-            domain={['auto', 'auto']}
-            label={{ value: 'BPM', angle: -90, position: 'insideLeft', fill: '#666' }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend verticalAlign="top" height={36} />
-          <Area
-            type="monotone"
-            dataKey="yhat_lower"
-            stackId="1"
-            stroke="none"
-            fill="#8884d8"
-            fillOpacity={0.2}
-            name="Lower Bound"
-          />
-          <Area
-            type="monotone"
-            dataKey="yhat_upper"
-            stackId="1"
-            stroke="none"
-            fill="#8884d8"
-            fillOpacity={0.2}
-            name="Upper Bound"
-          />
-          {showHistorical && (
+  const renderChart = (chartData: any[], title: string, showHistorical: boolean = false) => {
+    const dataWithFlags = chartData.map((item, index) => ({
+      ...item,
+      yhat_historical: index < chartData.length - 4320 ? item.yhat : null,
+      yhat_predicted: index >= chartData.length - 4320 ? item.yhat : null,
+    }));
+
+    return (
+      <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
+        <h2 className="text-xl font-bold mb-4 text-center">{title}</h2>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={dataWithFlags} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis
+              dataKey="ds"
+              tick={{ fill: '#666', fontSize: 12 }}
+              tickFormatter={(tick) => format(new Date(tick), 'MM-dd')}
+            />
+            <YAxis
+              tick={{ fill: '#666', fontSize: 12 }}
+              domain={['auto', 'auto']}
+              label={{ value: 'BPM', angle: -90, position: 'insideLeft', fill: '#666' }}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend verticalAlign="top" height={36} />
+            <Area
+              type="monotone"
+              dataKey="yhat_lower"
+              stackId="1"
+              stroke="none"
+              fill="#8884d8"
+              fillOpacity={0.2}
+              name="Lower Bound"
+            />
+            <Area
+              type="monotone"
+              dataKey="yhat_upper"
+              stackId="1"
+              stroke="none"
+              fill="#8884d8"
+              fillOpacity={0.2}
+              name="Upper Bound"
+            />
+            {showHistorical && (
+              <Line
+                type="monotone"
+                dataKey="yhat_historical"
+                stroke="#82ca9d"
+                name="Historical Data"
+                dot={false}
+                strokeWidth={2}
+              />
+            )}
             <Line
               type="monotone"
-              dataKey="yhat"
-              stroke="#82ca9d"
-              name="Historical Data"
+              dataKey="yhat_predicted"
+              stroke="#8884d8"
+              name="Predicted BPM"
               dot={false}
               strokeWidth={2}
             />
-          )}
-          <Line
-            type="monotone"
-            dataKey="yhat"
-            stroke="#8884d8"
-            name="Predicted BPM"
-            dot={false}
-            strokeWidth={2}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
-  );
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
 
   return (
     <div>
