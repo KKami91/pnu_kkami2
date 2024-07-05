@@ -3,6 +3,7 @@ import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
+const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';
 
 export default function Home() {
     const [selectedUser, setSelectedUser] = useState('')
@@ -39,27 +40,29 @@ export default function Home() {
           return
         }
 
-    try {
-        const response = await axios.get(`https://heart-rate-app10-hotofhe3yq-du.a.run.app/prediction_dates/${selectedUser}`)
-        setPredictionDates(response.data.dates)
-        } catch (error) {
-        setMessage(`Error fetching prediction dates: ${error instanceof Error ? error.message : String(error)}`)
-        }
-    }
+        try {
+            const response = await axios.get(`${API_URL}/prediction_dates/${selectedUser}`);
+            setPredictionDates(response.data.dates);
+          } catch (error) {
+            setMessage(`Error fetching prediction dates: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        };
 
     const fetchGraphData = async () => {
         if (!selectedUser || !selectedDate) {
-          setMessage('Please select a user and a prediction date')
-          return
+            setMessage('Please select a user and a prediction date');
+            return;
         }
     
     try {
-        const response = await axios.get(`https://heart-rate-app10-hotofhe3yq-du.a.run.app/prediction_data/${selectedUser}/${selectedDate}`)
-        setGraphData(response.data.data)
-    } catch (error) {
-        setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`)
-    }
-  }
+        // ISO 형식으로 날짜 변환 및 인코딩
+        const encodedDate = encodeURIComponent(selectedDate);
+        const response = await axios.get(`${API_URL}/prediction_data/${selectedUser}/${encodedDate}`);
+        setGraphData(response.data.data);
+        } catch (error) {
+        setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
+        }
+    };
 
   return (
     <div className="container mx-auto p-4">
