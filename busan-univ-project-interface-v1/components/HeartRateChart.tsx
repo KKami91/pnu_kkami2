@@ -18,9 +18,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return (
       <div className="bg-white p-2 border border-gray-300 rounded shadow">
         <p className="text-sm font-bold">{`Date: ${label}`}</p>
-        <p className="text-sm text-blue-600">{`Predicted: ${payload[0].value?.toFixed(2) ?? 'N/A'} BPM`}</p>
-        <p className="text-sm text-green-600">{`Lower: ${payload[1].value?.toFixed(2) ?? 'N/A'} BPM`}</p>
-        <p className="text-sm text-red-600">{`Upper: ${payload[2].value?.toFixed(2) ?? 'N/A'} BPM`}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} className={`text-sm text-${entry.color}`}>
+            {`${entry.name}: ${entry.value?.toFixed(2) ?? 'N/A'} BPM`}
+          </p>
+        ))}
       </div>
     );
   }
@@ -28,17 +30,24 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
+  console.log('Received data:', data); // 데이터 로깅
+
   if (!Array.isArray(data) || data.length === 0) {
     return <div className="text-center text-red-500">No valid data available for the chart.</div>;
   }
 
-  const formattedData = data.map(item => {
-    const parsedDate = parseISO(item.ds);
-    return {
-      ...item,
-      ds: isValid(parsedDate) ? format(parsedDate, 'yyyy-MM-dd HH:mm') : 'Invalid Date',
-    };
-  }).filter(item => item.ds !== 'Invalid Date');
+  const formattedData = data
+    .filter(item => item && typeof item === 'object' && 'ds' in item)
+    .map(item => {
+      const parsedDate = parseISO(item.ds);
+      return {
+        ...item,
+        ds: isValid(parsedDate) ? format(parsedDate, 'yyyy-MM-dd HH:mm') : 'Invalid Date',
+      };
+    })
+    .filter(item => item.ds !== 'Invalid Date');
+
+  console.log('Formatted data:', formattedData); // 포맷된 데이터 로깅
 
   if (formattedData.length === 0) {
     return <div className="text-center text-red-500">No valid dates found in the data.</div>;
@@ -75,6 +84,7 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
             stroke="none"
             fill="#8884d8"
             fillOpacity={0.2}
+            name="Lower Bound"
           />
           <Area
             type="monotone"
@@ -83,6 +93,7 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
             stroke="none"
             fill="#8884d8"
             fillOpacity={0.2}
+            name="Upper Bound"
           />
           {showHistorical && (
             <Line
