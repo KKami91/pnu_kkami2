@@ -48,14 +48,14 @@ const HeartRateChart: React.FC<HeartRateChartProps> = ({ data }) => {
             dataKey="yhat_lower" 
             stroke="none" 
             fill="#8884d8" 
-            fillOpacity={0.2}
+            fillOpacity={0.5}
           />
           <Area 
             type="monotone" 
             dataKey="yhat_upper" 
             stroke="none" 
             fill="#8884d8" 
-            fillOpacity={0.2}
+            fillOpacity={0.5}
           />
           <Line 
             type="monotone" 
