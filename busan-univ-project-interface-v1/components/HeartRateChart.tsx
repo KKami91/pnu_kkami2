@@ -120,8 +120,8 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
 
   return (
     <div>
-      {renderChart(formattedData, "Complete Heart Rate Data (Historical + Predicted)", true)}
-      {renderChart(predictedData, "Predicted Heart Rate Data (Last 3 Days)")}
+      {renderChart(formattedData, "ALL Data", true)}
+      {renderChart(predictedData, "Predicted Data (Last 3 Days)")}
     </div>
   );
 };
