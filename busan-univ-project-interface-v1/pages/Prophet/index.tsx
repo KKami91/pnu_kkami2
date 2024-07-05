@@ -18,7 +18,7 @@ export default function Home() {
     }
 
     try {
-      const response = await axios.post('https://heart-rate-app10-hotofhe3yq-du.a.run.app/analyze_and_predict/', { user_email: selectedUser })
+      const response = await axios.post('https://heart-rate-app10-hotofhe3yq-du.a.run.app/analyze_and_predict', { user_email: selectedUser })
       console.log(response)
       setMessage(`Analysis requested for ${selectedUser}. Response: ${JSON.stringify(response.data)}`)
     } catch (error) {
