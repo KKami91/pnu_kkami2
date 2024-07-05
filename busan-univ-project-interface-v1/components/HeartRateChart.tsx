@@ -19,7 +19,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="bg-white p-2 border border-gray-300 rounded shadow">
         <p className="text-sm font-bold">{`Date: ${label}`}</p>
         {payload.map((entry: any, index: number) => (
-          <p key={index} className={`text-sm text-${entry.color}`}>
+          <p key={index} className="text-sm text-black">
             {`${entry.name}: ${entry.value?.toFixed(2) ?? 'N/A'} BPM`}
           </p>
         ))}
