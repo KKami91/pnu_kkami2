@@ -27,8 +27,8 @@ const navigation = [
       {
         id: "004",
         icon: PresentationChartLineIcon,
-        name: "DynamoDB Data Recharts",
-        href: "/recharts_aws",
+        name: "Predict Prophet",
+        href: "/Prophet",
         tag: "",
       },
     ],
