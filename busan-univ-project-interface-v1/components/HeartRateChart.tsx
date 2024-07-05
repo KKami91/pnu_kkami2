@@ -83,7 +83,7 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
             stackId="1"
             stroke="none"
             fill="#8884d8"
-            fillOpacity={0.2}
+            fillOpacity={2}
             name="Lower Bound"
           />
           <Area
@@ -92,7 +92,7 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
             stackId="1"
             stroke="none"
             fill="#8884d8"
-            fillOpacity={0.2}
+            fillOpacity={2}
             name="Upper Bound"
           />
           {showHistorical && (
