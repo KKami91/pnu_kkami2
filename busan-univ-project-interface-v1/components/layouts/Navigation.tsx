@@ -25,7 +25,7 @@ const navigation = [
         tag: "",
       },
       {
-        id: "004",
+        id: "006",
         icon: PresentationChartLineIcon,
         name: "Predict Prophet",
         href: "/Prophet",
