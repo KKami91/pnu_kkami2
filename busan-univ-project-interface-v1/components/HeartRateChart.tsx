@@ -82,7 +82,7 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
             dataKey="yhat_lower"
             stackId="1"
             stroke="none"
-            fill="#8884d8"
+            fill="#82ca9d"
             fillOpacity={2}
             name="Lower Bound"
           />
@@ -91,7 +91,7 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
             dataKey="yhat_upper"
             stackId="1"
             stroke="none"
-            fill="#8884d8"
+            fill="#82ca9d"
             fillOpacity={2}
             name="Upper Bound"
           />
