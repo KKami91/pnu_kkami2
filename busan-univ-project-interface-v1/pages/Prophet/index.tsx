@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import axios from 'axios'
 
-const users = ['U#hwschaos@gmail.com', 'U#subak63@gmail.com']
+const users = ['U#hswchaos@gmail.com', 'U#subak63@gmail.com']
 
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('')
