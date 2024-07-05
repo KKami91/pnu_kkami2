@@ -111,11 +111,13 @@ export default function Home() {
         </button>
       </div>
       {message && <p className="mt-4">{message}</p>}
-      {graphData.length > 0 && (
+      {graphData.length > 0 ? (
         <div className="mt-8">
             <HeartRateChart data={graphData} />
         </div>
-      )}
+      ) : (
+        <div className="mt-8 text-center text-red-500">No data available for the chart.</div>
+      ) }
     </div>
   )
 }

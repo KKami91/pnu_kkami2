@@ -1,6 +1,6 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area } from 'recharts';
-import { format, parseISO, subDays } from 'date-fns';
+import { format, parseISO, subDays, isValid } from 'date-fns';
 
 interface DataItem {
   ds: string;
@@ -18,9 +18,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     return (
       <div className="bg-white p-2 border border-gray-300 rounded shadow">
         <p className="text-sm font-bold">{`Date: ${label}`}</p>
-        <p className="text-sm text-blue-600">{`Predicted: ${payload[0].value.toFixed(2)} BPM`}</p>
-        <p className="text-sm text-green-600">{`Lower: ${payload[1].value.toFixed(2)} BPM`}</p>
-        <p className="text-sm text-red-600">{`Upper: ${payload[2].value.toFixed(2)} BPM`}</p>
+        <p className="text-sm text-blue-600">{`Predicted: ${payload[0].value?.toFixed(2) ?? 'N/A'} BPM`}</p>
+        <p className="text-sm text-green-600">{`Lower: ${payload[1].value?.toFixed(2) ?? 'N/A'} BPM`}</p>
+        <p className="text-sm text-red-600">{`Upper: ${payload[2].value?.toFixed(2) ?? 'N/A'} BPM`}</p>
       </div>
     );
   }
@@ -28,12 +28,23 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
-  const formattedData = data.map(item => ({
-    ...item,
-    ds: format(parseISO(item.ds), 'yyyy-MM-dd HH:mm'),
-  }));
+  if (!Array.isArray(data) || data.length === 0) {
+    return <div className="text-center text-red-500">No valid data available for the chart.</div>;
+  }
 
-  const lastDate = parseISO(data[data.length - 1].ds);
+  const formattedData = data.map(item => {
+    const parsedDate = parseISO(item.ds);
+    return {
+      ...item,
+      ds: isValid(parsedDate) ? format(parsedDate, 'yyyy-MM-dd HH:mm') : 'Invalid Date',
+    };
+  }).filter(item => item.ds !== 'Invalid Date');
+
+  if (formattedData.length === 0) {
+    return <div className="text-center text-red-500">No valid dates found in the data.</div>;
+  }
+
+  const lastDate = parseISO(formattedData[formattedData.length - 1].ds);
   const predictionStartDate = subDays(lastDate, 3);
 
   const historicalData = formattedData.filter(item => parseISO(item.ds) < predictionStartDate);
