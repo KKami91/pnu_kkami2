@@ -13,20 +13,6 @@ interface HeartRateChartProps {
   data: DataItem[];
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white p-2 border border-gray-300 rounded shadow">
-        <p className="text-sm font-bold">{`Date: ${label}`}</p>
-        <p className="text-sm text-blue-600">{`Predicted: ${payload[0].value.toFixed(2)} BPM`}</p>
-        <p className="text-sm text-green-600">{`Lower: ${payload[1].value.toFixed(2)} BPM`}</p>
-        <p className="text-sm text-red-600">{`Upper: ${payload[2].value.toFixed(2)} BPM`}</p>
-      </div>
-    );
-  }
-  return null;
-};
-
 const HeartRateChart: React.FC<HeartRateChartProps> = ({ data }) => {
   const formattedData = data.map(item => ({
     ...item,
@@ -52,23 +38,24 @@ const HeartRateChart: React.FC<HeartRateChartProps> = ({ data }) => {
             domain={['auto', 'auto']}
             label={{ value: 'BPM', angle: -90, position: 'insideLeft', fill: '#666' }}
           />
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip 
+            contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}
+            labelFormatter={(label) => `Date: ${label}`}
+          />
           <Legend verticalAlign="top" height={36} />
           <Area 
             type="monotone" 
             dataKey="yhat_lower" 
-            stackId="1"
             stroke="none" 
             fill="#8884d8" 
-            fillOpacity={0.2}
+            fillOpacity={0.5}
           />
           <Area 
             type="monotone" 
             dataKey="yhat_upper" 
-            stackId="1"
             stroke="none" 
             fill="#8884d8" 
-            fillOpacity={0.2}
+            fillOpacity={0.5}
           />
           <Line 
             type="monotone" 
@@ -77,24 +64,6 @@ const HeartRateChart: React.FC<HeartRateChartProps> = ({ data }) => {
             name="Predicted BPM" 
             dot={false}
             strokeWidth={2}
-          />
-          <Line 
-            type="monotone" 
-            dataKey="yhat_lower" 
-            stroke="#82ca9d" 
-            name="Lower Bound" 
-            dot={false}
-            strokeWidth={1}
-            strokeDasharray="3 3"
-          />
-          <Line 
-            type="monotone" 
-            dataKey="yhat_upper" 
-            stroke="#ffc658" 
-            name="Upper Bound" 
-            dot={false}
-            strokeWidth={1}
-            strokeDasharray="3 3"
           />
         </LineChart>
       </ResponsiveContainer>
