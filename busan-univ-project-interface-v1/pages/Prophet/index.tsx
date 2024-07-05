@@ -19,10 +19,13 @@ export default function Home() {
 
     try {
       const response = await axios.post('https://heart-rate-app10-hotofhe3yq-du.a.run.app/analyze_and_predict', { user_email: selectedUser })
-      console.log(response)
       setMessage(`Analysis requested for ${selectedUser}. Response: ${JSON.stringify(response.data)}`)
     } catch (error) {
-      setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
+      if (axios.isAxiosError(error) && error.response) {
+        setMessage(`Error occurred: ${error.response.status} - ${JSON.stringify(error.response.data)}`)
+      } else {
+        setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
+      }
     }
   }
 
