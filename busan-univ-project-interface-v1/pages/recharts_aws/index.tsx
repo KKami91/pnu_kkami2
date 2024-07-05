@@ -187,6 +187,7 @@ export default function ReadJsonPage() {
     const maxHr = Math.max(...hearthRateList);
     const stdHr = getStandardDeviation(hearthRateList, 0);
 
+    // 건강한 성인의 경우 sdnn_min = 20, sdnn_max = 100
     const sdnnMax = 100;
     const sdnnMin = 0;
     const sdnnScore = (sdnn - sdnnMin) / (sdnnMax - sdnnMin);

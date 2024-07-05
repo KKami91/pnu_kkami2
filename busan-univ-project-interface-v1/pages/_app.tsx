@@ -35,7 +35,7 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
           {getLayout(<Component {...pageProps} />)}
         </ThemeProvider>
         <BubbleChat
-          chatflowid="1352afdb-1933-4a3f-88ea-b55d560ea805"
+          chatflowid="29117e68-46ca-4adf-b547-1936cd210d3a"
           apiHost="https://flowise-6pxd.onrender.com"
           theme={{ chatWindow: { poweredByTextColor: "#fff" } }}
         />
@@ -45,3 +45,10 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
 }
 
 export default MyApp;
+
+{/* <BubbleChat
+chatflowid="1352afdb-1933-4a3f-88ea-b55d560ea805"
+apiHost="https://flowise-6pxd.onrender.com"
+https://xbqbhszemiywwwucjnex.supabase.co
+theme={{ chatWindow: { poweredByTextColor: "#fff" } }}
+/> */}
