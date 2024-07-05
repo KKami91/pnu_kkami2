@@ -1,5 +1,5 @@
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area } from 'recharts';
 import { format, parseISO } from 'date-fns';
 
 interface DataItem {
@@ -43,6 +43,20 @@ const HeartRateChart: React.FC<HeartRateChartProps> = ({ data }) => {
             labelFormatter={(label) => `Date: ${label}`}
           />
           <Legend verticalAlign="top" height={36} />
+          <Area 
+            type="monotone" 
+            dataKey="yhat_lower" 
+            stroke="none" 
+            fill="#8884d8" 
+            fillOpacity={0.2}
+          />
+          <Area 
+            type="monotone" 
+            dataKey="yhat_upper" 
+            stroke="none" 
+            fill="#8884d8" 
+            fillOpacity={0.2}
+          />
           <Line 
             type="monotone" 
             dataKey="yhat" 
@@ -50,24 +64,6 @@ const HeartRateChart: React.FC<HeartRateChartProps> = ({ data }) => {
             name="Predicted BPM" 
             dot={false}
             strokeWidth={2}
-          />
-          <Line 
-            type="monotone" 
-            dataKey="yhat_lower" 
-            stroke="#82ca9d" 
-            name="Lower Bound" 
-            dot={false}
-            strokeWidth={1}
-            strokeDasharray="3 3"
-          />
-          <Line 
-            type="monotone" 
-            dataKey="yhat_upper" 
-            stroke="#ffc658" 
-            name="Upper Bound" 
-            dot={false}
-            strokeWidth={1}
-            strokeDasharray="3 3"
           />
         </LineChart>
       </ResponsiveContainer>
