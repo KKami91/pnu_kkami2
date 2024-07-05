@@ -1,6 +1,7 @@
 import { useState, useEffect  } from 'react'
 import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import HeartRateChart from '../../components/HeartRateChart';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';
@@ -111,19 +112,8 @@ export default function Home() {
       </div>
       {message && <p className="mt-4">{message}</p>}
       {graphData.length > 0 && (
-        <div className="mt-4" style={{ width: '100%', height: 400 }}>
-          <ResponsiveContainer>
-            <LineChart data={graphData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="ds" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="yhat" stroke="#8884d8" />
-              <Line type="monotone" dataKey="yhat_lower" stroke="#82ca9d" />
-              <Line type="monotone" dataKey="yhat_upper" stroke="#ffc658" />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="mt-8">
+            <HeartRateChart data={graphData} />
         </div>
       )}
     </div>
