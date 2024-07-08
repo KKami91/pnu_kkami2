@@ -34,7 +34,9 @@ export default function Home() {
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
     setSelectedUser(user)
-    setSelectedDate('')  // 새 사용자를 선택할 때 날짜 선택을 초기화합니다.
+    setSelectedDate('')
+    setPredictionDates([])
+    setGraphData([])
     if (user) {
       setIsLoadingUser(true)
       await checkDb(user)
@@ -45,8 +47,7 @@ export default function Home() {
 
   const checkDb = async (user: string) => {
     try {
-      const response = await axios.post(`${API_URL}/check_db`, { user_email: user })
-      // setMessage(`Analysis requested for ${user}. Response: ${JSON.stringify(response.data)}`)
+      await axios.post(`${API_URL}/check_db`, { user_email: user })
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -58,7 +59,7 @@ export default function Home() {
       setPredictionDates(response.data.dates);
     } catch (error) {
       setMessage(`Error fetching prediction dates: ${error instanceof Error ? error.message : String(error)}`);
-      setPredictionDates([]);  // 에러 발생 시 예측 날짜 목록을 비웁니다.
+      setPredictionDates([]);
     }
   }
 
@@ -68,7 +69,7 @@ export default function Home() {
       setGraphData(response.data.data);
     } catch (error) {
       setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
-      setGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
+      setGraphData([]);
     }
   }
 
