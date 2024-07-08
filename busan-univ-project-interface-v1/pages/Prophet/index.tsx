@@ -59,8 +59,12 @@ export default function Home() {
 
   const fetchGraphData = async (user: string, date: string) => {
     try {
+      console.log('In fetchGraphData');
+      console.log('date:', {date});
       const encodedDate = encodeURIComponent(date);
+      console.log('encodedDate:', {encodedDate});
       const response = await axios.get(`${API_URL}/prediction_data/${user}/${encodedDate}`);
+      console.log('response:', {response});
       setGraphData(response.data.data);
     } catch (error) {
       setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
