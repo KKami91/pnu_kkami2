@@ -85,7 +85,7 @@ export default function Home() {
           onClick={handleSubmit}
           className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
         >
-          심박수 분석
+          심박수 분석 요청하기
         </button>
       </div>
       <div className="mb-4">
