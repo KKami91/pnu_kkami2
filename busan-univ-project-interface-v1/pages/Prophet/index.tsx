@@ -108,7 +108,7 @@ export default function Home() {
           ) : (
             <p> </p>
           )}
-          {isLoadingUser && <LoadingBar />}
+          {isLoadingDate && <LoadingBar />}
         </div>
       )}
       
