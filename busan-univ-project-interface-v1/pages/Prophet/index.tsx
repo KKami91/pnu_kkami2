@@ -6,8 +6,10 @@ import HeartRateChart from '../../components/HeartRateChart2';
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';
 
-const LoadingIcon = () => (
-  <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-gray-900 ml-2"></div>
+const LoadingBar = () => (
+  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+    <div className="w-full h-full bg-blue-500 animate-pulse"></div>
+  </div>
 );
 
 export default function Home() {
@@ -34,9 +36,7 @@ export default function Home() {
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
     setSelectedUser(user)
-    setSelectedDate('')
-    setPredictionDates([])
-    setGraphData([])
+    setSelectedDate('')  // 새 사용자를 선택할 때 날짜 선택을 초기화합니다.
     if (user) {
       setIsLoadingUser(true)
       await checkDb(user)
@@ -47,7 +47,8 @@ export default function Home() {
 
   const checkDb = async (user: string) => {
     try {
-      await axios.post(`${API_URL}/check_db`, { user_email: user })
+      const response = await axios.post(`${API_URL}/check_db`, { user_email: user })
+      // setMessage(`Analysis requested for ${user}. Response: ${JSON.stringify(response.data)}`)
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -59,7 +60,7 @@ export default function Home() {
       setPredictionDates(response.data.dates);
     } catch (error) {
       setMessage(`Error fetching prediction dates: ${error instanceof Error ? error.message : String(error)}`);
-      setPredictionDates([]);
+      setPredictionDates([]);  // 에러 발생 시 예측 날짜 목록을 비웁니다.
     }
   }
 
@@ -69,14 +70,14 @@ export default function Home() {
       setGraphData(response.data.data);
     } catch (error) {
       setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
-      setGraphData([]);
+      setGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
     }
   }
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Heart Rate Analysis Dashboard</h1>
-      <div className="mb-4 flex items-center">
+      <div className="mb-4">
         <label className="mr-2">계정 선택:</label>
         <select 
           value={selectedUser} 
@@ -88,30 +89,29 @@ export default function Home() {
             <option key={user} value={user}>{user}</option>
           ))}
         </select>
-        {isLoadingUser && <LoadingIcon />}
+        {isLoadingUser && <LoadingBar />}
       </div>
-      {selectedUser && !isLoadingUser && (
-        <div className="mb-4 flex items-center">
+      {selectedUser && (
+        <div className="mb-4">
           <label className="mr-2">예측 기준 날짜:</label>
           {predictionDates.length > 0 ? (
-            <>
-              <select 
-                value={selectedDate} 
-                onChange={handleDateSelect}
-                className="border p-2 rounded mr-2"
-              >
-                <option value="">Select a prediction date</option>
-                {predictionDates.map(date => (
-                  <option key={date} value={date}>{date}</option>
-                ))}
-              </select>
-              {isLoadingDate && <LoadingIcon />}
-            </>
+            <select 
+              value={selectedDate} 
+              onChange={handleDateSelect}
+              className="border p-2 rounded mr-2"
+            >
+              <option value="">Select a prediction date</option>
+              {predictionDates.map(date => (
+                <option key={date} value={date}>{date}</option>
+              ))}
+            </select>
           ) : (
-            <p>No prediction dates available</p>
+            <p> </p>
           )}
+          {isLoadingUser && <LoadingBar />}
         </div>
       )}
+      
       {message && <p className="mt-4">{message}</p>}
       {graphData.length > 0 ? (
         <div className="mt-8">
