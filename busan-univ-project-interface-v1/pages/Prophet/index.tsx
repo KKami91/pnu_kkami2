@@ -12,6 +12,14 @@ const LoadingSpinner = () => (
   </div>
 );
 
+const SkeletonLoader = () => (
+  <div className="animate-pulse">
+    <div className="h-64 bg-gray-300 rounded"></div>
+    <div className="mt-4 h-4 bg-gray-300 rounded w-3/4"></div>
+    <div className="mt-2 h-4 bg-gray-300 rounded w-1/2"></div>
+  </div>
+);
+
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('')
   const [message, setMessage] = useState('')
@@ -114,13 +122,15 @@ export default function Home() {
       )}
       
       {message && <p className="mt-4">{message}</p>}
-      {graphData.length > 0 ? (
-        <div className="mt-8">
-            <HeartRateChart data={graphData} />
-        </div>
-      ) : (
-        <div className="mt-8 text-center text-red-500">No data available for the chart.</div>
-      )}
+      <div className="mt-8">
+        {isLoadingDate ? (
+          <SkeletonLoader />
+        ) : graphData.length > 0 ? (
+          <HeartRateChart data={graphData} />
+        ) : (
+          <div className="text-center text-red-500">No data available for the chart.</div>
+        )}
+      </div>
     </div>
   )
 }
