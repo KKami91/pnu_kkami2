@@ -28,7 +28,8 @@ export default function Home() {
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
-    setSelectedDate(user)
+    setSelectedUser(user)
+    setSelectedDate('')  // 새 사용자를 선택할 때 날짜 선택을 초기화합니다.
     if (user) {
       setIsLoading(true)
       await checkDb(user)
@@ -46,20 +47,13 @@ export default function Home() {
     }
   }
 
-    // try {
-    //     const response = await axios.post('https://heart-rate-app10-hotofhe3yq-du.a.run.app/check_db', { user_email: selectedUser })
-    //     setMessage(`Analysis requested for ${selectedUser}. Response: ${JSON.stringify(response.data)}`)
-    //   } catch (error) {
-    //     setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
-    //   }
-    // }
-
   const fetchPredictionDates = async (user: string) => {
     try {
       const response = await axios.get(`${API_URL}/prediction_dates/${user}`);
       setPredictionDates(response.data.dates);
     } catch (error) {
       setMessage(`Error fetching prediction dates: ${error instanceof Error ? error.message : String(error)}`);
+      setPredictionDates([]);  // 에러 발생 시 예측 날짜 목록을 비웁니다.
     }
   }
 
@@ -70,6 +64,7 @@ export default function Home() {
       setGraphData(response.data.data);
     } catch (error) {
       setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
+      setGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
     }
   }
 
@@ -92,16 +87,20 @@ export default function Home() {
       {selectedUser && (
         <div className="mb-4">
           <label className="mr-2">예측 기준 날짜:</label>
-          <select 
-            value={selectedDate} 
-            onChange={handleDateSelect}
-            className="border p-2 rounded mr-2"
-          >
-            <option value="">Select a prediction date</option>
-            {predictionDates.map(date => (
-              <option key={date} value={date}>{date}</option>
-            ))}
-          </select>
+          {predictionDates.length > 0 ? (
+            <select 
+              value={selectedDate} 
+              onChange={handleDateSelect}
+              className="border p-2 rounded mr-2"
+            >
+              <option value="">Select a prediction date</option>
+              {predictionDates.map(date => (
+                <option key={date} value={date}>{date}</option>
+              ))}
+            </select>
+          ) : (
+            <p>No prediction dates available</p>
+          )}
         </div>
       )}
       {isLoading && <p className="mt-4">Loading...</p>}
