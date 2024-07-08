@@ -6,7 +6,11 @@ import HeartRateChart from '../../components/HeartRateChart2';
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';
 
-
+const LoadingBar = () => (
+  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+    <div className="w-full h-full bg-blue-500 animate-pulse"></div>
+  </div>
+);
 
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('')
@@ -16,13 +20,16 @@ export default function Home() {
   const [graphData, setGraphData] = useState([])
   const [isLoading, setIsLoading] = useState(false)
 
+  const [isLoadingUser, setIsLoadingUser] = useState(false)
+  const [isLoadingDate, setIsLoadingDate] = useState(false)
+
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
     setSelectedDate(date)
     if (date) {
-      setIsLoading(true)
+      setIsLoadingDate(true)
       await fetchGraphData(selectedUser, date)
-      setIsLoading(false)
+      setIsLoadingDate(false)
     }
   }
 
@@ -31,17 +38,17 @@ export default function Home() {
     setSelectedUser(user)
     setSelectedDate('')  // 새 사용자를 선택할 때 날짜 선택을 초기화합니다.
     if (user) {
-      setIsLoading(true)
+      setIsLoadingUser(true)
       await checkDb(user)
       await fetchPredictionDates(user)
-      setIsLoading(false)
+      setIsLoadingUser(false)
     }
   }
 
   const checkDb = async (user: string) => {
     try {
       const response = await axios.post(`${API_URL}/check_db`, { user_email: user })
-      setMessage(`Analysis requested for ${user}. Response: ${JSON.stringify(response.data)}`)
+      // setMessage(`Analysis requested for ${user}. Response: ${JSON.stringify(response.data)}`)
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -59,12 +66,7 @@ export default function Home() {
 
   const fetchGraphData = async (user: string, date: string) => {
     try {
-      console.log('In fetchGraphData');
-      console.log('date:', {date});
-      //const encodedDate = encodeURIComponent(date);
-      //console.log('encodedDate:', {encodedDate});
       const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
-      console.log('response:', {response});
       setGraphData(response.data.data);
     } catch (error) {
       setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
@@ -87,6 +89,7 @@ export default function Home() {
             <option key={user} value={user}>{user}</option>
           ))}
         </select>
+        {isLoadingUser && <LoadingBar />}
       </div>
       {selectedUser && (
         <div className="mb-4">
@@ -103,11 +106,12 @@ export default function Home() {
               ))}
             </select>
           ) : (
-            <p>No prediction dates available</p>
+            <p> </p>
           )}
+          {isLoadingUser && <LoadingBar />}
         </div>
       )}
-      {isLoading && <p className="mt-4">Loading...</p>}
+      
       {message && <p className="mt-4">{message}</p>}
       {graphData.length > 0 ? (
         <div className="mt-8">
