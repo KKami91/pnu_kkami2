@@ -6,9 +6,9 @@ import HeartRateChart from '../../components/HeartRateChart2';
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';
 
-const LoadingBar = () => (
-  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-    <div className="w-full h-full bg-blue-500 animate-pulse"></div>
+const LoadingSpinner = () => (
+  <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] ml-2">
+    <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
   </div>
 );
 
@@ -37,6 +37,7 @@ export default function Home() {
     const user = e.target.value
     setSelectedUser(user)
     setSelectedDate('')  // 새 사용자를 선택할 때 날짜 선택을 초기화합니다.
+    setPredictionDates([])
     if (user) {
       setIsLoadingUser(true)
       await checkDb(user)
@@ -77,7 +78,7 @@ export default function Home() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Heart Rate Analysis Dashboard</h1>
-      <div className="mb-4">
+      <div className="mb-4 flex items-center">
         <label className="mr-2">계정 선택:</label>
         <select 
           value={selectedUser} 
@@ -89,10 +90,10 @@ export default function Home() {
             <option key={user} value={user}>{user}</option>
           ))}
         </select>
-        {isLoadingUser && <LoadingBar />}
+        {isLoadingUser && <LoadingSpinner />}
       </div>
       {selectedUser && (
-        <div className="mb-4">
+        <div className="mb-4 flex items-center">
           <label className="mr-2">예측 기준 날짜:</label>
           {predictionDates.length > 0 ? (
             <select 
@@ -106,9 +107,9 @@ export default function Home() {
               ))}
             </select>
           ) : (
-            <p> </p>
+            <p>No prediction dates available</p>
           )}
-          {isLoadingDate && <LoadingBar />}
+          {isLoadingDate && <LoadingSpinner />}
         </div>
       )}
       
