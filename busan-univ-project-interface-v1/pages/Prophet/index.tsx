@@ -6,10 +6,8 @@ import HeartRateChart from '../../components/HeartRateChart2';
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';
 
-const LoadingBar = () => (
-  <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
-    <div className="w-full h-full bg-blue-500 animate-pulse"></div>
-  </div>
+const LoadingIcon = () => (
+  <div className="inline-block animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-gray-900 ml-2"></div>
 );
 
 export default function Home() {
@@ -77,7 +75,7 @@ export default function Home() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Heart Rate Analysis Dashboard</h1>
-      <div className="mb-4">
+      <div className="mb-4 flex items-center">
         <label className="mr-2">계정 선택:</label>
         <select 
           value={selectedUser} 
@@ -89,29 +87,30 @@ export default function Home() {
             <option key={user} value={user}>{user}</option>
           ))}
         </select>
-        {isLoadingUser && <LoadingBar />}
+        {isLoadingUser && <LoadingIcon />}
       </div>
-      {selectedUser && (
-        <div className="mb-4">
+      {selectedUser && !isLoadingUser && (
+        <div className="mb-4 flex items-center">
           <label className="mr-2">예측 기준 날짜:</label>
           {predictionDates.length > 0 ? (
-            <select 
-              value={selectedDate} 
-              onChange={handleDateSelect}
-              className="border p-2 rounded mr-2"
-            >
-              <option value="">Select a prediction date</option>
-              {predictionDates.map(date => (
-                <option key={date} value={date}>{date}</option>
-              ))}
-            </select>
+            <>
+              <select 
+                value={selectedDate} 
+                onChange={handleDateSelect}
+                className="border p-2 rounded mr-2"
+              >
+                <option value="">Select a prediction date</option>
+                {predictionDates.map(date => (
+                  <option key={date} value={date}>{date}</option>
+                ))}
+              </select>
+              {isLoadingDate && <LoadingIcon />}
+            </>
           ) : (
-            <p> </p>
+            <p>No prediction dates available</p>
           )}
-          {isLoadingUser && <LoadingBar />}
         </div>
       )}
-      
       {message && <p className="mt-4">{message}</p>}
       {graphData.length > 0 ? (
         <div className="mt-8">
