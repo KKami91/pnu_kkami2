@@ -14,12 +14,15 @@ export default function Home() {
   const [predictionDates, setPredictionDates] = useState([])
   const [selectedDate, setSelectedDate] = useState('')
   const [graphData, setGraphData] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
     setSelectedDate(date)
     if (date) {
+      setIsLoading(true)
       await fetchGraphData(selectedUser, date)
+      setIsLoading(false)
     }
   }
 
@@ -27,8 +30,10 @@ export default function Home() {
     const user = e.target.value
     setSelectedDate(user)
     if (user) {
+      setIsLoading(true)
       await checkDb(user)
       await fetchPredictionDates(user)
+      setIsLoading(false)
     }
   }
 
@@ -99,6 +104,7 @@ export default function Home() {
           </select>
         </div>
       )}
+      {isLoading && <p className="mt-4">Loading...</p>}
       {message && <p className="mt-4">{message}</p>}
       {graphData.length > 0 ? (
         <div className="mt-8">
