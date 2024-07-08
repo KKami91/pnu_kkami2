@@ -85,7 +85,7 @@ export default function Home() {
           onClick={handleSubmit}
           className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
         >
-          Analyze Heart Rate
+          심박수 분석
         </button>
       </div>
       <div className="mb-4">
@@ -93,7 +93,7 @@ export default function Home() {
           onClick={fetchPredictionDates}
           className="bg-green-500 text-white p-2 rounded hover:bg-green-600 mr-2"
         >
-          Fetch Prediction Dates
+          예측 데이터 불러오기
         </button>
         <select 
           value={selectedDate} 
@@ -109,7 +109,7 @@ export default function Home() {
           onClick={fetchGraphData}
           className="bg-purple-500 text-white p-2 rounded hover:bg-purple-600"
         >
-          Show Graph
+          예측 그래프 보기
         </button>
       </div>
       {message && <p className="mt-4">{message}</p>}
