@@ -74,6 +74,8 @@ export default function Home() {
   }
 
   const fetchGraphData = async (user: string, date: string) => {
+    console.log(user);
+    console.log(date);
     try {
       const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
       console.log(response);
