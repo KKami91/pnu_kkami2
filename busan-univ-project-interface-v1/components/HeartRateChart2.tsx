@@ -84,24 +84,6 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={36} />
-            <Area
-              type="monotone"
-              dataKey="yhat_lower"
-              stackId="1"
-              stroke="none"
-              fill="#8884d8"
-              fillOpacity={0.2}
-              name="Lower Bound"
-            />
-            <Area
-              type="monotone"
-              dataKey="yhat_upper"
-              stackId="1"
-              stroke="none"
-              fill="#8884d8"
-              fillOpacity={0.2}
-              name="Upper Bound"
-            />
             {showHistorical && (
               <Line
                 type="monotone"
