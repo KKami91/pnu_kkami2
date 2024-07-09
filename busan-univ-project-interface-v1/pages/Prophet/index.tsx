@@ -76,8 +76,10 @@ export default function Home() {
   const fetchGraphData = async (user: string, date: string) => {
     try {
       const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
+      console.log(response);
       setGraphData(response.data.data);
     } catch (error) {
+      console.log('error....');
       setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
       setGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
     }
