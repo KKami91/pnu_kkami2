@@ -162,27 +162,6 @@ export default function Home() {
         </div>
         
       )}
-
-      {selectedUser && (
-        <div className="mb-4 flex items-center">
-          <label className="mr-2">심박수 저장 날짜:</label>
-          {predictionDates.length > 0 ? (
-            <select 
-              value={predictionSelectedDate} 
-              onChange={handlePredictionDateSelect}
-              className="border p-2 rounded mr-2"
-            >
-              <option value="">Select a BPM date</option>
-              {predictionDates.map(date => (
-                <option key={date} value={date}>{date}</option>
-              ))}
-            </select>
-          ) : (
-            <p>No BPM dates available</p>
-          )}
-          {isLoadingDate && <LoadingSpinner />}
-        </div>
-      )}
       
       {message && <p className="mt-4">{message}</p>}
       <div className="mt-8">
