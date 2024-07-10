@@ -25,17 +25,18 @@ export default function Home() {
   const [message, setMessage] = useState('')
   const [analysisDates, setAnalysisDates] = useState([])
   const [predictionDates, setPredictionDates] = useState([])
-  const [selectedAnalysisDate, setSelectedAnalysisDate] = useState('')
-  const [selectedPredictionDate, setSelectedPredictionDate] = useState('')
+  const [analysisSelectedDate, setAnalysisSelectedDate] = useState('')
+  const [predictionSelectedDate, setPredictionSelectedDate] = useState('')
   const [analysisGraphData, setAnalysisGraphData] = useState([])
-  const [heartRateData, setHeartRateData] = useState([])
+  const [predictionGraphData, setPredictionGraphData] = useState([])
   const [isLoading, setIsLoading] = useState(false)
+
   const [isLoadingUser, setIsLoadingUser] = useState(false)
   const [isLoadingDate, setIsLoadingDate] = useState(false)
 
   const handleAnalysisDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
-    setSelectedAnalysisDate(date)
+    setAnalysisSelectedDate(date)
     if (date) {
       setIsLoadingDate(true)
       await fetchAnalysisGraphData(selectedUser, date)
@@ -45,10 +46,10 @@ export default function Home() {
 
   const handlePredictionDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
-    setSelectedPredictionDate(date)
+    setPredictionSelectedDate(date)
     if (date) {
       setIsLoadingDate(true)
-      await fetchHeartRateData(selectedUser, date)
+      await fetchPredictionGraphData(selectedUser, date)
       setIsLoadingDate(false)
     }
   }
@@ -56,15 +57,12 @@ export default function Home() {
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
     setSelectedUser(user)
-    setSelectedAnalysisDate('')
-    setSelectedPredictionDate('')
+    setAnalysisSelectedDate('')  // 새 사용자를 선택할 때 날짜 선택을 초기화합니다.
     setAnalysisDates([])
-    setPredictionDates([])
     if (user) {
       setIsLoadingUser(true)
       await checkDb(user)
       await fetchAnalysisDates(user)
-      await fetchPredictionDates(user)
       setIsLoadingUser(false)
     }
   }
@@ -72,6 +70,7 @@ export default function Home() {
   const checkDb = async (user: string) => {
     try {
       const response = await axios.post(`${API_URL}/check_db_analysis`, { user_email: user })
+      // setMessage(`Analysis requested for ${user}. Response: ${JSON.stringify(response.data)}`)
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -83,7 +82,7 @@ export default function Home() {
       setAnalysisDates(response.data.dates);
     } catch (error) {
       setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`);
-      setAnalysisDates([]);
+      setAnalysisDates([]);  // 에러 발생 시 예측 날짜 목록을 비웁니다.
     }
   }
 
@@ -92,30 +91,38 @@ export default function Home() {
       const response = await axios.get(`${API_URL}/prediction_dates/${user}`);
       setPredictionDates(response.data.dates);
     } catch (error) {
-      setMessage(`Error fetching prediction dates: ${error instanceof Error ? error.message : String(error)}`);
-      setPredictionDates([]);
+      setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`);
+      setPredictionDates([]);  // 에러 발생 시 예측 날짜 목록을 비웁니다.
     }
   }
 
   const fetchAnalysisGraphData = async (user: string, date: string) => {
+    console.log(user);
+    console.log(date);
     try {
       const response = await axios.get(`${API_URL}/analysis_data/${user}/${date}`);
+      console.log(response);
       setAnalysisGraphData(response.data.data);
     } catch (error) {
-      setMessage(`Error fetching analysis graph data: ${error instanceof Error ? error.message : String(error)}`);
-      setAnalysisGraphData([]);
+      console.log('error....');
+      setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
+      setAnalysisGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
     }
   }
 
-  const fetchHeartRateData = async (user: string, date: string) => {
+  const fetchPredictionGraphData = async (user: string, date: string) => {
+    console.log(user);
+    console.log(date);
     try {
       const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
-      setHeartRateData(response.data.data);
+      console.log(response);
+      setPredictionGraphData(response.data.data);
     } catch (error) {
-      setMessage(`Error fetching heart rate data: ${error instanceof Error ? error.message : String(error)}`);
-      setHeartRateData([]);
+      console.log('error....');
+      setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
+      setPredictionGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
+      }
     }
-  }
 
   return (
     <div className="container mx-auto p-4">
@@ -135,54 +142,55 @@ export default function Home() {
         {isLoadingUser && <LoadingSpinner />}
       </div>
       {selectedUser && (
-        <>
-          <div className="mb-4 flex items-center">
-            <label className="mr-2">분석 저장 날짜:</label>
-            {analysisDates.length > 0 ? (
-              <select 
-                value={selectedAnalysisDate} 
-                onChange={handleAnalysisDateSelect}
-                className="border p-2 rounded mr-2"
-              >
-                <option value="">Select an analysis date</option>
-                {analysisDates.map(date => (
-                  <option key={date} value={date}>{date}</option>
-                ))}
-              </select>
-            ) : (
-              <p>No analysis dates available</p>
-            )}
-            {isLoadingDate && <LoadingSpinner />}
-          </div>
-          <div className="mb-4 flex items-center">
-            <label className="mr-2">심박수 저장 날짜:</label>
-            {predictionDates.length > 0 ? (
-              <select 
-                value={selectedPredictionDate} 
-                onChange={handlePredictionDateSelect}
-                className="border p-2 rounded mr-2"
-              >
-                <option value="">Select a heart rate date</option>
-                {predictionDates.map(date => (
-                  <option key={date} value={date}>{date}</option>
-                ))}
-              </select>
-            ) : (
-              <p>No heart rate dates available</p>
-            )}
-            {isLoadingDate && <LoadingSpinner />}
-          </div>
-        </>
+        <div className="mb-4 flex items-center">
+          <label className="mr-2">분석 저장 날짜:</label>
+          {analysisDates.length > 0 ? (
+            <select 
+              value={analysisSelectedDate} 
+              onChange={handleAnalysisDateSelect}
+              className="border p-2 rounded mr-2"
+            >
+              <option value="">Select a analysis date</option>
+              {analysisDates.map(date => (
+                <option key={date} value={date}>{date}</option>
+              ))}
+            </select>
+          ) : (
+            <p>No analysis dates available</p>
+          )}
+          {isLoadingDate && <LoadingSpinner />}
+        </div>
+      )}
+
+      {selectedUser && (
+        <div className="mb-4 flex items-center">
+          <label className="mr-2">심박수 저장 날짜:</label>
+          {predictionDates.length > 0 ? (
+            <select 
+              value={predictionSelectedDate} 
+              onChange={handlePredictionDateSelect}
+              className="border p-2 rounded mr-2"
+            >
+              <option value="">Select a BPM date</option>
+              {predictionDates.map(date => (
+                <option key={date} value={date}>{date}</option>
+              ))}
+            </select>
+          ) : (
+            <p>No BPM dates available</p>
+          )}
+          {isLoadingDate && <LoadingSpinner />}
+        </div>
       )}
       
       {message && <p className="mt-4">{message}</p>}
       <div className="mt-8">
         {isLoadingDate ? (
           <SkeletonLoader />
-        ) : analysisGraphData.length > 0 && heartRateData.length > 0 ? (
-          <AnalysisChart analysisData={analysisGraphData} heartRateData={heartRateData} />
+        ) : analysisGraphData.length > 0 ? (
+          <AnalysisChart data={analysisGraphData} />
         ) : (
-          <div className="text-center text-red-500">Please select both analysis and heart rate dates to view the chart.</div>
+          <div className="text-center text-red-500">No data available for the chart.</div>
         )}
       </div>
     </div>
