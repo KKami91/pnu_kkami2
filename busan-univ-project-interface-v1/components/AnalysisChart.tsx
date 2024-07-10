@@ -2,14 +2,20 @@ import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area } from 'recharts';
 import { format, parseISO, subDays, isValid } from 'date-fns';
 
-interface DataItem {
+interface AnalysisDataItem {
   ds: string;
   sdnn: number;
   rmssd: number;
 }
 
+interface HeartRateDataItem {
+  ds: string;
+  y: number;
+}
+
 interface AnalysisChartProps {
-  data: DataItem[];
+  analysisData: AnalysisDataItem[];
+  heartRateData: HeartRateDataItem[];
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -19,7 +25,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="text-sm font-bold text-black">{`Date: ${label}`}</p>
         {payload.map((entry: any, index: number) => (
           <p key={index} className="text-sm text-black">
-            {`${entry.name}: ${entry.value?.toFixed(2) ?? 'N/A'} ms`}
+            {`${entry.name}: ${entry.value?.toFixed(2) ?? 'N/A'} ${entry.name === 'Heart Rate' ? 'BPM' : 'ms'}`}
           </p>
         ))}
       </div>
@@ -28,14 +34,15 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
-  console.log('Received data:', data); // 데이터 로깅
+const AnalysisChart: React.FC<AnalysisChartProps> = ({ analysisData, heartRateData }) => {
+  console.log('Received analysis data:', analysisData);
+  console.log('Received heart rate data:', heartRateData);
 
-  if (!Array.isArray(data) || data.length === 0) {
+  if (!Array.isArray(analysisData) || analysisData.length === 0 || !Array.isArray(heartRateData) || heartRateData.length === 0) {
     return <div className="text-center text-red-500">No valid data available for the chart.</div>;
   }
 
-  const formattedData = data
+  const formattedAnalysisData = analysisData
     .filter(item => item && typeof item === 'object' && 'ds' in item)
     .map(item => {
       const parsedDate = parseISO(item.ds);
@@ -46,13 +53,25 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
     })
     .filter(item => item.ds !== 'Invalid Date');
 
-  console.log('Formatted data:', formattedData); // 포맷된 데이터 로깅
+  const formattedHeartRateData = heartRateData
+    .filter(item => item && typeof item === 'object' && 'ds' in item)
+    .map(item => {
+      const parsedDate = parseISO(item.ds);
+      return {
+        ...item,
+        ds: isValid(parsedDate) ? format(parsedDate, 'yyyy-MM-dd HH:mm') : 'Invalid Date',
+      };
+    })
+    .filter(item => item.ds !== 'Invalid Date');
 
-  if (formattedData.length === 0) {
+  console.log('Formatted analysis data:', formattedAnalysisData);
+  console.log('Formatted heart rate data:', formattedHeartRateData);
+
+  if (formattedAnalysisData.length === 0 || formattedHeartRateData.length === 0) {
     return <div className="text-center text-red-500">No valid dates found in the data.</div>;
   }
 
-  const renderChart = (chartData: any[], title: string, dataKey: string) => {
+  const renderChart = (chartData: any[], title: string, dataKey: string, yAxisLabel: string) => {
     return (
       <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
         <h2 className="text-xl font-bold mb-4 text-black text-center">{title}</h2>
@@ -67,7 +86,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
             <YAxis
               tick={{ fill: '#666', fontSize: 12 }}
               domain={['auto', 'auto']}
-              label={{ value: 'ms', angle: -90, position: 'insideLeft', fill: '#666' }}
+              label={{ value: yAxisLabel, angle: -90, position: 'insideLeft', fill: '#666' }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={36} />
@@ -75,7 +94,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
               type="monotone"
               dataKey={dataKey}
               stroke="#8884d8"
-              name={dataKey.toUpperCase()}
+              name={title}
               dot={false}
               strokeWidth={2}
             />
@@ -87,8 +106,9 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
 
   return (
     <div>
-      {renderChart(formattedData, "SDNN Analysis", "sdnn")}
-      {renderChart(formattedData, "RMSSD Analysis", "rmssd")}
+      {renderChart(formattedAnalysisData, "SDNN", "sdnn", "ms")}
+      {renderChart(formattedAnalysisData, "RMSSD", "rmssd", "ms")}
+      {renderChart(formattedHeartRateData, "Heart Rate", "y", "BPM")}
     </div>
   );
 };
