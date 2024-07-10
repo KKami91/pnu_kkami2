@@ -20,12 +20,12 @@ const navigation = [
       {
         id: "000",
         icon: PresentationChartLineIcon,
-        name: "Dashboard",
-        href: "/dashboard",
+        name: "Neurokit Analysis",
+        href: "/neurokit",
         tag: "",
       },
       {
-        id: "006",
+        id: "001",
         icon: PresentationChartLineIcon,
         name: "Predict Prophet",
         href: "/Prophet",
