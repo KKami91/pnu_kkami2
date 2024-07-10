@@ -5,8 +5,6 @@ import { format, parseISO, subDays, isValid } from 'date-fns';
 interface DataItem {
   ds: string;
   yhat: number;
-  yhat_lower: number;
-  yhat_upper: number;
 }
 
 interface HeartRateChartsProps {

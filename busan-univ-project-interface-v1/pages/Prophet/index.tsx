@@ -1,7 +1,7 @@
 import { useState, useEffect  } from 'react'
 import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import HeartRateChart from '../../components/HeartRateChart2';
+import HeartRateChart from '../../components/PredictChart';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';
@@ -56,7 +56,7 @@ export default function Home() {
 
   const checkDb = async (user: string) => {
     try {
-      const response = await axios.post(`${API_URL}/check_db`, { user_email: user })
+      const response = await axios.post(`${API_URL}/check_db_predict`, { user_email: user })
       // setMessage(`Analysis requested for ${user}. Response: ${JSON.stringify(response.data)}`)
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
