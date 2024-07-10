@@ -44,15 +44,6 @@ export default function Home() {
     }
   }
 
-  const handlePredictionDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const date = e.target.value
-    setPredictionSelectedDate(date)
-    if (date) {
-      setIsLoadingDate(true)
-      await fetchPredictionGraphData(selectedUser, date)
-      setIsLoadingDate(false)
-    }
-  }
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
@@ -86,15 +77,6 @@ export default function Home() {
     }
   }
 
-  const fetchPredictionDates = async (user: string) => {
-    try {
-      const response = await axios.get(`${API_URL}/prediction_dates/${user}`);
-      setPredictionDates(response.data.dates);
-    } catch (error) {
-      setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`);
-      setPredictionDates([]);  // 에러 발생 시 예측 날짜 목록을 비웁니다.
-    }
-  }
 
   const fetchAnalysisGraphData = async (user: string, date: string) => {
     console.log(user);
@@ -109,20 +91,6 @@ export default function Home() {
       setAnalysisGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
     }
   }
-
-  const fetchPredictionGraphData = async (user: string, date: string) => {
-    console.log(user);
-    console.log(date);
-    try {
-      const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
-      console.log(response);
-      setPredictionGraphData(response.data.data);
-    } catch (error) {
-      console.log('error....');
-      setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
-      setPredictionGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
-      }
-    }
 
   return (
     <div className="container mx-auto p-4">
