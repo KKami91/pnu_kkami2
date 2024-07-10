@@ -20,7 +20,7 @@ const navigation = [
       {
         id: "000",
         icon: PresentationChartLineIcon,
-        name: "Neurokit Analysis",
+        name: "HRV Analysis",
         href: "/neurokit",
         tag: "",
       },
