@@ -1,7 +1,7 @@
 import { useState, useEffect  } from 'react'
 import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import HeartRateChart from '../../components/AnalysisChart';
+import AnalysisChart from '../../components/AnalysisChart';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';
@@ -24,19 +24,32 @@ export default function Home() {
   const [selectedUser, setSelectedUser] = useState('')
   const [message, setMessage] = useState('')
   const [analysisDates, setAnalysisDates] = useState([])
-  const [selectedDate, setSelectedDate] = useState('')
-  const [graphData, setGraphData] = useState([])
+  const [predictionDates, setPredictionDates] = useState([])
+  const [analysisSelectedDate, setAnalysisSelectedDate] = useState('')
+  const [predictionSelectedDate, setPredictionSelectedDate] = useState('')
+  const [analysisGraphData, setAnalysisGraphData] = useState([])
+  const [predictionGraphData, setPredictionGraphData] = useState([])
   const [isLoading, setIsLoading] = useState(false)
 
   const [isLoadingUser, setIsLoadingUser] = useState(false)
   const [isLoadingDate, setIsLoadingDate] = useState(false)
 
-  const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleAnalysisDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
-    setSelectedDate(date)
+    setAnalysisSelectedDate(date)
     if (date) {
       setIsLoadingDate(true)
-      await fetchGraphData(selectedUser, date)
+      await fetchAnalysisGraphData(selectedUser, date)
+      setIsLoadingDate(false)
+    }
+  }
+
+  const handlePredictionDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const date = e.target.value
+    setPredictionSelectedDate(date)
+    if (date) {
+      setIsLoadingDate(true)
+      await fetchPredictionGraphData(selectedUser, date)
       setIsLoadingDate(false)
     }
   }
@@ -44,7 +57,7 @@ export default function Home() {
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
     setSelectedUser(user)
-    setSelectedDate('')  // 새 사용자를 선택할 때 날짜 선택을 초기화합니다.
+    setAnalysisSelectedDate('')  // 새 사용자를 선택할 때 날짜 선택을 초기화합니다.
     setAnalysisDates([])
     if (user) {
       setIsLoadingUser(true)
@@ -73,19 +86,43 @@ export default function Home() {
     }
   }
 
-  const fetchGraphData = async (user: string, date: string) => {
+  const fetchPredictionDates = async (user: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/prediction_dates/${user}`);
+      setPredictionDates(response.data.dates);
+    } catch (error) {
+      setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`);
+      setPredictionDates([]);  // 에러 발생 시 예측 날짜 목록을 비웁니다.
+    }
+  }
+
+  const fetchAnalysisGraphData = async (user: string, date: string) => {
     console.log(user);
     console.log(date);
     try {
       const response = await axios.get(`${API_URL}/analysis_data/${user}/${date}`);
       console.log(response);
-      setGraphData(response.data.data);
+      setAnalysisGraphData(response.data.data);
     } catch (error) {
       console.log('error....');
       setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
-      setGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
+      setAnalysisGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
     }
   }
+
+  const fetchPredictionGraphData = async (user: string, date: string) => {
+    console.log(user);
+    console.log(date);
+    try {
+      const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
+      console.log(response);
+      setPredictionGraphData(response.data.data);
+    } catch (error) {
+      console.log('error....');
+      setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
+      setPredictionGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
+      }
+    }
 
   return (
     <div className="container mx-auto p-4">
@@ -106,11 +143,11 @@ export default function Home() {
       </div>
       {selectedUser && (
         <div className="mb-4 flex items-center">
-          <label className="mr-2">예측 기준 날짜:</label>
+          <label className="mr-2">분석 저장 날짜:</label>
           {analysisDates.length > 0 ? (
             <select 
-              value={selectedDate} 
-              onChange={handleDateSelect}
+              value={analysisSelectedDate} 
+              onChange={handleAnalysisDateSelect}
               className="border p-2 rounded mr-2"
             >
               <option value="">Select a analysis date</option>
@@ -124,13 +161,34 @@ export default function Home() {
           {isLoadingDate && <LoadingSpinner />}
         </div>
       )}
+
+      {selectedUser && (
+        <div className="mb-4 flex items-center">
+          <label className="mr-2">심박수 저장 날짜:</label>
+          {predictionDates.length > 0 ? (
+            <select 
+              value={predictionSelectedDate} 
+              onChange={handlePredictionDateSelect}
+              className="border p-2 rounded mr-2"
+            >
+              <option value="">Select a BPM date</option>
+              {predictionDates.map(date => (
+                <option key={date} value={date}>{date}</option>
+              ))}
+            </select>
+          ) : (
+            <p>No BPM dates available</p>
+          )}
+          {isLoadingDate && <LoadingSpinner />}
+        </div>
+      )}
       
       {message && <p className="mt-4">{message}</p>}
       <div className="mt-8">
         {isLoadingDate ? (
           <SkeletonLoader />
-        ) : graphData.length > 0 ? (
-          <HeartRateChart data={graphData} />
+        ) : analysisGraphData.length > 0 ? (
+          <AnalysisChart data={analysisGraphData} />
         ) : (
           <div className="text-center text-red-500">No data available for the chart.</div>
         )}

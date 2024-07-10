@@ -1,7 +1,7 @@
 import { useState, useEffect  } from 'react'
 import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import HeartRateChart from '../../components/PredictChart';
+import PredictChart from '../../components/PredictChart';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';
@@ -130,7 +130,7 @@ export default function Home() {
         {isLoadingDate ? (
           <SkeletonLoader />
         ) : graphData.length > 0 ? (
-          <HeartRateChart data={graphData} />
+          <PredictChart data={graphData} />
         ) : (
           <div className="text-center text-red-500">No data available for the chart.</div>
         )}
