@@ -126,12 +126,23 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
-  const [refAreaLeft, setRefAreaLeft] = useState<string | null>(null);
-  const [refAreaRight, setRefAreaRight] = useState<string | null>(null);
-  const [left, setLeft] = useState<string | number>('dataMin');
-  const [right, setRight] = useState<string | number>('dataMax');
-  const [top, setTop] = useState<string | number>('dataMax+1');
-  const [bottom, setBottom] = useState<string | number>('dataMin-1');
+  const [sdnnState, setSdnnState] = useState({
+    refAreaLeft: null as string | null,
+    refAreaRight: null as string | null,
+    left: 'dataMin' as string | number,
+    right: 'dataMax' as string | number,
+    top: 'dataMax+1' as string | number,
+    bottom: 'dataMin-1' as string | number,
+  });
+
+  const [rmssdState, setRmssdState] = useState({
+    refAreaLeft: null as string | null,
+    refAreaRight: null as string | null,
+    left: 'dataMin' as string | number,
+    right: 'dataMax' as string | number,
+    top: 'dataMax+1' as string | number,
+    bottom: 'dataMin-1' as string | number,
+  });
 
   const formattedData = data
     .filter(item => item && typeof item === 'object' && 'ds' in item)
@@ -152,14 +163,13 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
     return [(bottomVal as number) - offset, (topVal as number) + offset];
   };
 
-  const zoom = () => {
-    if (refAreaLeft === refAreaRight || refAreaRight === null) {
-      setRefAreaLeft(null);
-      setRefAreaRight(null);
+  const zoom = (setState: React.Dispatch<React.SetStateAction<typeof sdnnState>>, state: typeof sdnnState) => {
+    if (state.refAreaLeft === state.refAreaRight || state.refAreaRight === null) {
+      setState(prev => ({ ...prev, refAreaLeft: null, refAreaRight: null }));
       return;
     }
 
-    let [leftIndex, rightIndex] = [refAreaLeft, refAreaRight].map(x => 
+    let [leftIndex, rightIndex] = [state.refAreaLeft, state.refAreaRight].map(x => 
       formattedData.findIndex(item => item.ds === x)
     );
 
@@ -168,34 +178,46 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
 
     const [bottomVal, topVal] = getAxisYDomain(leftIndex, rightIndex, 'sdnn', 1);
     
-    setRefAreaLeft(null);
-    setRefAreaRight(null);
-    setLeft(formattedData[leftIndex].ds);
-    setRight(formattedData[rightIndex].ds);
-    setBottom(bottomVal);
-    setTop(topVal);
+    setState({
+      refAreaLeft: null,
+      refAreaRight: null,
+      left: formattedData[leftIndex].ds,
+      right: formattedData[rightIndex].ds,
+      bottom: bottomVal,
+      top: topVal,
+    });
   };
 
-  const zoomOut = () => {
-    setRefAreaLeft(null);
-    setRefAreaRight(null);
-    setLeft('dataMin');
-    setRight('dataMax');
-    setTop('dataMax+1');
-    setBottom('dataMin');
+  const zoomOut = (setState: React.Dispatch<React.SetStateAction<typeof sdnnState>>) => {
+    setState({
+      refAreaLeft: null,
+      refAreaRight: null,
+      left: 'dataMin',
+      right: 'dataMax',
+      top: 'dataMax+1',
+      bottom: 'dataMin',
+    });
   };
 
-  const renderChart = (chartData: DataItem[], title: string, dataKey: keyof DataItem) => {
+  const renderChart = (
+    chartData: DataItem[], 
+    title: string, 
+    dataKey: keyof DataItem,
+    state: typeof sdnnState,
+    setState: React.Dispatch<React.SetStateAction<typeof sdnnState>>
+  ) => {
     return (
       <div className="w-full h-[500px] bg-white p-4 rounded-lg shadow-lg mb-8">
-        <h2 className="text-xl font-bold mb-4 text-black text-center">{title}</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold text-black">{title}</h2>
+          <button onClick={() => zoomOut(setState)} className="bg-blue-500 text-white px-4 py-2 rounded">
+            Zoom Out
+          </button>
+        </div>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
             margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
-            onMouseDown={(e) => e && e.activeLabel && setRefAreaLeft(e.activeLabel)}
-            onMouseMove={(e) => e && e.activeLabel && refAreaLeft && setRefAreaRight(e.activeLabel)}
-            onMouseUp={zoom}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis
@@ -205,11 +227,11 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
               angle={-45}
               textAnchor="end"
               height={60}
-              domain={[left, right]}
+              domain={[state.left, state.right]}
             />
             <YAxis
               tick={{ fill: '#666', fontSize: 12 }}
-              domain={[bottom, top]}
+              domain={[state.bottom, state.top]}
               label={{ value: '', angle: -90, position: 'insideLeft', fill: '#666' }}
             />
             <Tooltip content={<CustomTooltip />} />
@@ -222,23 +244,20 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
               dot={false}
               strokeWidth={2}
             />
-            {refAreaLeft && refAreaRight ? (
-              <ReferenceArea x1={refAreaLeft} x2={refAreaRight} strokeOpacity={0.3} />
+            {state.refAreaLeft && state.refAreaRight ? (
+              <ReferenceArea x1={state.refAreaLeft} x2={state.refAreaRight} strokeOpacity={0.3} />
             ) : null}
             <Brush dataKey="ds" height={30} stroke="#8884d8" />
           </LineChart>
         </ResponsiveContainer>
-        <button onClick={zoomOut} className="mt-4 bg-blue-500 text-white px-4 py-2 rounded">
-          Zoom Out
-        </button>
       </div>
     );
   };
 
   return (
     <div>
-      {renderChart(formattedData, "SDNN Analysis", "sdnn")}
-      {renderChart(formattedData, "RMSSD Analysis", "rmssd")}
+      {renderChart(formattedData, "SDNN Analysis", "sdnn", sdnnState, setSdnnState)}
+      {renderChart(formattedData, "RMSSD Analysis", "rmssd", rmssdState, setRmssdState)}
     </div>
   );
 };
