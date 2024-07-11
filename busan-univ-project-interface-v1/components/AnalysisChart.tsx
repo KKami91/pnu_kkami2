@@ -127,6 +127,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
   const [sdnnState, setSdnnState] = useState({
+    refAreaLeft: null as string | null,
+    refAreaRight: null as string | null,
     left: 'dataMin' as string | number,
     right: 'dataMax' as string | number,
     top: 'dataMax+1' as string | number,
@@ -134,6 +136,8 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
   });
 
   const [rmssdState, setRmssdState] = useState({
+    refAreaLeft: null as string | null,
+    refAreaRight: null as string | null,
     left: 'dataMin' as string | number,
     right: 'dataMax' as string | number,
     top: 'dataMax+1' as string | number,
@@ -148,14 +152,52 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
     }))
     .filter(item => item.ds !== 'Invalid Date');
 
-  const zoomOut = (setState: React.Dispatch<React.SetStateAction<typeof sdnnState>>) => {
-    setState({
-      left: 'dataMin',
-      right: 'dataMax',
-      top: 'dataMax+1',
-      bottom: 'dataMin',
+  const getAxisYDomain = (from: number, to: number, ref: keyof DataItem, offset: number) => {
+    const refData = formattedData.slice(from, to);
+    let [bottomVal, topVal] = [refData[0][ref], refData[0][ref]];
+    refData.forEach((d) => {
+      if (d[ref] > topVal) topVal = d[ref];
+      if (d[ref] < bottomVal) bottomVal = d[ref];
     });
+    
+    return [(bottomVal as number) - offset, (topVal as number) + offset];
   };
+
+  // const zoom = (setState: React.Dispatch<React.SetStateAction<typeof sdnnState>>, state: typeof sdnnState) => {
+  //   if (state.refAreaLeft === state.refAreaRight || state.refAreaRight === null) {
+  //     setState(prev => ({ ...prev, refAreaLeft: null, refAreaRight: null }));
+  //     return;
+  //   }
+
+  //   let [leftIndex, rightIndex] = [state.refAreaLeft, state.refAreaRight].map(x => 
+  //     formattedData.findIndex(item => item.ds === x)
+  //   );
+
+  //   if (leftIndex > rightIndex) 
+  //     [leftIndex, rightIndex] = [rightIndex, leftIndex];
+
+  //   const [bottomVal, topVal] = getAxisYDomain(leftIndex, rightIndex, 'sdnn', 1);
+    
+  //   setState({
+  //     refAreaLeft: null,
+  //     refAreaRight: null,
+  //     left: formattedData[leftIndex].ds,
+  //     right: formattedData[rightIndex].ds,
+  //     bottom: bottomVal,
+  //     top: topVal,
+  //   });
+  // };
+
+  // const zoomOut = (setState: React.Dispatch<React.SetStateAction<typeof sdnnState>>) => {
+  //   setState({
+  //     refAreaLeft: null,
+  //     refAreaRight: null,
+  //     left: 'dataMin',
+  //     right: 'dataMax',
+  //     top: 'dataMax+1',
+  //     bottom: 'dataMin',
+  //   });
+  // };
 
   const renderChart = (
     chartData: DataItem[], 
@@ -168,14 +210,14 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
       <div className="w-full h-[500px] bg-white p-4 rounded-lg shadow-lg mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-black">{title}</h2>
-          <button onClick={() => zoomOut(setState)} className="bg-black-500 text-white px-4 py-2 rounded">
+          {/* <button onClick={() => zoomOut(setState)} className="bg-black-500 text-white px-4 py-2 rounded">
             Zoom Out
-          </button>
+          </button> */}
         </div>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
+            margin={{ top: 5, right: 30, left: 20, bottom: 40 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis
@@ -202,6 +244,9 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
               dot={false}
               strokeWidth={2}
             />
+            {state.refAreaLeft && state.refAreaRight ? (
+              <ReferenceArea x1={state.refAreaLeft} x2={state.refAreaRight} strokeOpacity={0.3} />
+            ) : null}
             <Brush dataKey="ds" height={30} stroke="#8884d8" />
           </LineChart>
         </ResponsiveContainer>
