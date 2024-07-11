@@ -67,7 +67,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
             <YAxis
               tick={{ fill: '#666', fontSize: 12 }}
               domain={['auto', 'auto']}
-              label={{ value: 'ms', angle: -90, position: 'insideLeft', fill: '#666' }}
+              label={{ value: '', angle: -90, position: 'insideLeft', fill: '#666' }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={36} />
