@@ -60,7 +60,7 @@ export default function Home() {
 
   const checkDb = async (user: string) => {
     try {
-      const response = await axios.post(`${API_URL}/check_db/`, { user_email: user })
+      const response = await axios.post(`${API_URL}/check_db`, { user_email: user })
       console.log('in checkDb');
       console.log(response);
       // setMessage(`Analysis requested for ${user}. Response: ${JSON.stringify(response.data)}`)
