@@ -56,7 +56,7 @@ export default function Home() {
 
   const checkDb = async (user: string) => {
     try {
-      const response = await axios.post(`${API_URL}/check_db_predict`, { user_email: user })
+      const response = await axios.post(`${API_URL}/check_db`, { user_email: user })
       // setMessage(`Analysis requested for ${user}. Response: ${JSON.stringify(response.data)}`)
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
