@@ -68,7 +68,7 @@ const HeartRateCharts: React.FC<HeartRateChartsProps> = ({ data }) => {
       <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
         <h2 className="text-xl font-bold mb-4 text-black text-center">{title}</h2>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={dataWithFlags} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <LineChart data={dataWithFlags} margin={{ top: 5, right: 30, left: 20, bottom: 25 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis
               dataKey="ds"
