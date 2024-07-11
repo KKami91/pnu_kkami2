@@ -61,6 +61,8 @@ export default function Home() {
   const checkDb = async (user: string) => {
     try {
       const response = await axios.post(`${API_URL}/check_db`, { user_email: user })
+      console.log('in checkDb');
+      console.log(response);
       // setMessage(`Analysis requested for ${user}. Response: ${JSON.stringify(response.data)}`)
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
@@ -70,6 +72,8 @@ export default function Home() {
   const fetchAnalysisDates = async (user: string) => {
     try {
       const response = await axios.get(`${API_URL}/analysis_dates/${user}`);
+      console.log('in analysisDates');
+      console.log(response);
       setAnalysisDates(response.data.dates);
     } catch (error) {
       setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`);
