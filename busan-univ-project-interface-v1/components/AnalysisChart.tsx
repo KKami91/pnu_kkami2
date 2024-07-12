@@ -96,7 +96,7 @@
 // export default AnalysisChart;
 
 import React, { useState, useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea, Brush } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
 import { format, parseISO, addHours, isValid } from 'date-fns';
 
 interface DataItem {
@@ -109,14 +109,14 @@ interface AnalysisChartProps {
   data: DataItem[];
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-white p-2 border border-gray-300 rounded shadow">
         <p className="text-sm font-bold text-black">{`Date: ${label}`}</p>
-        {payload.map((entry: any, index: number) => (
+        {payload.map((entry, index) => (
           <p key={index} className="text-sm text-black">
-            {`${entry.name}: ${entry.value !== null ? entry.value.toFixed(2) : 'N/A'} ms`}
+            {`${entry.name}: ${entry.value != null ? Number(entry.value).toFixed(2) : 'N/A'} ms`}
           </p>
         ))}
       </div>
@@ -126,30 +126,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
-  const [sdnnState, setSdnnState] = useState({
-    refAreaLeft: null as string | null,
-    refAreaRight: null as string | null,
-    left: 'dataMin' as string | number,
-    right: 'dataMax' as string | number,
-    top: 'dataMax+1' as string | number,
-    bottom: 'dataMin-1' as string | number,
-  });
-
-  const [rmssdState, setRmssdState] = useState({
-    refAreaLeft: null as string | null,
-    refAreaRight: null as string | null,
-    left: 'dataMin' as string | number,
-    right: 'dataMax' as string | number,
-    top: 'dataMax+1' as string | number,
-    bottom: 'dataMin-1' as string | number,
-  });
+  const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const formattedData = useMemo(() => {
-    // Sort data by date
     const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
-
-    // Fill in missing hours
     const filledData: DataItem[] = [];
+
     for (let i = 0; i < sortedData.length; i++) {
       const currentDate = new Date(sortedData[i].ds);
       filledData.push({
@@ -175,42 +157,27 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
     return filledData.filter(item => isValid(parseISO(item.ds)));
   }, [data]);
 
-  const getAxisYDomain = (from: number, to: number, ref: keyof DataItem, offset: number) => {
-    const refData = formattedData.slice(from, to);
-    let [bottomVal, topVal] = [Infinity, -Infinity];
-    refData.forEach((d) => {
-      const value = d[ref];
-      if (typeof value === 'number') {
-        if (value > topVal) topVal = value;
-        if (value < bottomVal) bottomVal = value;
-      }
-    });
-    
-    // Handle the case where all values are null
-    if (bottomVal === Infinity || topVal === -Infinity) {
-      bottomVal = 0;
-      topVal = 100; // or any default range you prefer
+  const handleBrushChange = (newDomain: any) => {
+    if (Array.isArray(newDomain) && newDomain.length === 2) {
+      setBrushDomain(newDomain as [number, number]);
     }
-
-    return [bottomVal - offset, topVal + offset];
   };
 
   const renderChart = (
-    chartData: DataItem[], 
-    title: string, 
+    chartData: DataItem[],
+    title: string,
     dataKey: keyof DataItem,
-    state: typeof sdnnState,
-    setState: React.Dispatch<React.SetStateAction<typeof sdnnState>>
+    color: string,
+    syncId: string
   ) => {
     return (
-      <div className="w-full h-[500px] bg-white p-4 rounded-lg shadow-lg mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-black">{title}</h2>
-        </div>
+      <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
+        <h2 className="text-xl font-bold text-black mb-4">{title}</h2>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 40 }}
+            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            syncId={syncId}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis
@@ -220,28 +187,30 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
               angle={-45}
               textAnchor="end"
               height={60}
-              domain={[state.left, state.right]}
             />
             <YAxis
               tick={{ fill: '#666', fontSize: 12 }}
-              domain={[state.bottom, state.top]}
-              label={{ value: '', angle: -90, position: 'insideLeft', fill: '#666' }}
+              label={{ value: 'ms', angle: -90, position: 'insideLeft', fill: '#666' }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={36} />
             <Line
               type="monotone"
               dataKey={dataKey}
-              stroke="#8884d8"
+              stroke={color}
               name={dataKey.toUpperCase()}
               dot={false}
               strokeWidth={2}
               connectNulls={false}
             />
-            {state.refAreaLeft && state.refAreaRight ? (
-              <ReferenceArea x1={state.refAreaLeft} x2={state.refAreaRight} strokeOpacity={0.3} />
-            ) : null}
-            <Brush dataKey="ds" height={30} stroke="#8884d8" />
+            <Brush
+              dataKey="ds"
+              height={30}
+              stroke={color}
+              onChange={handleBrushChange}
+              startIndex={brushDomain ? brushDomain[0] : undefined}
+              endIndex={brushDomain ? brushDomain[1] : undefined}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -250,8 +219,8 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
 
   return (
     <div>
-      {renderChart(formattedData, "SDNN Analysis", "sdnn", sdnnState, setSdnnState)}
-      {renderChart(formattedData, "RMSSD Analysis", "rmssd", rmssdState, setRmssdState)}
+      {renderChart(formattedData, "SDNN Analysis", "sdnn", "#8884d8", "sync")}
+      {renderChart(formattedData, "RMSSD Analysis", "rmssd", "#82ca9d", "sync")}
     </div>
   );
 };
