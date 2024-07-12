@@ -50,11 +50,39 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
   const [showExplanation, setShowExplanation] = useState(false);
 
   const formattedData = useMemo(() => {
-    return data.map(item => ({
-      ...item,
-      ds: format(new Date(item.ds), 'yyyy-MM-dd HH:mm:ss')
-    })).sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
-  }, [data]);
+    const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
+    const filledData: DataItem[] = [];
+
+    let currentDate = new Date(globalStartDate);
+    const endDate = new Date(globalEndDate);
+
+    while (currentDate <= endDate) {
+      const existingData = sortedData.find(item => {
+        const itemDate = new Date(item.ds);
+        return itemDate.getFullYear() === currentDate.getFullYear() &&
+               itemDate.getMonth() === currentDate.getMonth() &&
+               itemDate.getDate() === currentDate.getDate() &&
+               itemDate.getHours() === currentDate.getHours();
+      });
+
+      if (isPrediction) {
+        filledData.push({
+          ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
+          y: (existingData as PredictionData | undefined)?.y ?? null,
+        });
+      } else {
+        filledData.push({
+          ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
+          sdnn: (existingData as AnalysisData | undefined)?.sdnn ?? null,
+          rmssd: (existingData as AnalysisData | undefined)?.rmssd ?? null,
+        });
+      }
+
+      currentDate = addHours(currentDate, 1);
+    }
+
+    return filledData;
+  }, [data, globalStartDate, globalEndDate, isPrediction]);
 
   const handleBrushChange = (newDomain: any) => {
     if (Array.isArray(newDomain) && newDomain.length === 2) {

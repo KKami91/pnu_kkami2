@@ -70,9 +70,6 @@ export default function Home() {
     }
   }
 
-  const handleBrushChange = (newDomain: [number, number] | null) => {
-    setBrushDomain(newDomain);
-  };
 
   const fetchAnalysisDates = async (user: string) => {
     try {
@@ -109,7 +106,6 @@ export default function Home() {
     }
   }
 
-
   const fetchAnalysisGraphData = async (user: string, date: string) => {
     try {
       const response = await axios.get(`${API_URL}/analysis_data/${user}/${date}`);
@@ -124,7 +120,7 @@ export default function Home() {
 
   const fetchPredictionGraphData = async (user: string, date: string) => {
     try {
-      const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
+      const response = await axios.get(`${API_URL}/predict_data/${user}/${date}`);
       console.log(response);
       setPredictionGraphData(response.data.data.map((item: any) => ({
         ds: item.ds,
@@ -136,6 +132,11 @@ export default function Home() {
       setPredictionGraphData([]);
     }
   }
+
+  const handleBrushChange = (newDomain: [number, number] | null) => {
+    setBrushDomain(newDomain);
+  };
+
 
   return (
     <div className="container mx-auto p-4">
@@ -203,7 +204,7 @@ export default function Home() {
       </div>
     </div>
   )
-  }
+}
 
 
 // BPM 다 나오는 버전
