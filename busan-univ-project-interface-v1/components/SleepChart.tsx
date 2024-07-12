@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, parseISO, eachMinuteOfInterval } from 'date-fns';
+import { format, parseISO, eachMinuteOfInterval, startOfHour, isEqual } from 'date-fns';
 
 interface SleepData {
   ds_start: string;
@@ -53,7 +53,7 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
 
   const handleBrushChange = (domain: any) => {
     if (Array.isArray(domain) && domain.length === 2) {
-      onBrushChange([domain[0], domain[1]]);
+      onBrushChange(domain as [number, number]);
     }
   };
 
@@ -63,15 +63,22 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={chartData}
-          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+          margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="time"
-            tickFormatter={(time) => format(new Date(time), 'MM-dd HH:mm')}
+            tickFormatter={(time) => {
+              const date = new Date(time);
+              return isEqual(date, startOfHour(date)) ? format(date, 'MM-dd HH:00') : '';
+            }}
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
+            angle={-45}
+            textAnchor="end"
+            height={60}
+            interval="preserveStartEnd"
           />
           <YAxis
             tickFormatter={(value) => value.toString()}
