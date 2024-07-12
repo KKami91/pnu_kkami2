@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { format, parseISO, addHours, isValid, min, max } from 'date-fns';
 import { HelpCircle } from 'lucide-react';
 
+
 interface AnalysisData {
   ds: string;
   sdnn: number | null;
@@ -50,39 +51,46 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
   const [showExplanation, setShowExplanation] = useState(false);
 
   const formattedData = useMemo(() => {
-    const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
-    const filledData: DataItem[] = [];
+    return data.map(item => ({
+      ...item,
+      ds: format(new Date(item.ds), 'yyyy-MM-dd HH:mm:ss')
+    })).sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
+  }, [data]);
 
-    let currentDate = new Date(globalStartDate);
-    const endDate = new Date(globalEndDate);
+  // const formattedData = useMemo(() => {
+  //   const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
+  //   const filledData: DataItem[] = [];
 
-    while (currentDate <= endDate) {
-      const existingData = sortedData.find(item => {
-        const itemDate = new Date(item.ds);
-        return itemDate.getFullYear() === currentDate.getFullYear() &&
-               itemDate.getMonth() === currentDate.getMonth() &&
-               itemDate.getDate() === currentDate.getDate() &&
-               itemDate.getHours() === currentDate.getHours();
-      });
+  //   let currentDate = new Date(globalStartDate);
+  //   const endDate = new Date(globalEndDate);
 
-      if (isPrediction) {
-        filledData.push({
-          ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
-          y: (existingData as PredictionData | undefined)?.y ?? null,
-        });
-      } else {
-        filledData.push({
-          ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
-          sdnn: (existingData as AnalysisData | undefined)?.sdnn ?? null,
-          rmssd: (existingData as AnalysisData | undefined)?.rmssd ?? null,
-        });
-      }
+  //   while (currentDate <= endDate) {
+  //     const existingData = sortedData.find(item => {
+  //       const itemDate = new Date(item.ds);
+  //       return itemDate.getFullYear() === currentDate.getFullYear() &&
+  //              itemDate.getMonth() === currentDate.getMonth() &&
+  //              itemDate.getDate() === currentDate.getDate() &&
+  //              itemDate.getHours() === currentDate.getHours();
+  //     });
 
-      currentDate = addHours(currentDate, 1);
-    }
+  //     if (isPrediction) {
+  //       filledData.push({
+  //         ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
+  //         y: (existingData as PredictionData | undefined)?.y ?? null,
+  //       });
+  //     } else {
+  //       filledData.push({
+  //         ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
+  //         sdnn: (existingData as AnalysisData | undefined)?.sdnn ?? null,
+  //         rmssd: (existingData as AnalysisData | undefined)?.rmssd ?? null,
+  //       });
+  //     }
 
-    return filledData;
-  }, [data, globalStartDate, globalEndDate, isPrediction]);
+  //     currentDate = addHours(currentDate, 1);
+  //   }
+
+  //   return filledData;
+  // }, [data, globalStartDate, globalEndDate, isPrediction]);
 
   const handleBrushChange = (newDomain: any) => {
     if (Array.isArray(newDomain) && newDomain.length === 2) {
@@ -96,10 +104,12 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
     dataKey: 'y' | 'sdnn' | 'rmssd',
     color: string,
     syncId: string,
-    explanation: string
+    explanation: string,
+    showBrush: boolean
   ) => {
     const isPredictionData = (item: DataItem): item is PredictionData => 'y' in item;
     const isAnalysisData = (item: DataItem): item is AnalysisData => 'sdnn' in item && 'rmssd' in item;
+
     return (
       <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8 relative">
         <div className="flex items-center mb-4">
@@ -140,7 +150,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
                 dataKey="y"
                 stroke={color}
                 name="BPM"
-                dot={{ r: 3, strokeWidth: 1 }}
+                dot={{ r: 2, strokeWidth: 1 }}
                 strokeWidth={2}
                 connectNulls={false}
               />
@@ -151,17 +161,19 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
                 dataKey={dataKey}
                 stroke={color}
                 name={dataKey.toUpperCase()}
-                dot={{ r: 3, strokeWidth: 1 }}
+                dot={{ r: 2, strokeWidth: 1 }}
                 strokeWidth={2}
                 connectNulls={false}
               />
             )}
-            <Brush
-              dataKey="ds"
-              height={30}
-              stroke={color}
-              onChange={handleBrushChange}
-            />
+            {showBrush && (
+              <Brush
+                dataKey="ds"
+                height={30}
+                stroke={color}
+                onChange={handleBrushChange}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -173,13 +185,13 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
   const predictionExplanation = "이 그래프는 예측된 심박수 데이터를 보여줍니다. 실제 측정값(Y)을 나타내며, 향후 예측된 값들도 포함될 수 있습니다.";
 
   if (isPrediction) {
-    return renderChart(formattedData, "심박수 BPM", "y", "#FF5733", "sync", predictionExplanation);
+    return renderChart(formattedData, "심박수 BPM", "y", "#FF5733", "sync", predictionExplanation, false);
   }
 
   return (
     <div>
-      {renderChart(formattedData, "SDNN : 정상 심박 간격(NN intervals)의 표준편차", "sdnn", "#8884d8", "sync", sdnnExplanation)}
-      {renderChart(formattedData, "RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균", "rmssd", "#82ca9d", "sync", rmssdExplanation)}
+      {renderChart(formattedData, "SDNN : 정상 심박 간격(NN intervals)의 표준편차", "sdnn", "#8884d8", "sync", sdnnExplanation, true)}
+      {renderChart(formattedData, "RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균", "rmssd", "#82ca9d", "sync", rmssdExplanation, false)}
     </div>
   );
 };
