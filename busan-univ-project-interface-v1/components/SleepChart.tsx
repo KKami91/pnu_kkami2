@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, parseISO, eachMinuteOfInterval, differenceInHours } from 'date-fns';
+import { format, parseISO, eachMinuteOfInterval } from 'date-fns';
 
 interface SleepData {
   ds_start: string;
@@ -27,7 +27,7 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
 };
 
 const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
-  const { chartData, ticks } = useMemo(() => {
+  const chartData = useMemo(() => {
     const startDate = new Date(Math.min(...data.map(d => new Date(d.ds_start).getTime())));
     const endDate = new Date(Math.max(...data.map(d => new Date(d.ds_end).getTime())));
 
@@ -48,14 +48,7 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
       });
     });
 
-    // Generate ticks for every 4 hours
-    const hourDiff = differenceInHours(endDate, startDate);
-    const tickInterval = Math.max(1, Math.floor(hourDiff / 6)); // Adjust number of ticks based on data range
-    const ticks = minutelyData
-      .filter((_, index) => index % (tickInterval * 60) === 0)
-      .map(item => item.time);
-
-    return { chartData: minutelyData, ticks };
+    return minutelyData;
   }, [data]);
 
   const handleBrushChange = (domain: any) => {
@@ -70,7 +63,7 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={chartData}
-          margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
+          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
@@ -79,11 +72,6 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            ticks={ticks}
-            angle={-45}
-            textAnchor="end"
-            height={60}
-            interval={0}
           />
           <YAxis
             tickFormatter={(value) => value.toString()}
