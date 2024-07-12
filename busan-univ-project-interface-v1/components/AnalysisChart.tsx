@@ -5,12 +5,14 @@ import { HelpCircle } from 'lucide-react';
 
 interface DataItem {
   ds: string;
-  sdnn: number | null;
-  rmssd: number | null;
+  sdnn?: number | null;
+  rmssd?: number | null;
+  y?: number | null;
 }
 
 interface AnalysisChartProps {
   data: DataItem[];
+  isPrediction?: boolean;
 }
 
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
@@ -20,7 +22,7 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
         <p className="text-sm font-bold text-black">{`Date: ${label}`}</p>
         {payload.map((entry, index) => (
           <p key={index} className="text-sm text-black">
-            {`${entry.name}: ${entry.value != null ? Number(entry.value).toFixed(2) : 'N/A'} ms`}
+            {`${entry.name}: ${entry.value != null ? Number(entry.value).toFixed(2) : 'N/A'} ${entry.name === 'Y' ? 'bpm' : 'ms'}`}
           </p>
         ))}
       </div>
@@ -35,10 +37,9 @@ const ExplanationTooltip: React.FC<{ content: string }> = ({ content }) => (
   </div>
 );
 
-const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
+const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = false }) => {
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
-  const [showSDNNExplanation, setShowSDNNExplanation] = useState(false);
-  const [showRMSSDExplanation, setShowRMSSDExplanation] = useState(false);
+  const [showExplanation, setShowExplanation] = useState(false);
 
   const formattedData = useMemo(() => {
     const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
@@ -60,6 +61,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
             ds: format(currentHour, 'yyyy-MM-dd HH:mm'),
             sdnn: null,
             rmssd: null,
+            y: null,
           });
           currentHour = addHours(currentHour, 1);
         }
@@ -82,9 +84,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
     color: string,
     syncId: string,
     showBrush: boolean,
-    explanation: string,
-    showExplanation: boolean,
-    setShowExplanation: React.Dispatch<React.SetStateAction<boolean>>
+    explanation: string
   ) => {
     return (
       <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8 relative">
@@ -116,7 +116,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
             />
             <YAxis
               tick={{ fill: '#666', fontSize: 12 }}
-              label={{ value: 'ms', angle: -90, position: 'insideLeft', fill: '#666' }}
+              label={{ value: isPrediction ? 'bpm' : 'ms', angle: -90, position: 'insideLeft', fill: '#666' }}
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={36} />
@@ -147,11 +147,16 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
 
   const sdnnExplanation = "* 전체적인 HRV를 나타내는 지표로써, 장기간의 기록에서 모든 주기성을 반영\n\n* SDNN이 높다면 전반적인 자율신경계의 변동성이 크다는 것을 의미, 건강한 심장 기능과 관련이 있습니다.\n\n* SDNN이 낮다면 자율신경계의 변동성이 낮아 스트레스에 취약할 수 있습니다. 또한, 종종 심혈관 질환과 연관이 있습니다.";
   const rmssdExplanation = "* 단기 HRV를 반영하며, 주로 보교감 신경계의 활동을 나타냄\n\nRMSSD가 높다면 부교감신경의 활성도가 높다는 것을 의미, 일반적으로 좋은 회복 능력과 관련이 있습니다.\n\n* RMSSD가 낮다면 부교감신경의 활성도가 낮아 스트레스,피로,우울증이 있을 수 있습니다.";
+  const predictionExplanation = "이 그래프는 예측된 심박수 데이터를 보여줍니다. 실제 측정값(Y)을 나타내며, 향후 예측된 값들도 포함될 수 있습니다.";
+
+  if (isPrediction) {
+    return renderChart(formattedData, "심박수 예측", "y", "#FF5733", "prediction", true, predictionExplanation);
+  }
 
   return (
     <div>
-      {renderChart(formattedData, "SDNN : 정상 심박 간격(NN intervals)의 표준편차", "sdnn", "#8884d8", "sync", true, sdnnExplanation, showSDNNExplanation, setShowSDNNExplanation)}
-      {renderChart(formattedData, "RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균", "rmssd", "#82ca9d", "sync", false, rmssdExplanation, showRMSSDExplanation, setShowRMSSDExplanation)}
+      {renderChart(formattedData, "SDNN : 정상 심박 간격(NN intervals)의 표준편차", "sdnn", "#8884d8", "sync", true, sdnnExplanation)}
+      {renderChart(formattedData, "RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균", "rmssd", "#82ca9d", "sync", false, rmssdExplanation)}
     </div>
   );
 };

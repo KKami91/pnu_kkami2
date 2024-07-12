@@ -1,6 +1,7 @@
-import { useState, useEffect  } from 'react'
+import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+
 import AnalysisChart from '../../components/AnalysisChart';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
@@ -24,13 +25,9 @@ export default function Home() {
   const [selectedUser, setSelectedUser] = useState('')
   const [message, setMessage] = useState('')
   const [analysisDates, setAnalysisDates] = useState([])
-  const [predictionDates, setPredictionDates] = useState([])
   const [analysisSelectedDate, setAnalysisSelectedDate] = useState('')
-  const [predictionSelectedDate, setPredictionSelectedDate] = useState('')
   const [analysisGraphData, setAnalysisGraphData] = useState([])
   const [predictionGraphData, setPredictionGraphData] = useState([])
-  const [isLoading, setIsLoading] = useState(false)
-
   const [isLoadingUser, setIsLoadingUser] = useState(false)
   const [isLoadingDate, setIsLoadingDate] = useState(false)
 
@@ -39,16 +36,18 @@ export default function Home() {
     setAnalysisSelectedDate(date)
     if (date) {
       setIsLoadingDate(true)
-      await fetchAnalysisGraphData(selectedUser, date)
+      await Promise.all([
+        fetchAnalysisGraphData(selectedUser, date),
+        fetchPredictionGraphData(selectedUser, date)
+      ]);
       setIsLoadingDate(false)
     }
   }
 
-
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
     setSelectedUser(user)
-    setAnalysisSelectedDate('')  // 새 사용자를 선택할 때 날짜 선택을 초기화합니다.
+    setAnalysisSelectedDate('')
     setAnalysisDates([])
     if (user) {
       setIsLoadingUser(true)
@@ -63,7 +62,6 @@ export default function Home() {
       const response = await axios.post(`${API_URL}/check_db`, { user_email: user })
       console.log('in checkDb');
       console.log(response);
-      // setMessage(`Analysis requested for ${user}. Response: ${JSON.stringify(response.data)}`)
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -77,22 +75,36 @@ export default function Home() {
       setAnalysisDates(response.data.dates);
     } catch (error) {
       setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`);
-      setAnalysisDates([]);  // 에러 발생 시 예측 날짜 목록을 비웁니다.
+      setAnalysisDates([]);
     }
   }
 
-
   const fetchAnalysisGraphData = async (user: string, date: string) => {
-    console.log(user);
-    console.log(date);
     try {
       const response = await axios.get(`${API_URL}/analysis_data/${user}/${date}`);
       console.log(response);
       setAnalysisGraphData(response.data.data);
     } catch (error) {
       console.log('error....');
-      setMessage(`Error fetching graph data: ${error instanceof Error ? error.message : String(error)}`);
-      setAnalysisGraphData([]);  // 에러 발생 시 그래프 데이터를 비웁니다.
+      setMessage(`Error fetching analysis data: ${error instanceof Error ? error.message : String(error)}`);
+      setAnalysisGraphData([]);
+    }
+  }
+
+  const fetchPredictionGraphData = async (user: string, date: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/predict_data/${user}/${date}`);
+      console.log(response);
+      // 예측 데이터에서 y 값만 추출
+      const predictionData = response.data.data.map((item: any) => ({
+        ds: item.ds,
+        y: item.y
+      }));
+      setPredictionGraphData(predictionData);
+    } catch (error) {
+      console.log('error....');
+      setMessage(`Error fetching prediction data: ${error instanceof Error ? error.message : String(error)}`);
+      setPredictionGraphData([]);
     }
   }
 
@@ -132,7 +144,6 @@ export default function Home() {
           )}
           {isLoadingDate && <LoadingSpinner />}
         </div>
-        
       )}
       
       {message && <p className="mt-4">{message}</p>}
@@ -140,7 +151,10 @@ export default function Home() {
         {isLoadingDate ? (
           <SkeletonLoader />
         ) : analysisGraphData.length > 0 ? (
-          <AnalysisChart data={analysisGraphData} />
+          <>
+            <AnalysisChart data={analysisGraphData} />
+            <AnalysisChart data={predictionGraphData} isPrediction={true} />
+          </>
         ) : (
           <div className="text-center text-red-500">No data available for the chart.</div>
         )}
