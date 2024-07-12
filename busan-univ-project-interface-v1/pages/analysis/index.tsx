@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import AnalysisChart from '../../components/AnalysisChart';
+import SleepChart from '../../components/SleepChart';
 import { min, max } from 'date-fns';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
@@ -32,6 +33,12 @@ interface PredictionData {
   y: number | null;
 }
 
+interface SleepData {
+  ds_start: string;
+  ds_end: string;
+  stage: string;
+}
+
 export default function Home() {
   // ... (이전 상태들은 그대로 유지)
   const [selectedUser, setSelectedUser] = useState('')
@@ -45,6 +52,10 @@ export default function Home() {
   //   const [analysisGraphData, setAnalysisGraphData] = useState<AnalysisData[]>([])
 //   const [predictionGraphData, setPredictionGraphData] = useState<PredictionData[]>([])
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+  const [sleepDates, setSleepDates] = useState<string[]>([]);
+  const [sleepSelectedDate, setSleepSelectedDate] = useState('');
+  const [sleepData, setSleepData] = useState<SleepData[]>([]);
+  const [selectedDate, setSelectedDate] = useState('')
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
@@ -57,19 +68,32 @@ export default function Home() {
     };
   }, [analysisGraphData, predictionGraphData]);
   
-  const handleAnalysisDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
-    setAnalysisSelectedDate(date)
+    setSelectedDate(date)
     if (date) {
       setIsLoadingDate(true)
       await Promise.all([
         fetchAnalysisGraphData(selectedUser, date),
-        fetchPredictionGraphData(selectedUser, date)
+        fetchPredictionGraphData(selectedUser, date),
+        fetchSleepData(selectedUser, date)
       ]);
       setIsLoadingDate(false)
     }
   }
 
+  const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const user = e.target.value
+    setSelectedUser(user)
+    setSelectedDate('')
+    setAnalysisDates([])
+    if (user) {
+      setIsLoadingUser(true)
+      await checkDb(user)
+      await fetchAnalysisDates(user)
+      setIsLoadingUser(false)
+    }
+  }
 
   const fetchAnalysisDates = async (user: string) => {
     try {
@@ -82,20 +106,6 @@ export default function Home() {
       setAnalysisDates([]);
     }
   }
-
-  const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const user = e.target.value
-    setSelectedUser(user)
-    setAnalysisSelectedDate('')
-    setAnalysisDates([])
-    if (user) {
-      setIsLoadingUser(true)
-      await checkDb(user)
-      await fetchAnalysisDates(user)
-      setIsLoadingUser(false)
-    }
-  }
-
   const checkDb = async (user: string) => {
     try {
       const response = await axios.post(`${API_URL}/check_db`, { user_email: user })
@@ -133,6 +143,17 @@ export default function Home() {
     }
   }
 
+  const fetchSleepData = async (user: string, date: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/sleep_data/${user}/${date}`);
+      setSleepData(response.data.data);
+    } catch (error) {
+      console.log('error....');
+      setMessage(`Error fetching sleep data: ${error instanceof Error ? error.message : String(error)}`);
+      setSleepData([]);
+    }
+  }
+
   const handleBrushChange = (newDomain: [number, number] | null) => {
     setBrushDomain(newDomain);
   };
@@ -140,10 +161,10 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Heart Rate Analysis Dashboard</h1>
-       <div className="mb-4 flex items-center">
-         <label className="mr-2">계정 선택:</label>
-         <select 
+      <h1 className="text-2xl font-bold mb-4">Heart Rate and Sleep Analysis Dashboard</h1>
+      <div className="mb-4 flex items-center">
+        <label className="mr-2">계정 선택:</label>
+        <select 
           value={selectedUser} 
           onChange={handleUserSelect}
           className="border p-2 rounded mr-2"
@@ -157,14 +178,14 @@ export default function Home() {
       </div>
       {selectedUser && (
         <div className="mb-4 flex items-center">
-          <label className="mr-2">분석 저장 날짜:</label>
+          <label className="mr-2">분석 날짜:</label>
           {analysisDates.length > 0 ? (
             <select 
-              value={analysisSelectedDate} 
-              onChange={handleAnalysisDateSelect}
+              value={selectedDate} 
+              onChange={handleDateSelect}
               className="border p-2 rounded mr-2"
             >
-              <option value="">Select a analysis date</option>
+              <option value="">Select a date</option>
               {analysisDates.map(date => (
                 <option key={date} value={date}>{date}</option>
               ))}
@@ -180,14 +201,16 @@ export default function Home() {
       <div className="mt-8">
         {isLoadingDate ? (
           <SkeletonLoader />
-        ) : analysisGraphData.length > 0 ? (
+        ) : (
           <>
-            <AnalysisChart 
-              data={analysisGraphData} 
-              globalStartDate={globalStartDate}
-              globalEndDate={globalEndDate}
-              onBrushChange={handleBrushChange}
-            />
+            {analysisGraphData.length > 0 && (
+              <AnalysisChart 
+                data={analysisGraphData} 
+                globalStartDate={globalStartDate}
+                globalEndDate={globalEndDate}
+                onBrushChange={handleBrushChange}
+              />
+            )}
             {predictionGraphData.length > 0 && (
               <AnalysisChart 
                 data={predictionGraphData} 
@@ -197,15 +220,18 @@ export default function Home() {
                 onBrushChange={handleBrushChange}
               />
             )}
+            {sleepData.length > 0 && (
+              <SleepChart data={sleepData} />
+            )}
           </>
-        ) : (
-          <div className="text-center text-red-500">No data available for the chart.</div>
+        )}
+        {!isLoadingDate && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && (
+          <div className="text-center text-red-500">No data available for the charts.</div>
         )}
       </div>
     </div>
   )
 }
-
 
 // BPM 다 나오는 버전
 // import { useState, useEffect, useMemo } from 'react'
