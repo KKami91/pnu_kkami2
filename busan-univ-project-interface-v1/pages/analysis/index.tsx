@@ -42,6 +42,8 @@ export default function Home() {
   const [isLoadingDate, setIsLoadingDate] = useState(false)
   const [analysisGraphData, setAnalysisGraphData] = useState<AnalysisData[]>([])
   const [predictionGraphData, setPredictionGraphData] = useState<PredictionData[]>([])
+  //   const [analysisGraphData, setAnalysisGraphData] = useState<AnalysisData[]>([])
+//   const [predictionGraphData, setPredictionGraphData] = useState<PredictionData[]>([])
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
@@ -54,6 +56,19 @@ export default function Home() {
       globalEndDate: allDates.length > 0 ? max(allDates) : new Date()
     };
   }, [analysisGraphData, predictionGraphData]);
+  
+  const handleAnalysisDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const date = e.target.value
+    setAnalysisSelectedDate(date)
+    if (date) {
+      setIsLoadingDate(true)
+      await Promise.all([
+        fetchAnalysisGraphData(selectedUser, date),
+        fetchPredictionGraphData(selectedUser, date)
+      ]);
+      setIsLoadingDate(false)
+    }
+  }
 
   const handleBrushChange = (newDomain: [number, number] | null) => {
     setBrushDomain(newDomain);
@@ -109,7 +124,7 @@ export default function Home() {
 
   const fetchPredictionGraphData = async (user: string, date: string) => {
     try {
-      const response = await axios.get(`${API_URL}/predict_data/${user}/${date}`);
+      const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
       console.log(response);
       setPredictionGraphData(response.data.data.map((item: any) => ({
         ds: item.ds,
@@ -124,7 +139,43 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-4">
-      {/* ... (이전 JSX는 그대로 유지) */}
+      <h1 className="text-2xl font-bold mb-4">Heart Rate Analysis Dashboard</h1>
+       <div className="mb-4 flex items-center">
+         <label className="mr-2">계정 선택:</label>
+         <select 
+          value={selectedUser} 
+          onChange={handleUserSelect}
+          className="border p-2 rounded mr-2"
+        >
+          <option value="">Select a user</option>
+          {users.map(user => (
+            <option key={user} value={user}>{user}</option>
+          ))}
+        </select>
+        {isLoadingUser && <LoadingSpinner />}
+      </div>
+      {selectedUser && (
+        <div className="mb-4 flex items-center">
+          <label className="mr-2">분석 저장 날짜:</label>
+          {analysisDates.length > 0 ? (
+            <select 
+              value={analysisSelectedDate} 
+              onChange={handleAnalysisDateSelect}
+              className="border p-2 rounded mr-2"
+            >
+              <option value="">Select a analysis date</option>
+              {analysisDates.map(date => (
+                <option key={date} value={date}>{date}</option>
+              ))}
+            </select>
+          ) : (
+            <p>No analysis dates available</p>
+          )}
+          {isLoadingDate && <LoadingSpinner />}
+        </div>
+      )}
+      
+      {message && <p className="mt-4">{message}</p>}
       <div className="mt-8">
         {isLoadingDate ? (
           <SkeletonLoader />
