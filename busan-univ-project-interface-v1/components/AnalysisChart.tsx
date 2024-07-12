@@ -13,6 +13,8 @@ interface DataItem {
 interface AnalysisChartProps {
   data: DataItem[];
   isPrediction?: boolean;
+  brushDomain: [number, number] | null;
+  onBrushChange: (domain: [number, number] | null) => void;
 }
 
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
@@ -37,8 +39,7 @@ const ExplanationTooltip: React.FC<{ content: string }> = ({ content }) => (
   </div>
 );
 
-const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = false }) => {
-  const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = false, brushDomain, onBrushChange }) => {
   const [showExplanation, setShowExplanation] = useState(false);
 
   const formattedData = useMemo(() => {
@@ -73,7 +74,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
 
   const handleBrushChange = (newDomain: any) => {
     if (Array.isArray(newDomain) && newDomain.length === 2) {
-      setBrushDomain(newDomain as [number, number]);
+      onBrushChange(newDomain as [number, number]);
     }
   };
 
@@ -83,7 +84,6 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
     dataKey: keyof DataItem,
     color: string,
     syncId: string,
-    showBrush: boolean,
     explanation: string
   ) => {
     return (
@@ -129,16 +129,14 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
               strokeWidth={2}
               connectNulls={false}
             />
-            {showBrush && (
-              <Brush
-                dataKey="ds"
-                height={30}
-                stroke={color}
-                onChange={handleBrushChange}
-                startIndex={brushDomain ? brushDomain[0] : undefined}
-                endIndex={brushDomain ? brushDomain[1] : undefined}
-              />
-            )}
+            <Brush
+              dataKey="ds"
+              height={30}
+              stroke={color}
+              onChange={handleBrushChange}
+              startIndex={brushDomain ? brushDomain[0] : undefined}
+              endIndex={brushDomain ? brushDomain[1] : undefined}
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -147,16 +145,16 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
 
   const sdnnExplanation = "* 전체적인 HRV를 나타내는 지표로써, 장기간의 기록에서 모든 주기성을 반영\n\n* SDNN이 높다면 전반적인 자율신경계의 변동성이 크다는 것을 의미, 건강한 심장 기능과 관련이 있습니다.\n\n* SDNN이 낮다면 자율신경계의 변동성이 낮아 스트레스에 취약할 수 있습니다. 또한, 종종 심혈관 질환과 연관이 있습니다.";
   const rmssdExplanation = "* 단기 HRV를 반영하며, 주로 보교감 신경계의 활동을 나타냄\n\nRMSSD가 높다면 부교감신경의 활성도가 높다는 것을 의미, 일반적으로 좋은 회복 능력과 관련이 있습니다.\n\n* RMSSD가 낮다면 부교감신경의 활성도가 낮아 스트레스,피로,우울증이 있을 수 있습니다.";
-  const predictionExplanation = "이 그래프는 예측된 심박수 데이터를 보여줍니다. 실제 측정값(Y)을 나타내며, 향후 예측된 값들도 포함될 수 있습니다.";
+  const predictionExplanation = "이 그래프는 심박수 데이터를 보여줍니다. 실제 측정값(BPM)";
 
   if (isPrediction) {
-    return renderChart(formattedData, "심박수 예측", "y", "#FF5733", "prediction", true, predictionExplanation);
+    return renderChart(formattedData, "심박수 BPM", "y", "#FF5733", "sync", predictionExplanation);
   }
 
   return (
     <div>
-      {renderChart(formattedData, "SDNN : 정상 심박 간격(NN intervals)의 표준편차", "sdnn", "#8884d8", "sync", true, sdnnExplanation)}
-      {renderChart(formattedData, "RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균", "rmssd", "#82ca9d", "sync", false, rmssdExplanation)}
+      {renderChart(formattedData, "SDNN : 정상 심박 간격(NN intervals)의 표준편차", "sdnn", "#8884d8", "sync", sdnnExplanation)}
+      {renderChart(formattedData, "RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균", "rmssd", "#82ca9d", "sync", rmssdExplanation)}
     </div>
   );
 };

@@ -30,6 +30,7 @@ export default function Home() {
   const [predictionGraphData, setPredictionGraphData] = useState([])
   const [isLoadingUser, setIsLoadingUser] = useState(false)
   const [isLoadingDate, setIsLoadingDate] = useState(false)
+  const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const handleAnalysisDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
@@ -43,6 +44,10 @@ export default function Home() {
       setIsLoadingDate(false)
     }
   }
+
+  const handleBrushChange = (newDomain: [number, number] | null) => {
+    setBrushDomain(newDomain);
+  };
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
@@ -152,8 +157,19 @@ export default function Home() {
           <SkeletonLoader />
         ) : analysisGraphData.length > 0 ? (
           <>
-            <AnalysisChart data={analysisGraphData} />
-            <AnalysisChart data={predictionGraphData} isPrediction={true} />
+            <AnalysisChart 
+              data={analysisGraphData} 
+              brushDomain={brushDomain}
+              onBrushChange={handleBrushChange}
+            />
+            {predictionGraphData.length > 0 && (
+              <AnalysisChart 
+                data={predictionGraphData} 
+                isPrediction={true}
+                brushDomain={brushDomain}
+                onBrushChange={handleBrushChange}
+              />
+            )}
           </>
         ) : (
           <div className="text-center text-red-500">No data available for the chart.</div>
