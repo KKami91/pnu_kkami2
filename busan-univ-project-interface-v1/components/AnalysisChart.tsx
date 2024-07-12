@@ -95,14 +95,14 @@
 
 // export default AnalysisChart;
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea, Brush } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addHours, isValid } from 'date-fns';
 
 interface DataItem {
   ds: string;
-  sdnn: number;
-  rmssd: number;
+  sdnn: number | null;
+  rmssd: number | null;
 }
 
 interface AnalysisChartProps {
@@ -116,7 +116,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
         <p className="text-sm font-bold text-black">{`Date: ${label}`}</p>
         {payload.map((entry: any, index: number) => (
           <p key={index} className="text-sm text-black">
-            {`${entry.name}: ${entry.value?.toFixed(2) ?? 'N/A'} ms`}
+            {`${entry.name}: ${entry.value !== null ? entry.value.toFixed(2) : 'N/A'} ms`}
           </p>
         ))}
       </div>
@@ -144,60 +144,56 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
     bottom: 'dataMin-1' as string | number,
   });
 
-  const formattedData = data
-    .filter(item => item && typeof item === 'object' && 'ds' in item)
-    .map(item => ({
-      ...item,
-      ds: format(parseISO(item.ds), 'yyyy-MM-dd HH:mm'),
-    }))
-    .filter(item => item.ds !== 'Invalid Date');
+  const formattedData = useMemo(() => {
+    // Sort data by date
+    const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
+
+    // Fill in missing hours
+    const filledData: DataItem[] = [];
+    for (let i = 0; i < sortedData.length; i++) {
+      const currentDate = new Date(sortedData[i].ds);
+      filledData.push({
+        ...sortedData[i],
+        ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
+      });
+
+      if (i < sortedData.length - 1) {
+        const nextDate = new Date(sortedData[i + 1].ds);
+        let currentHour = addHours(currentDate, 1);
+
+        while (currentHour < nextDate) {
+          filledData.push({
+            ds: format(currentHour, 'yyyy-MM-dd HH:mm'),
+            sdnn: null,
+            rmssd: null,
+          });
+          currentHour = addHours(currentHour, 1);
+        }
+      }
+    }
+
+    return filledData.filter(item => isValid(parseISO(item.ds)));
+  }, [data]);
 
   const getAxisYDomain = (from: number, to: number, ref: keyof DataItem, offset: number) => {
     const refData = formattedData.slice(from, to);
-    let [bottomVal, topVal] = [refData[0][ref], refData[0][ref]];
+    let [bottomVal, topVal] = [Infinity, -Infinity];
     refData.forEach((d) => {
-      if (d[ref] > topVal) topVal = d[ref];
-      if (d[ref] < bottomVal) bottomVal = d[ref];
+      const value = d[ref];
+      if (typeof value === 'number') {
+        if (value > topVal) topVal = value;
+        if (value < bottomVal) bottomVal = value;
+      }
     });
     
-    return [(bottomVal as number) - offset, (topVal as number) + offset];
+    // Handle the case where all values are null
+    if (bottomVal === Infinity || topVal === -Infinity) {
+      bottomVal = 0;
+      topVal = 100; // or any default range you prefer
+    }
+
+    return [bottomVal - offset, topVal + offset];
   };
-
-  // const zoom = (setState: React.Dispatch<React.SetStateAction<typeof sdnnState>>, state: typeof sdnnState) => {
-  //   if (state.refAreaLeft === state.refAreaRight || state.refAreaRight === null) {
-  //     setState(prev => ({ ...prev, refAreaLeft: null, refAreaRight: null }));
-  //     return;
-  //   }
-
-  //   let [leftIndex, rightIndex] = [state.refAreaLeft, state.refAreaRight].map(x => 
-  //     formattedData.findIndex(item => item.ds === x)
-  //   );
-
-  //   if (leftIndex > rightIndex) 
-  //     [leftIndex, rightIndex] = [rightIndex, leftIndex];
-
-  //   const [bottomVal, topVal] = getAxisYDomain(leftIndex, rightIndex, 'sdnn', 1);
-    
-  //   setState({
-  //     refAreaLeft: null,
-  //     refAreaRight: null,
-  //     left: formattedData[leftIndex].ds,
-  //     right: formattedData[rightIndex].ds,
-  //     bottom: bottomVal,
-  //     top: topVal,
-  //   });
-  // };
-
-  // const zoomOut = (setState: React.Dispatch<React.SetStateAction<typeof sdnnState>>) => {
-  //   setState({
-  //     refAreaLeft: null,
-  //     refAreaRight: null,
-  //     left: 'dataMin',
-  //     right: 'dataMax',
-  //     top: 'dataMax+1',
-  //     bottom: 'dataMin',
-  //   });
-  // };
 
   const renderChart = (
     chartData: DataItem[], 
@@ -210,9 +206,6 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
       <div className="w-full h-[500px] bg-white p-4 rounded-lg shadow-lg mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-black">{title}</h2>
-          {/* <button onClick={() => zoomOut(setState)} className="bg-black-500 text-white px-4 py-2 rounded">
-            Zoom Out
-          </button> */}
         </div>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
@@ -243,6 +236,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
               name={dataKey.toUpperCase()}
               dot={false}
               strokeWidth={2}
+              connectNulls={false}
             />
             {state.refAreaLeft && state.refAreaRight ? (
               <ReferenceArea x1={state.refAreaLeft} x2={state.refAreaRight} strokeOpacity={0.3} />
