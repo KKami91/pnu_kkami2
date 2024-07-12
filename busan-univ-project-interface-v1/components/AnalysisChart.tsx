@@ -102,7 +102,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            margin={{ top: 5, right: 30, left: 20, bottom: 35 }}
             syncId={syncId}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -145,13 +145,13 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
     );
   };
 
-  const sdnnExplanation = "* SDNN이 높다면 전반적인 자율신경계의 변동성이 크다는 것을 의미, 건강한 심장 기능과 관련이 있습니다.\n* SDNN이 낮다면 자율신경계의 변동성이 낮아 스트레스에 취약할 수 있습니다. 또한, 종종 심혈관 질환과 연관이 있습니다.";
-  const rmssdExplanation = "* RMSSD가 높다면 부교감신경의 활성도가 높다는 것을 의미, 일반적으로 좋은 회복 능력과 관련이 있습니다.\n* RMSSD가 낮다면 부교감신경의 활성도가 낮아 스트레스,피로,우울증이 있을 수 있습니다.";
+  const sdnnExplanation = "* 전체적인 HRV를 나타내는 지표로써, 장기간의 기록에서 모든 주기성을 반영\n\n* SDNN이 높다면 전반적인 자율신경계의 변동성이 크다는 것을 의미, 건강한 심장 기능과 관련이 있습니다.\n\n* SDNN이 낮다면 자율신경계의 변동성이 낮아 스트레스에 취약할 수 있습니다. 또한, 종종 심혈관 질환과 연관이 있습니다.";
+  const rmssdExplanation = "* 단기 HRV를 반영하며, 주로 보교감 신경계의 활동을 나타냄\n\nRMSSD가 높다면 부교감신경의 활성도가 높다는 것을 의미, 일반적으로 좋은 회복 능력과 관련이 있습니다.\n\n* RMSSD가 낮다면 부교감신경의 활성도가 낮아 스트레스,피로,우울증이 있을 수 있습니다.";
 
   return (
     <div>
-      {renderChart(formattedData, "SDNN Analysis", "sdnn", "#8884d8", "sync", true, sdnnExplanation, showSDNNExplanation, setShowSDNNExplanation)}
-      {renderChart(formattedData, "RMSSD Analysis", "rmssd", "#82ca9d", "sync", false, rmssdExplanation, showRMSSDExplanation, setShowRMSSDExplanation)}
+      {renderChart(formattedData, "SDNN : 정상 심박 간격(NN intervals)의 표준편차", "sdnn", "#8884d8", "sync", true, sdnnExplanation, showSDNNExplanation, setShowSDNNExplanation)}
+      {renderChart(formattedData, "RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균", "rmssd", "#82ca9d", "sync", false, rmssdExplanation, showRMSSDExplanation, setShowRMSSDExplanation)}
     </div>
   );
 };
