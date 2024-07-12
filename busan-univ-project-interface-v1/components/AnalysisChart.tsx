@@ -50,40 +50,40 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
   const [showExplanation, setShowExplanation] = useState(false);
 
   const formattedData = useMemo(() => {
-    if (isPrediction) {
-      // For BPM data, just format the dates
-      return data.map(item => ({
-        ...item,
-        ds: format(new Date(item.ds), 'yyyy-MM-dd HH:mm')
-      })).sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
-    } else {
-      // For SDNN and RMSSD, fill in hourly data
-      const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
-      const filledData: DataItem[] = [];
+    const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
+    const filledData: DataItem[] = [];
 
-      let currentDate = new Date(globalStartDate);
-      const endDate = new Date(globalEndDate);
+    let currentDate = new Date(globalStartDate);
+    const endDate = new Date(globalEndDate);
 
-      while (currentDate <= endDate) {
-        const existingData = sortedData.find(item => {
-          const itemDate = new Date(item.ds);
-          return itemDate.getFullYear() === currentDate.getFullYear() &&
-                 itemDate.getMonth() === currentDate.getMonth() &&
-                 itemDate.getDate() === currentDate.getDate() &&
-                 itemDate.getHours() === currentDate.getHours();
-        });
+    while (currentDate <= endDate) {
+      const existingData = sortedData.find(item => {
+        const itemDate = new Date(item.ds);
+        return itemDate.getFullYear() === currentDate.getFullYear() &&
+               itemDate.getMonth() === currentDate.getMonth() &&
+               itemDate.getDate() === currentDate.getDate() &&
+               itemDate.getHours() === currentDate.getHours();
+      });
 
+      if (isPrediction) {
+        if (existingData) {
+          filledData.push({
+            ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
+            y: (existingData as PredictionData).y,
+          });
+        }
+      } else {
         filledData.push({
           ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
-          sdnn: existingData ? (existingData as AnalysisData).sdnn : null,
-          rmssd: existingData ? (existingData as AnalysisData).rmssd : null,
+          sdnn: (existingData as AnalysisData | undefined)?.sdnn ?? null,
+          rmssd: (existingData as AnalysisData | undefined)?.rmssd ?? null,
         });
-
-        currentDate = addHours(currentDate, 1);
       }
 
-      return filledData;
+      currentDate = addHours(currentDate, 1);
     }
+
+    return filledData;
   }, [data, globalStartDate, globalEndDate, isPrediction]);
 
   const handleBrushChange = (newDomain: any) => {
@@ -191,6 +191,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
 };
 
 export default AnalysisChart;
+
 
 
 // BPM 전체 다 나오는 버전
