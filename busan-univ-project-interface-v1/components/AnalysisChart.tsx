@@ -1,100 +1,3 @@
-// import React from 'react';
-// import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area } from 'recharts';
-// import { format, parseISO, subDays, isValid } from 'date-fns';
-
-// interface DataItem {
-//   ds: string;
-//   sdnn: number;
-//   rmssd: number;
-// }
-
-// interface AnalysisChartProps {
-//   data: DataItem[];
-// }
-
-// const CustomTooltip = ({ active, payload, label }: any) => {
-//   if (active && payload && payload.length) {
-//     return (
-//       <div className="bg-white p-2 border border-gray-300 rounded shadow">
-//         <p className="text-sm font-bold text-black">{`Date: ${label}`}</p>
-//         {payload.map((entry: any, index: number) => (
-//           <p key={index} className="text-sm text-black">
-//             {`${entry.name}: ${entry.value?.toFixed(2) ?? 'N/A'} ms`}
-//           </p>
-//         ))}
-//       </div>
-//     );
-//   }
-//   return null;
-// };
-
-// const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
-//   console.log('Received data:', data); // 데이터 로깅
-
-//   if (!Array.isArray(data) || data.length === 0) {
-//     return <div className="text-center text-red-500">No valid data available for the chart.</div>;
-//   }
-
-//   const formattedData = data
-//     .filter(item => item && typeof item === 'object' && 'ds' in item)
-//     .map(item => {
-//       const parsedDate = parseISO(item.ds);
-//       return {
-//         ...item,
-//         ds: isValid(parsedDate) ? format(parsedDate, 'yyyy-MM-dd HH:mm') : 'Invalid Date',
-//       };
-//     })
-//     .filter(item => item.ds !== 'Invalid Date');
-
-//   console.log('Formatted data:', formattedData); // 포맷된 데이터 로깅
-
-//   if (formattedData.length === 0) {
-//     return <div className="text-center text-red-500">No valid dates found in the data.</div>;
-//   }
-
-//   const renderChart = (chartData: any[], title: string, dataKey: string) => {
-//     return (
-//       <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
-//         <h2 className="text-xl font-bold mb-4 text-black text-center">{title}</h2>
-//         <ResponsiveContainer width="100%" height="100%">
-//           <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 25 }}>
-//             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-//             <XAxis
-//               dataKey="ds"
-//               tick={{ fill: '#666', fontSize: 12 }}
-//               tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
-//             />
-//             <YAxis
-//               tick={{ fill: '#666', fontSize: 12 }}
-//               domain={['auto', 'auto']}
-//               label={{ value: '', angle: -90, position: 'insideLeft', fill: '#666' }}
-//             />
-//             <Tooltip content={<CustomTooltip />} />
-//             <Legend verticalAlign="top" height={36} />
-//             <Line
-//               type="monotone"
-//               dataKey={dataKey}
-//               stroke="#8884d8"
-//               name={dataKey.toUpperCase()}
-//               dot={false}
-//               strokeWidth={2}
-//             />
-//           </LineChart>
-//         </ResponsiveContainer>
-//       </div>
-//     );
-//   };
-
-//   return (
-//     <div>
-//       {renderChart(formattedData, "SDNN Analysis", "sdnn")}
-//       {renderChart(formattedData, "RMSSD Analysis", "rmssd")}
-//     </div>
-//   );
-// };
-
-// export default AnalysisChart;
-
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
 import { format, parseISO, addHours, isValid } from 'date-fns';
@@ -127,7 +30,7 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
 };
 
 const ExplanationTooltip: React.FC<{ content: string }> = ({ content }) => (
-  <div className="absolute z-10 p-2 bg-white border border-gray-300 rounded shadow max-w-xs">
+  <div className="absolute z-10 p-2 bg-white border border-gray-300 rounded shadow" style={{ width: '300px', left: '25px', top: '-5px' }}>
     <p className="text-sm text-black whitespace-pre-line">{content}</p>
   </div>
 );
@@ -242,8 +145,8 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
     );
   };
 
-  const sdnnExplanation = "SDNN이 높다면 전반적인 자율신경계의 변동성이 크다는 것을 의미합니다.\nSDNN이 낮다면 자율신경계의 변동성이 낮아 스트레스에 취약할 수 있습니다.";
-  const rmssdExplanation = "RMSSD가 높다면 부교감신경의 활성도가 높다는 것을 의미합니다.\nRMSSD가 낮다면 부교감신경의 활성도가 낮아 스트레스 회복 능력이 떨어질 수 있습니다.";
+  const sdnnExplanation = "* SDNN이 높다면 전반적인 자율신경계의 변동성이 크다는 것을 의미, 건강한 심장 기능과 관련이 있습니다.\n* SDNN이 낮다면 자율신경계의 변동성이 낮아 스트레스에 취약할 수 있습니다. 또한, 종종 심혈관 질환과 연관이 있습니다.";
+  const rmssdExplanation = "* RMSSD가 높다면 부교감신경의 활성도가 높다는 것을 의미, 일반적으로 좋은 회복 능력과 관련이 있습니다.\n* RMSSD가 낮다면 부교감신경의 활성도가 낮아 스트레스,피로,우울증이 있을 수 있습니다.";
 
   return (
     <div>
