@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, parseISO, addHours, isValid, min, max } from 'date-fns';
+import { format, parseISO, addHours, isValid } from 'date-fns';
 import { HelpCircle } from 'lucide-react';
 
 interface AnalysisData {
@@ -50,38 +50,40 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
   const [showExplanation, setShowExplanation] = useState(false);
 
   const formattedData = useMemo(() => {
-    const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
-    const filledData: DataItem[] = [];
+    if (isPrediction) {
+      // For BPM data, just format the dates
+      return data.map(item => ({
+        ...item,
+        ds: format(new Date(item.ds), 'yyyy-MM-dd HH:mm')
+      })).sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
+    } else {
+      // For SDNN and RMSSD, fill in hourly data
+      const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
+      const filledData: DataItem[] = [];
 
-    let currentDate = new Date(globalStartDate);
-    const endDate = new Date(globalEndDate);
+      let currentDate = new Date(globalStartDate);
+      const endDate = new Date(globalEndDate);
 
-    while (currentDate <= endDate) {
-      const existingData = sortedData.find(item => {
-        const itemDate = new Date(item.ds);
-        return itemDate.getFullYear() === currentDate.getFullYear() &&
-               itemDate.getMonth() === currentDate.getMonth() &&
-               itemDate.getDate() === currentDate.getDate() &&
-               itemDate.getHours() === currentDate.getHours();
-      });
+      while (currentDate <= endDate) {
+        const existingData = sortedData.find(item => {
+          const itemDate = new Date(item.ds);
+          return itemDate.getFullYear() === currentDate.getFullYear() &&
+                 itemDate.getMonth() === currentDate.getMonth() &&
+                 itemDate.getDate() === currentDate.getDate() &&
+                 itemDate.getHours() === currentDate.getHours();
+        });
 
-      if (isPrediction) {
         filledData.push({
           ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
-          y: (existingData as PredictionData | undefined)?.y ?? null,
+          sdnn: existingData ? (existingData as AnalysisData).sdnn : null,
+          rmssd: existingData ? (existingData as AnalysisData).rmssd : null,
         });
-      } else {
-        filledData.push({
-          ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
-          sdnn: (existingData as AnalysisData | undefined)?.sdnn ?? null,
-          rmssd: (existingData as AnalysisData | undefined)?.rmssd ?? null,
-        });
+
+        currentDate = addHours(currentDate, 1);
       }
 
-      currentDate = addHours(currentDate, 1);
+      return filledData;
     }
-
-    return filledData;
   }, [data, globalStartDate, globalEndDate, isPrediction]);
 
   const handleBrushChange = (newDomain: any) => {
@@ -96,7 +98,8 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
     dataKey: 'y' | 'sdnn' | 'rmssd',
     color: string,
     syncId: string,
-    explanation: string
+    explanation: string,
+    showBrush: boolean
   ) => {
     const isPredictionData = (item: DataItem): item is PredictionData => 'y' in item;
     const isAnalysisData = (item: DataItem): item is AnalysisData => 'sdnn' in item && 'rmssd' in item;
@@ -157,12 +160,14 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
                 connectNulls={false}
               />
             )}
-            <Brush
-              dataKey="ds"
-              height={30}
-              stroke={color}
-              onChange={handleBrushChange}
-            />
+            {showBrush && (
+              <Brush
+                dataKey="ds"
+                height={30}
+                stroke={color}
+                onChange={handleBrushChange}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -174,19 +179,18 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
   const predictionExplanation = "이 그래프는 예측된 심박수 데이터를 보여줍니다. 실제 측정값(Y)을 나타내며, 향후 예측된 값들도 포함될 수 있습니다.";
 
   if (isPrediction) {
-    return renderChart(formattedData, "심박수 BPM", "y", "#FF5733", "sync", predictionExplanation);
+    return renderChart(formattedData, "심박수 BPM", "y", "#FF5733", "sync", predictionExplanation, false);
   }
 
   return (
     <div>
-      {renderChart(formattedData, "SDNN : 정상 심박 간격(NN intervals)의 표준편차", "sdnn", "#8884d8", "sync", sdnnExplanation)}
-      {renderChart(formattedData, "RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균", "rmssd", "#82ca9d", "sync", rmssdExplanation)}
+      {renderChart(formattedData, "SDNN : 정상 심박 간격(NN intervals)의 표준편차", "sdnn", "#8884d8", "sync", sdnnExplanation, true)}
+      {renderChart(formattedData, "RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균", "rmssd", "#82ca9d", "sync", rmssdExplanation, false)}
     </div>
   );
 };
 
 export default AnalysisChart;
-
 
 
 // BPM 전체 다 나오는 버전
