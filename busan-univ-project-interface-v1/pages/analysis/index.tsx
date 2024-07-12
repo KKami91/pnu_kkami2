@@ -93,7 +93,7 @@ export default function Home() {
 
   const fetchPredictionGraphData = async (user: string, date: string) => {
     try {
-      const response = await axios.get(`${API_URL}/predict_data/${user}/${date}`);
+      const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
       console.log(response);
       // 예측 데이터에서 y 값만 추출
       const predictionData = response.data.data.map((item: any) => ({
