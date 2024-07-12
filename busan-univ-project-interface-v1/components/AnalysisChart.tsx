@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, parseISO, addHours, isValid } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { HelpCircle } from 'lucide-react';
 
 interface AnalysisData {
@@ -23,7 +23,6 @@ interface AnalysisChartProps {
   globalEndDate: Date;
   onBrushChange: (domain: [number, number] | null) => void;
 }
-
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -50,41 +49,11 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
   const [showExplanation, setShowExplanation] = useState(false);
 
   const formattedData = useMemo(() => {
-    if (isPrediction) {
-      // For BPM data, just format the dates
-      return data.map(item => ({
-        ...item,
-        ds: format(new Date(item.ds), 'yyyy-MM-dd HH:mm')
-      })).sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
-    } else {
-      // For SDNN and RMSSD, fill in hourly data
-      const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
-      const filledData: DataItem[] = [];
-
-      let currentDate = new Date(globalStartDate);
-      const endDate = new Date(globalEndDate);
-
-      while (currentDate <= endDate) {
-        const existingData = sortedData.find(item => {
-          const itemDate = new Date(item.ds);
-          return itemDate.getFullYear() === currentDate.getFullYear() &&
-                 itemDate.getMonth() === currentDate.getMonth() &&
-                 itemDate.getDate() === currentDate.getDate() &&
-                 itemDate.getHours() === currentDate.getHours();
-        });
-
-        filledData.push({
-          ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
-          sdnn: existingData ? (existingData as AnalysisData).sdnn : null,
-          rmssd: existingData ? (existingData as AnalysisData).rmssd : null,
-        });
-
-        currentDate = addHours(currentDate, 1);
-      }
-
-      return filledData;
-    }
-  }, [data, globalStartDate, globalEndDate, isPrediction]);
+    return data.map(item => ({
+      ...item,
+      ds: format(new Date(item.ds), 'yyyy-MM-dd HH:mm:ss')
+    })).sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
+  }, [data]);
 
   const handleBrushChange = (newDomain: any) => {
     if (Array.isArray(newDomain) && newDomain.length === 2) {
