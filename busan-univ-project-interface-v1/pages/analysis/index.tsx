@@ -120,7 +120,7 @@ export default function Home() {
 
   const fetchPredictionGraphData = async (user: string, date: string) => {
     try {
-      const response = await axios.get(`${API_URL}/predict_data/${user}/${date}`);
+      const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
       console.log(response);
       setPredictionGraphData(response.data.data.map((item: any) => ({
         ds: item.ds,
