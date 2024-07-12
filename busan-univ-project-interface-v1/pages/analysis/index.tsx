@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-
 import AnalysisChart from '../../components/AnalysisChart';
+import { min, max } from 'date-fns';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';
@@ -21,17 +21,39 @@ const SkeletonLoader = () => (
   </div>
 );
 
+interface AnalysisData {
+  ds: string;
+  sdnn: number | null;
+  rmssd: number | null;
+}
+
+interface PredictionData {
+  ds: string;
+  y: number | null;
+}
+
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('')
   const [message, setMessage] = useState('')
   const [analysisDates, setAnalysisDates] = useState([])
   const [analysisSelectedDate, setAnalysisSelectedDate] = useState('')
-  const [analysisGraphData, setAnalysisGraphData] = useState([])
-  const [predictionGraphData, setPredictionGraphData] = useState([])
+  const [analysisGraphData, setAnalysisGraphData] = useState<AnalysisData[]>([])
+  const [predictionGraphData, setPredictionGraphData] = useState<PredictionData[]>([])
   const [isLoadingUser, setIsLoadingUser] = useState(false)
   const [isLoadingDate, setIsLoadingDate] = useState(false)
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
+  const { globalStartDate, globalEndDate } = useMemo(() => {
+    const allDates = [
+      ...analysisGraphData.map(item => new Date(item.ds)),
+      ...predictionGraphData.map(item => new Date(item.ds))
+    ];
+    return {
+      globalStartDate: allDates.length > 0 ? min(allDates) : new Date(),
+      globalEndDate: allDates.length > 0 ? max(allDates) : new Date()
+    };
+  }, [analysisGraphData, predictionGraphData]);
+  
   const handleAnalysisDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
     setAnalysisSelectedDate(date)
@@ -100,18 +122,18 @@ export default function Home() {
     try {
       const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
       console.log(response);
-      // 예측 데이터에서 y 값만 추출
-      const predictionData = response.data.data.map((item: any) => ({
+      setPredictionGraphData(response.data.data.map((item: any) => ({
         ds: item.ds,
         y: item.y
-      }));
-      setPredictionGraphData(predictionData);
+      })));
     } catch (error) {
       console.log('error....');
       setMessage(`Error fetching prediction data: ${error instanceof Error ? error.message : String(error)}`);
       setPredictionGraphData([]);
     }
   }
+
+  
 
   return (
     <div className="container mx-auto p-4">
@@ -159,14 +181,16 @@ export default function Home() {
           <>
             <AnalysisChart 
               data={analysisGraphData} 
-              brushDomain={brushDomain}
+              globalStartDate={globalStartDate}
+              globalEndDate={globalEndDate}
               onBrushChange={handleBrushChange}
             />
             {predictionGraphData.length > 0 && (
               <AnalysisChart 
                 data={predictionGraphData} 
                 isPrediction={true}
-                brushDomain={brushDomain}
+                globalStartDate={globalStartDate}
+                globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
               />
             )}

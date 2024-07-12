@@ -1,19 +1,26 @@
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, parseISO, addHours, isValid } from 'date-fns';
+import { format, parseISO, addHours, isValid, min, max } from 'date-fns';
 import { HelpCircle } from 'lucide-react';
 
-interface DataItem {
+interface AnalysisData {
   ds: string;
-  sdnn?: number | null;
-  rmssd?: number | null;
-  y?: number | null;
+  sdnn: number | null;
+  rmssd: number | null;
 }
+
+interface PredictionData {
+  ds: string;
+  y: number | null;
+}
+
+type DataItem = AnalysisData | PredictionData;
 
 interface AnalysisChartProps {
   data: DataItem[];
   isPrediction?: boolean;
-  brushDomain: [number, number] | null;
+  globalStartDate: Date;
+  globalEndDate: Date;
   onBrushChange: (domain: [number, number] | null) => void;
 }
 
@@ -39,38 +46,43 @@ const ExplanationTooltip: React.FC<{ content: string }> = ({ content }) => (
   </div>
 );
 
-const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = false, brushDomain, onBrushChange }) => {
+const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = false, globalStartDate, globalEndDate, onBrushChange }) => {
   const [showExplanation, setShowExplanation] = useState(false);
 
   const formattedData = useMemo(() => {
     const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
     const filledData: DataItem[] = [];
 
-    for (let i = 0; i < sortedData.length; i++) {
-      const currentDate = new Date(sortedData[i].ds);
-      filledData.push({
-        ...sortedData[i],
-        ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
+    let currentDate = new Date(globalStartDate);
+    const endDate = new Date(globalEndDate);
+
+    while (currentDate <= endDate) {
+      const existingData = sortedData.find(item => {
+        const itemDate = new Date(item.ds);
+        return itemDate.getFullYear() === currentDate.getFullYear() &&
+               itemDate.getMonth() === currentDate.getMonth() &&
+               itemDate.getDate() === currentDate.getDate() &&
+               itemDate.getHours() === currentDate.getHours();
       });
 
-      if (i < sortedData.length - 1) {
-        const nextDate = new Date(sortedData[i + 1].ds);
-        let currentHour = addHours(currentDate, 1);
-
-        while (currentHour < nextDate) {
-          filledData.push({
-            ds: format(currentHour, 'yyyy-MM-dd HH:mm'),
-            sdnn: null,
-            rmssd: null,
-            y: null,
-          });
-          currentHour = addHours(currentHour, 1);
-        }
+      if (isPrediction) {
+        filledData.push({
+          ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
+          y: (existingData as PredictionData | undefined)?.y ?? null,
+        });
+      } else {
+        filledData.push({
+          ds: format(currentDate, 'yyyy-MM-dd HH:mm'),
+          sdnn: (existingData as AnalysisData | undefined)?.sdnn ?? null,
+          rmssd: (existingData as AnalysisData | undefined)?.rmssd ?? null,
+        });
       }
+
+      currentDate = addHours(currentDate, 1);
     }
 
-    return filledData.filter(item => isValid(parseISO(item.ds)));
-  }, [data]);
+    return filledData;
+  }, [data, globalStartDate, globalEndDate, isPrediction]);
 
   const handleBrushChange = (newDomain: any) => {
     if (Array.isArray(newDomain) && newDomain.length === 2) {
@@ -81,11 +93,13 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
   const renderChart = (
     chartData: DataItem[],
     title: string,
-    dataKey: keyof DataItem,
+    dataKey: 'y' | 'sdnn' | 'rmssd',
     color: string,
     syncId: string,
     explanation: string
   ) => {
+    const isPredictionData = (item: DataItem): item is PredictionData => 'y' in item;
+    const isAnalysisData = (item: DataItem): item is AnalysisData => 'sdnn' in item && 'rmssd' in item;
     return (
       <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8 relative">
         <div className="flex items-center mb-4">
@@ -120,22 +134,33 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={36} />
-            <Line
-              type="linear"
-              dataKey={dataKey}
-              stroke={color}
-              name={dataKey.toUpperCase()}
-              dot={{ r: 3, strokeWidth: 1 }}
-              strokeWidth={2}
-              connectNulls={false}
-            />
+            {isPredictionData(chartData[0]) && (
+              <Line
+                type="linear"
+                dataKey="y"
+                stroke={color}
+                name="BPM"
+                dot={{ r: 3, strokeWidth: 1 }}
+                strokeWidth={2}
+                connectNulls={false}
+              />
+            )}
+            {isAnalysisData(chartData[0]) && (
+              <Line
+                type="linear"
+                dataKey={dataKey}
+                stroke={color}
+                name={dataKey.toUpperCase()}
+                dot={{ r: 3, strokeWidth: 1 }}
+                strokeWidth={2}
+                connectNulls={false}
+              />
+            )}
             <Brush
               dataKey="ds"
               height={30}
               stroke={color}
               onChange={handleBrushChange}
-              startIndex={brushDomain ? brushDomain[0] : undefined}
-              endIndex={brushDomain ? brushDomain[1] : undefined}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -145,7 +170,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
 
   const sdnnExplanation = "* 전체적인 HRV를 나타내는 지표로써, 장기간의 기록에서 모든 주기성을 반영\n\n* SDNN이 높다면 전반적인 자율신경계의 변동성이 크다는 것을 의미, 건강한 심장 기능과 관련이 있습니다.\n\n* SDNN이 낮다면 자율신경계의 변동성이 낮아 스트레스에 취약할 수 있습니다. 또한, 종종 심혈관 질환과 연관이 있습니다.";
   const rmssdExplanation = "* 단기 HRV를 반영하며, 주로 보교감 신경계의 활동을 나타냄\n\nRMSSD가 높다면 부교감신경의 활성도가 높다는 것을 의미, 일반적으로 좋은 회복 능력과 관련이 있습니다.\n\n* RMSSD가 낮다면 부교감신경의 활성도가 낮아 스트레스,피로,우울증이 있을 수 있습니다.";
-  const predictionExplanation = "이 그래프는 심박수 데이터를 보여줍니다. 실제 측정값(BPM)";
+  const predictionExplanation = "이 그래프는 예측된 심박수 데이터를 보여줍니다. 실제 측정값(Y)을 나타내며, 향후 예측된 값들도 포함될 수 있습니다.";
 
   if (isPrediction) {
     return renderChart(formattedData, "심박수 BPM", "y", "#FF5733", "sync", predictionExplanation);
