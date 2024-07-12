@@ -98,6 +98,7 @@
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
 import { format, parseISO, addHours, isValid } from 'date-fns';
+import { HelpCircle } from 'lucide-react';
 
 interface DataItem {
   ds: string;
@@ -125,8 +126,16 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
   return null;
 };
 
+const ExplanationTooltip: React.FC<{ content: string }> = ({ content }) => (
+  <div className="absolute z-10 p-2 bg-white border border-gray-300 rounded shadow max-w-xs">
+    <p className="text-sm text-black whitespace-pre-line">{content}</p>
+  </div>
+);
+
 const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+  const [showSDNNExplanation, setShowSDNNExplanation] = useState(false);
+  const [showRMSSDExplanation, setShowRMSSDExplanation] = useState(false);
 
   const formattedData = useMemo(() => {
     const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
@@ -169,11 +178,24 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
     dataKey: keyof DataItem,
     color: string,
     syncId: string,
-    showBrush: boolean
+    showBrush: boolean,
+    explanation: string,
+    showExplanation: boolean,
+    setShowExplanation: React.Dispatch<React.SetStateAction<boolean>>
   ) => {
     return (
-      <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
-        <h2 className="text-xl font-bold text-black mb-4">{title}</h2>
+      <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8 relative">
+        <div className="flex items-center mb-4">
+          <h2 className="text-xl font-bold text-black mr-2">{title}</h2>
+          <div
+            className="relative"
+            onMouseEnter={() => setShowExplanation(true)}
+            onMouseLeave={() => setShowExplanation(false)}
+          >
+            <HelpCircle size={18} className="text-gray-500 cursor-help" />
+            {showExplanation && <ExplanationTooltip content={explanation} />}
+          </div>
+        </div>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={chartData}
@@ -220,10 +242,13 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
     );
   };
 
+  const sdnnExplanation = "SDNN이 높다면 전반적인 자율신경계의 변동성이 크다는 것을 의미합니다.\nSDNN이 낮다면 자율신경계의 변동성이 낮아 스트레스에 취약할 수 있습니다.";
+  const rmssdExplanation = "RMSSD가 높다면 부교감신경의 활성도가 높다는 것을 의미합니다.\nRMSSD가 낮다면 부교감신경의 활성도가 낮아 스트레스 회복 능력이 떨어질 수 있습니다.";
+
   return (
     <div>
-      {renderChart(formattedData, "SDNN Analysis", "sdnn", "#8884d8", "sync", true)}
-      {renderChart(formattedData, "RMSSD Analysis", "rmssd", "#82ca9d", "sync", false)}
+      {renderChart(formattedData, "SDNN Analysis", "sdnn", "#8884d8", "sync", true, sdnnExplanation, showSDNNExplanation, setShowSDNNExplanation)}
+      {renderChart(formattedData, "RMSSD Analysis", "rmssd", "#82ca9d", "sync", false, rmssdExplanation, showRMSSDExplanation, setShowRMSSDExplanation)}
     </div>
   );
 };
