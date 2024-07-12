@@ -1,5 +1,5 @@
 import React from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
+import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
 import { format, parseISO } from 'date-fns';
 
 interface SleepData {
@@ -12,7 +12,7 @@ interface SleepChartProps {
   data: SleepData[];
 }
 
-const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
+const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload }) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload as SleepData;
     return (
@@ -26,53 +26,62 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
 };
 
 const stageToNumber = (stage: string): number => {
-  switch (stage) {
-    case 'Awake': return 4;
-    case 'REM': return 3;
-    case '1': return 2;
-    case '2': return 1;
-    case '3': return 0;
-    default: return -1;
-  }
+  const stageNum = parseInt(stage, 10);
+  return isNaN(stageNum) ? 0 : stageNum;
 };
 
 const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
   const chartData = data.map(item => ({
     ...item,
-    stageNumber: stageToNumber(item.stage),
+    x: new Date(item.ds_start).getTime(),
+    y: stageToNumber(item.stage),
+    z: (new Date(item.ds_end).getTime() - new Date(item.ds_start).getTime()) / 60000, // duration in minutes
   }));
+
+  const minTime = Math.min(...chartData.map(d => d.x));
+  const maxTime = Math.max(...chartData.map(d => d.x));
 
   return (
     <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
       <h2 className="text-xl font-bold text-black mb-4">Sleep Stages</h2>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart
-          data={chartData}
-          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+        <ScatterChart
+          margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
         >
-          <CartesianGrid strokeDasharray="3 3" />
+          <CartesianGrid />
           <XAxis
-            dataKey="ds_start"
-            tickFormatter={(tick) => format(parseISO(tick), 'HH:mm')}
-            type="category"
-            scale="time"
-            domain={['dataMin', 'dataMax']}
+            dataKey="x"
+            type="number"
+            domain={[minTime, maxTime]}
+            tickFormatter={(unixTime) => format(new Date(unixTime), 'HH:mm')}
+            name="Time"
           />
           <YAxis
-            tickFormatter={(tick) => {
-              switch (tick) {
-                case 0: return '3';
-                case 1: return '2';
-                case 2: return '1';
-                case 3: return 'REM';
-                case 4: return 'Awake';
+            dataKey="y"
+            type="number"
+            domain={[0, 6]}
+            tickFormatter={(stage) => {
+              switch (stage) {
+                case 1: return 'Stage 1';
+                case 2: return 'Stage 2';
+                case 3: return 'Stage 3';
+                case 4: return 'Stage 4';
+                case 5: return 'REM';
+                case 6: return 'Awake';
                 default: return '';
               }
             }}
+            name="Stage"
+          />
+          <ZAxis
+            dataKey="z"
+            type="number"
+            range={[20, 200]}
+            name="Duration"
           />
           <Tooltip content={<CustomTooltip />} />
-          <Area type="step" dataKey="stageNumber" stroke="#8884d8" fill="#8884d8" />
-        </AreaChart>
+          <Scatter name="Sleep Stage" data={chartData} fill="#8884d8" />
+        </ScatterChart>
       </ResponsiveContainer>
     </div>
   );
