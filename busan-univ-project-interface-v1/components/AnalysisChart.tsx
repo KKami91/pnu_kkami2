@@ -168,7 +168,8 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
     title: string,
     dataKey: keyof DataItem,
     color: string,
-    syncId: string
+    syncId: string,
+    showBrush: boolean
   ) => {
     return (
       <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
@@ -195,22 +196,24 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
             <Tooltip content={<CustomTooltip />} />
             <Legend verticalAlign="top" height={36} />
             <Line
-              type="monotone"
+              type="linear"
               dataKey={dataKey}
               stroke={color}
               name={dataKey.toUpperCase()}
-              dot={false}
+              dot={{ r: 3, strokeWidth: 1 }}
               strokeWidth={2}
               connectNulls={false}
             />
-            <Brush
-              dataKey="ds"
-              height={30}
-              stroke={color}
-              onChange={handleBrushChange}
-              startIndex={brushDomain ? brushDomain[0] : undefined}
-              endIndex={brushDomain ? brushDomain[1] : undefined}
-            />
+            {showBrush && (
+              <Brush
+                dataKey="ds"
+                height={30}
+                stroke={color}
+                onChange={handleBrushChange}
+                startIndex={brushDomain ? brushDomain[0] : undefined}
+                endIndex={brushDomain ? brushDomain[1] : undefined}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -219,8 +222,8 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data }) => {
 
   return (
     <div>
-      {renderChart(formattedData, "SDNN Analysis", "sdnn", "#8884d8", "sync")}
-      {renderChart(formattedData, "RMSSD Analysis", "rmssd", "#82ca9d", "sync")}
+      {renderChart(formattedData, "SDNN Analysis", "sdnn", "#8884d8", "sync", true)}
+      {renderChart(formattedData, "RMSSD Analysis", "rmssd", "#82ca9d", "sync", false)}
     </div>
   );
 };
