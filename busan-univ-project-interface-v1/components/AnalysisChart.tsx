@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, parseISO, addHours, isValid, min, max } from 'date-fns';
+import { format, parseISO, isValid, addMinutes, isBefore } from 'date-fns';
 import { HelpCircle } from 'lucide-react';
-
 
 interface AnalysisData {
   ds: string;
@@ -51,11 +50,43 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = fals
   const [showExplanation, setShowExplanation] = useState(false);
 
   const formattedData = useMemo(() => {
-    return data.map(item => ({
-      ...item,
-      ds: format(new Date(item.ds), 'yyyy-MM-dd HH:mm:ss')
-    })).sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
-  }, [data]);
+    const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
+    const filledData: DataItem[] = [];
+    
+    let currentDate = new Date(globalStartDate);
+    const endDate = new Date(globalEndDate);
+
+    while (isBefore(currentDate, endDate) || currentDate.getTime() === endDate.getTime()) {
+      const existingData = sortedData.find(item => {
+        const itemDate = new Date(item.ds);
+        return itemDate.getTime() === currentDate.getTime();
+      });
+
+      if (existingData) {
+        filledData.push({
+          ...existingData,
+          ds: format(currentDate, 'yyyy-MM-dd HH:mm:ss')
+        });
+      } else {
+        if (isPrediction) {
+          filledData.push({
+            ds: format(currentDate, 'yyyy-MM-dd HH:mm:ss'),
+            y: null
+          });
+        } else {
+          filledData.push({
+            ds: format(currentDate, 'yyyy-MM-dd HH:mm:ss'),
+            sdnn: null,
+            rmssd: null
+          });
+        }
+      }
+
+      currentDate = addMinutes(currentDate, 1);
+    }
+
+    return filledData;
+  }, [data, globalStartDate, globalEndDate, isPrediction]);
 
   // const formattedData = useMemo(() => {
   //   const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
