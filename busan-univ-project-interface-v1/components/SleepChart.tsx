@@ -1,6 +1,6 @@
-import React from 'react';
-import { ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from 'recharts';
-import { format, parseISO, differenceInMinutes } from 'date-fns';
+import React, { useMemo } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
+import { format, parseISO, eachHourOfInterval, isSameHour } from 'date-fns';
 
 interface SleepData {
   ds_start: string;
@@ -10,77 +10,93 @@ interface SleepData {
 
 interface SleepChartProps {
   data: SleepData[];
+  onBrushChange: (domain: [number, number] | null) => void;
 }
 
-const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload as SleepData;
-      const startTime = parseISO(data.ds_start);
-      const endTime = parseISO(data.ds_end);
-      const duration = differenceInMinutes(endTime, startTime);
-  
-      return (
-        <div className="bg-white p-2 border border-gray-300 rounded shadow">
-          <p className="text-sm font-bold text-black">{`Time: ${format(startTime, 'yyyy-MM-dd HH:mm')} - ${format(endTime, 'HH:mm')}`}</p>
-          <p className="text-sm text-black">{`Stage: ${data.stage}`}</p>
-          <p className="text-sm text-black">{`Duration: ${duration} minutes`}</p>
-        </div>
-      );
-    }
-    return null;
-  };
-
-  const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
-    const chartData = data.map(item => {
-      const startTime = parseISO(item.ds_start);
-      const endTime = parseISO(item.ds_end);
-      return {
-        ...item,
-        x: startTime.getTime(),
-        y: parseInt(item.stage),
-        z: differenceInMinutes(endTime, startTime), // duration in minutes
-      };
-    });
-  
-    const minTime = Math.min(...chartData.map(d => d.x));
-    const maxTime = Math.max(...chartData.map(d => d.x));
-    const minStage = Math.min(...chartData.map(d => d.y));
-    const maxStage = Math.max(...chartData.map(d => d.y));
-  
+const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload as { time: Date; stage: number };
     return (
-      <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
-        <h2 className="text-xl font-bold text-black mb-4">Sleep Stages</h2>
-        <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart
-            margin={{ top: 20, right: 20, bottom: 20, left: 40 }}
-          >
-            <CartesianGrid />
-            <XAxis
-              dataKey="x"
-              type="number"
-              domain={[minTime, maxTime]}
-              tickFormatter={(unixTime) => format(new Date(unixTime), 'HH:mm')}
-              name="Time"
-            />
-            <YAxis
-              dataKey="y"
-              type="number"
-              domain={[minStage, maxStage]}
-              name="Stage"
-              ticks={Array.from({length: maxStage - minStage + 1}, (_, i) => i + minStage)}
-            />
-            <ZAxis
-              dataKey="z"
-              type="number"
-              range={[20, 200]}
-              name="Duration"
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Scatter name="Sleep Stage" data={chartData} fill="#8884d8" />
-          </ScatterChart>
-        </ResponsiveContainer>
+      <div className="bg-white p-2 border border-gray-300 rounded shadow">
+        <p className="text-sm font-bold text-black">{`Time: ${format(data.time, 'yyyy-MM-dd HH:mm')}`}</p>
+        <p className="text-sm text-black">{`Stage: ${data.stage}`}</p>
       </div>
     );
+  }
+  return null;
+};
+
+const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
+  const chartData = useMemo(() => {
+    const startDate = new Date(Math.min(...data.map(d => new Date(d.ds_start).getTime())));
+    const endDate = new Date(Math.max(...data.map(d => new Date(d.ds_end).getTime())));
+
+    const hourlyData = eachHourOfInterval({ start: startDate, end: endDate }).map(hour => ({
+      time: hour,
+      stage: 0
+    }));
+
+    data.forEach(item => {
+      const start = new Date(item.ds_start);
+      const end = new Date(item.ds_end);
+      const stage = parseInt(item.stage);
+
+      hourlyData.forEach(hourData => {
+        if (hourData.time >= start && hourData.time < end) {
+          hourData.stage = stage;
+        }
+      });
+    });
+
+    return hourlyData;
+  }, [data]);
+
+  const handleBrushChange = (domain: any) => {
+    if (Array.isArray(domain) && domain.length === 2) {
+      onBrushChange([domain[0], domain[1]]);
+    }
   };
-  
-  export default SleepChart;
+
+  return (
+    <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
+      <h2 className="text-xl font-bold text-black mb-4">Sleep Stages</h2>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart
+          data={chartData}
+          margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="time"
+            tickFormatter={(time) => format(time, 'MM-dd HH:mm')}
+            type="number"
+            scale="time"
+            domain={['dataMin', 'dataMax']}
+          />
+          <YAxis
+            tickFormatter={(value) => value.toString()}
+            domain={[0, 6]}
+            ticks={[0, 1, 2, 3, 4, 5, 6]}
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Area 
+            type="step" 
+            dataKey="stage" 
+            stroke="#8884d8" 
+            fill="#8884d8" 
+            isAnimationActive={false}
+          />
+          <Brush
+            dataKey="time"
+            height={30}
+            stroke="#8884d8"
+            onChange={handleBrushChange}
+            tickFormatter={(time) => format(new Date(time), 'MM-dd')}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
+
+export default SleepChart;
