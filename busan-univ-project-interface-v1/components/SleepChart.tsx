@@ -98,7 +98,7 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
           />
           <Brush
             dataKey="time"
-            height={0}
+            height={20}
             stroke="#8884d8"
             onChange={handleBrushChange}
             tickFormatter={formatXAxis}
