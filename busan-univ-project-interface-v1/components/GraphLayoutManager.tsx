@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import AnalysisChart from './AnalysisChart';
+import SleepChart from './SleepChart';
 
 interface GraphLayoutManagerProps {
   analysisData: any[];
@@ -25,10 +26,11 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
 
   const handleBrushChange = (domain: [number, number] | null) => {
     setBrushDomain(domain);
+    onBrushChange(domain);
   };
 
   const renderCharts = () => {
-    const charts = [
+    const syncedCharts = [
       <AnalysisChart
         key="sdnn"
         data={analysisData}
@@ -77,10 +79,22 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
       />,
     ];
 
+    const sleepChart = (
+      <SleepChart
+        key="sleep"
+        data={sleepData}
+        globalStartDate={globalStartDate}
+        globalEndDate={globalEndDate}
+      />
+    );
+
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columnsCount}, 1fr)`, gap: '1rem' }}>
-        {charts}
-      </div>
+      <>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columnsCount}, 1fr)`, gap: '1rem' }}>
+          {syncedCharts}
+        </div>
+        {sleepChart}
+      </>
     );
   };
 

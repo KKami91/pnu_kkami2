@@ -230,9 +230,9 @@ export default function Home() {
             onBrushChange={handleBrushChange}
           />
         )}
-        {!isLoadingDate && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 &&(
-          <div className="text-center text-red-500">No data available for the charts.</div>
-        )}
+          {!isLoadingDate && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && (
+            <div className="text-center text-red-500">No data available for the charts.</div>
+          )}
       </div>
     </div>
   )
