@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, parseISO, eachMinuteOfInterval, startOfHour, isEqual } from 'date-fns';
+import { format, parseISO, eachHourOfInterval, startOfDay, endOfDay, differenceInHours } from 'date-fns';
 
 interface SleepData {
   ds_start: string;
@@ -27,12 +27,12 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
 };
 
 const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
-  const chartData = useMemo(() => {
-    const startDate = new Date(Math.min(...data.map(d => new Date(d.ds_start).getTime())));
-    const endDate = new Date(Math.max(...data.map(d => new Date(d.ds_end).getTime())));
+  const { chartData, ticks } = useMemo(() => {
+    const startDate = startOfDay(new Date(Math.min(...data.map(d => new Date(d.ds_start).getTime()))));
+    const endDate = endOfDay(new Date(Math.max(...data.map(d => new Date(d.ds_end).getTime()))));
 
-    const minutelyData = eachMinuteOfInterval({ start: startDate, end: endDate }).map(minute => ({
-      time: minute.getTime(),
+    const hourlyData = eachHourOfInterval({ start: startDate, end: endDate }).map(hour => ({
+      time: hour.getTime(),
       stage: 0
     }));
 
@@ -41,19 +41,25 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
       const end = new Date(item.ds_end).getTime();
       const stage = parseInt(item.stage);
 
-      minutelyData.forEach(minuteData => {
-        if (minuteData.time >= start && minuteData.time < end) {
-          minuteData.stage = stage;
+      hourlyData.forEach(hourData => {
+        if (hourData.time >= start && hourData.time < end) {
+          hourData.stage = stage;
         }
       });
     });
 
-    return minutelyData;
+    // Generate ticks for every 6 hours
+    const tickInterval = 6;
+    const ticks = hourlyData
+      .filter((_, index) => index % tickInterval === 0)
+      .map(item => item.time);
+
+    return { chartData: hourlyData, ticks };
   }, [data]);
 
   const handleBrushChange = (domain: any) => {
     if (Array.isArray(domain) && domain.length === 2) {
-      onBrushChange(domain as [number, number]);
+      onBrushChange([domain[0], domain[1]]);
     }
   };
 
@@ -65,20 +71,18 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
           data={chartData}
           margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
         >
-          <CartesianGrid strokeDasharray="3 3" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} />
           <XAxis
             dataKey="time"
-            tickFormatter={(time) => {
-              const date = new Date(time);
-              return isEqual(date, startOfHour(date)) ? format(date, 'MM-dd HH:00') : '';
-            }}
-            type="number"
             scale="time"
+            type="number"
             domain={['dataMin', 'dataMax']}
+            tickFormatter={(time) => format(new Date(time), 'MM-dd HH:mm')}
+            ticks={ticks}
             angle={-45}
             textAnchor="end"
             height={60}
-            interval="preserveStartEnd"
+            interval={0}
           />
           <YAxis
             tickFormatter={(value) => value.toString()}
