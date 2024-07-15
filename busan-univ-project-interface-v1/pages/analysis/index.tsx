@@ -223,6 +223,7 @@ export default function Home() {
             {analysisGraphData.length > 0 && (
               <AnalysisChart 
                 data={analysisGraphData} 
+                stepData={stepData}  // stepData 추가
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
@@ -239,11 +240,11 @@ export default function Home() {
             )}
             {sleepData.length > 0 && (
               <SleepChart 
-              data={sleepData} 
-              onBrushChange={(domain) => {
-                setBrushDomain(domain);
-              }}
-            />
+                data={sleepData} 
+                onBrushChange={(domain) => {
+                  setBrushDomain(domain);
+                }}
+              />
             )}
           </>
         )}
