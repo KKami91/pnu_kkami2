@@ -1,6 +1,8 @@
-import React, { useMemo } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, parseISO, eachMinuteOfInterval, startOfHour, isEqual } from 'date-fns';
+import React, { useState, useMemo } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 
 interface SleepData {
   ds_start: string;
@@ -10,101 +12,99 @@ interface SleepData {
 
 interface SleepChartProps {
   data: SleepData[];
-  onBrushChange: (domain: [number, number] | null) => void;
 }
 
-const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload as { time: number; stage: number };
-    return (
-      <div className="bg-white p-2 border border-gray-300 rounded shadow">
-        <p className="text-sm font-bold text-black">{`Time: ${format(new Date(data.time), 'yyyy-MM-dd HH:mm')}`}</p>
-        <p className="text-sm text-black">{`Stage: ${data.stage}`}</p>
-      </div>
-    );
-  }
-  return null;
-};
+const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
 
-const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
   const chartData = useMemo(() => {
-    if (data.length === 0) return [];
+    if (!startDate || !endDate) return [];
 
-    const startDate = new Date(Math.min(...data.map(d => new Date(d.ds_start).getTime())));
-    const endDate = new Date(Math.max(...data.map(d => new Date(d.ds_end).getTime())));
+    const start = startOfDay(startDate);
+    const end = endOfDay(endDate);
 
-    const minutelyData = eachMinuteOfInterval({ start: startDate, end: endDate }).map(minute => ({
-      time: minute.getTime(),
-      stage: 0
-    }));
+    return data
+      .filter(item => {
+        const itemDate = parseISO(item.ds_start);
+        return itemDate >= start && itemDate <= end;
+      })
+      .map(item => ({
+        time: parseISO(item.ds_start).getTime(),
+        stage: parseInt(item.stage)
+      }))
+      .sort((a, b) => a.time - b.time);
+  }, [data, startDate, endDate]);
 
-    data.forEach(item => {
-      const start = new Date(item.ds_start).getTime();
-      const end = new Date(item.ds_end).getTime();
-      const stage = parseInt(item.stage);
-
-      minutelyData.forEach(minuteData => {
-        if (minuteData.time >= start && minuteData.time < end) {
-          minuteData.stage = stage;
-        }
-      });
-    });
-
-    return minutelyData;
-  }, [data]);
-
-  const handleBrushChange = (domain: any) => {
-    if (Array.isArray(domain) && domain.length === 2) {
-      onBrushChange(domain as [number, number]);
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-2 border border-gray-300 rounded shadow">
+          <p className="text-sm font-bold">{format(new Date(label), 'yyyy-MM-dd HH:mm')}</p>
+          <p className="text-sm">{`Stage: ${payload[0].value}`}</p>
+        </div>
+      );
     }
-  };
-
-  const formatXAxis = (tickItem: number) => {
-    return format(new Date(tickItem), 'MM-dd HH:mm');
+    return null;
   };
 
   return (
-    <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
+    <div className="w-full bg-white p-4 rounded-lg shadow-lg mb-8">
       <h2 className="text-xl font-bold text-black mb-4">Sleep Stages</h2>
-      <ResponsiveContainer width="100%" height="100%">
-        <AreaChart
-          data={chartData}
-          margin={{ top: 10, right: 30, left: 0, bottom: 60 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis
-            dataKey="time"
-            type="number"
-            scale="time"
-            domain={['dataMin', 'dataMax']}
-            tickFormatter={formatXAxis}
-            angle={-45}
-            textAnchor="end"
-            height={60}
-            interval="preserveStartEnd"
-          />
-          <YAxis
-            tickFormatter={(value) => value.toString()}
-            domain={[0, 6]}
-            ticks={[0, 1, 2, 3, 4, 5, 6]}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Area 
-            type="stepAfter" 
-            dataKey="stage" 
-            stroke="#8884d8" 
-            fill="#8884d8" 
-            isAnimationActive={false}
-          />
-          <Brush
-            dataKey="time"
-            height={30}
-            stroke="#8884d8"
-            onChange={handleBrushChange}
-            tickFormatter={formatXAxis}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      <div className="flex space-x-4 mb-4">
+        <DatePicker
+          selected={startDate}
+          onChange={(date: Date) => setStartDate(date)}
+          selectsStart
+          startDate={startDate}
+          endDate={endDate}
+          placeholderText="Start Date"
+          className="border p-2 rounded"
+        />
+        <DatePicker
+          selected={endDate}
+          onChange={(date: Date) => setEndDate(date)}
+          selectsEnd
+          startDate={startDate}
+          endDate={endDate}
+          minDate={startDate}
+          placeholderText="End Date"
+          className="border p-2 rounded"
+        />
+      </div>
+      {chartData.length > 0 ? (
+        <div className="h-[400px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={chartData}
+              margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="time"
+                type="number"
+                domain={['dataMin', 'dataMax']}
+                tickFormatter={(time) => format(new Date(time), 'MM-dd HH:mm')}
+              />
+              <YAxis
+                tickFormatter={(value) => value.toString()}
+                domain={[0, 6]}
+                ticks={[0, 1, 2, 3, 4, 5, 6]}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Area 
+                type="stepAfter" 
+                dataKey="stage" 
+                stroke="#8884d8" 
+                fill="#8884d8" 
+                isAnimationActive={false}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      ) : (
+        <p className="text-center text-gray-500">Please select a date range to view sleep data.</p>
+      )}
     </div>
   );
 };

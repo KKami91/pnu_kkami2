@@ -221,12 +221,7 @@ export default function Home() {
               />
             )}
             {sleepData.length > 0 && (
-              <SleepChart 
-              data={sleepData} 
-              onBrushChange={(domain) => {
-                setBrushDomain(domain);
-              }}
-            />
+              <SleepChart data={sleepData} />
             )}
           </>
         )}
