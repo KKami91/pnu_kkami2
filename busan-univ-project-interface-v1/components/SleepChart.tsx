@@ -28,6 +28,8 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
 
 const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
   const chartData = useMemo(() => {
+    if (data.length === 0) return [];
+
     const startDate = new Date(Math.min(...data.map(d => new Date(d.ds_start).getTime())));
     const endDate = new Date(Math.max(...data.map(d => new Date(d.ds_end).getTime())));
 
@@ -57,6 +59,10 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
     }
   };
 
+  const formatXAxis = (tickItem: number) => {
+    return format(new Date(tickItem), 'MM-dd HH:mm');
+  };
+
   return (
     <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
       <h2 className="text-xl font-bold text-black mb-4">Sleep Stages</h2>
@@ -68,13 +74,10 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="time"
-            tickFormatter={(time) => {
-              const date = new Date(time);
-              return isEqual(date, startOfHour(date)) ? format(date, 'MM-dd HH:00') : '';
-            }}
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
+            tickFormatter={formatXAxis}
             angle={-45}
             textAnchor="end"
             height={60}
@@ -98,7 +101,7 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
             height={30}
             stroke="#8884d8"
             onChange={handleBrushChange}
-            tickFormatter={(time) => format(new Date(time), 'MM-dd')}
+            tickFormatter={formatXAxis}
           />
         </AreaChart>
       </ResponsiveContainer>
