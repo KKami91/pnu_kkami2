@@ -39,6 +39,11 @@ interface SleepData {
   stage: string;
 }
 
+interface StepData {
+  ds: string;
+  step: number;
+}
+
 export default function Home() {
   // ... (이전 상태들은 그대로 유지)
   const [selectedUser, setSelectedUser] = useState('')
@@ -55,6 +60,7 @@ export default function Home() {
   const [sleepDates, setSleepDates] = useState<string[]>([]);
   const [sleepSelectedDate, setSleepSelectedDate] = useState('');
   const [sleepData, setSleepData] = useState<SleepData[]>([]);
+  const [stepData, setStepData] = useState<StepData[]>([]);
   const [selectedDate, setSelectedDate] = useState('')
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
@@ -76,6 +82,7 @@ export default function Home() {
       await Promise.all([
         fetchAnalysisGraphData(selectedUser, date),
         fetchPredictionGraphData(selectedUser, date),
+        fetchStepData(selectedUser, date),
         fetchSleepData(selectedUser, date)
       ]);
       setIsLoadingDate(false)
@@ -140,6 +147,16 @@ export default function Home() {
       console.log('error....');
       setMessage(`Error fetching prediction data: ${error instanceof Error ? error.message : String(error)}`);
       setPredictionGraphData([]);
+    }
+  }
+
+  const fetchStepData = async (user: string, date: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/step_data/${user}/${date}`);
+      setStepData(response.data.data);
+    } catch (error) {
+      setMessage(`Error fetching step data: ${error instanceof Error ? error.message : String(error)}`);
+      setStepData([]);
     }
   }
 
@@ -230,7 +247,7 @@ export default function Home() {
             )}
           </>
         )}
-        {!isLoadingDate && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && (
+        {!isLoadingDate && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 &&(
           <div className="text-center text-red-500">No data available for the charts.</div>
         )}
       </div>
