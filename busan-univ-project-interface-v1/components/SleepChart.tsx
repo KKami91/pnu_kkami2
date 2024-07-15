@@ -1,8 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, parseISO, startOfDay, endOfDay } from 'date-fns';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
 
 interface SleepData {
   ds_start: string;
@@ -15,14 +13,14 @@ interface SleepChartProps {
 }
 
 const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   const chartData = useMemo(() => {
     if (!startDate || !endDate) return [];
 
-    const start = startOfDay(startDate);
-    const end = endOfDay(endDate);
+    const start = startOfDay(new Date(startDate));
+    const end = endOfDay(new Date(endDate));
 
     return data
       .filter(item => {
@@ -52,23 +50,16 @@ const SleepChart: React.FC<SleepChartProps> = ({ data }) => {
     <div className="w-full bg-white p-4 rounded-lg shadow-lg mb-8">
       <h2 className="text-xl font-bold text-black mb-4">Sleep Stages</h2>
       <div className="flex space-x-4 mb-4">
-        <DatePicker
-          selected={startDate}
-          onChange={(date: Date) => setStartDate(date)}
-          selectsStart
-          startDate={startDate}
-          endDate={endDate}
-          placeholderText="Start Date"
+        <input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
           className="border p-2 rounded"
         />
-        <DatePicker
-          selected={endDate}
-          onChange={(date: Date) => setEndDate(date)}
-          selectsEnd
-          startDate={startDate}
-          endDate={endDate}
-          minDate={startDate}
-          placeholderText="End Date"
+        <input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
           className="border p-2 rounded"
         />
       </div>
