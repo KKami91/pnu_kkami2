@@ -69,7 +69,7 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart
           data={chartData}
-          margin={{ top: 10, right: 30, left: 0, bottom: 60 }}
+          margin={{ top: 10, right: 30, left: 0, bottom: 120 }}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
