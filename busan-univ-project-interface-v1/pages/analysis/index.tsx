@@ -3,6 +3,7 @@ import axios from 'axios'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import AnalysisChart from '../../components/AnalysisChart';
 import SleepChart from '../../components/SleepChart';
+import GraphLayoutManager from '../../components/GraphLayoutManager';
 import { min, max } from 'date-fns';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
@@ -219,34 +220,15 @@ export default function Home() {
         {isLoadingDate ? (
           <SkeletonLoader />
         ) : (
-          <>
-            {analysisGraphData.length > 0 && (
-              <AnalysisChart 
-                data={analysisGraphData} 
-                stepData={stepData}  // stepData 추가
-                globalStartDate={globalStartDate}
-                globalEndDate={globalEndDate}
-                onBrushChange={handleBrushChange}
-              />
-            )}
-            {predictionGraphData.length > 0 && (
-              <AnalysisChart 
-                data={predictionGraphData} 
-                isPrediction={true}
-                globalStartDate={globalStartDate}
-                globalEndDate={globalEndDate}
-                onBrushChange={handleBrushChange}
-              />
-            )}
-            {sleepData.length > 0 && (
-              <SleepChart 
-                data={sleepData} 
-                onBrushChange={(domain) => {
-                  setBrushDomain(domain);
-                }}
-              />
-            )}
-          </>
+          <GraphLayoutManager
+            analysisData={analysisGraphData}
+            predictionData={predictionGraphData}
+            stepData={stepData}
+            sleepData={sleepData}
+            globalStartDate={globalStartDate}
+            globalEndDate={globalEndDate}
+            onBrushChange={handleBrushChange}
+          />
         )}
         {!isLoadingDate && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 &&(
           <div className="text-center text-red-500">No data available for the charts.</div>

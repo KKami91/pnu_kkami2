@@ -25,9 +25,12 @@ type DataItem = AnalysisData | PredictionData;
 interface AnalysisChartProps {
   data: DataItem[];
   stepData?: StepData[];
+  isStep?: boolean;
   isPrediction?: boolean;
   globalStartDate: Date;
   globalEndDate: Date;
+  title: string;
+  dataKey: string;
   onBrushChange: (domain: [number, number] | null) => void;
 }
 
