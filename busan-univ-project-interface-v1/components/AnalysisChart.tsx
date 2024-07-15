@@ -24,20 +24,6 @@ interface AnalysisChartProps {
   onBrushChange: (domain: [number, number] | null) => void;
 }
 
-interface AnalysisChartProps {
-  data: DataItem[];
-  isPrediction?: boolean;
-  globalStartDate: Date;
-  globalEndDate: Date;
-  onBrushChange: (domain: [number, number] | null) => void;
-  brushDomain: [number, number] | null;
-  title: string;
-  dataKey: string;
-  color: string;
-  yAxisLabel: string;
-  addBrush?: boolean;
-}
-
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
@@ -60,20 +46,7 @@ const ExplanationTooltip: React.FC<{ content: string }> = ({ content }) => (
   </div>
 );
 
-
-const AnalysisChart: React.FC<AnalysisChartProps> = ({
-  data,
-  isPrediction = false,
-  globalStartDate,
-  globalEndDate,
-  onBrushChange,
-  brushDomain,
-  title,
-  dataKey,
-  color,
-  yAxisLabel,
-  addBrush = false
-}) => {
+const AnalysisChart: React.FC<AnalysisChartProps> = ({ data, isPrediction = false, globalStartDate, globalEndDate, onBrushChange }) => {
   const [showExplanation, setShowExplanation] = useState(false);
 
   const formattedData = useMemo(() => {
@@ -130,43 +103,71 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
     const isAnalysisData = (item: DataItem): item is AnalysisData => 'sdnn' in item && 'rmssd' in item;
 
     return (
-      <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8">
-        <h2 className="text-xl font-bold text-black mb-4">{title}</h2>
+      <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8 relative">
+        <div className="flex items-center mb-4">
+          <h2 className="text-xl font-bold text-black mr-2">{title}</h2>
+          <div
+            className="relative"
+            onMouseEnter={() => setShowExplanation(true)}
+            onMouseLeave={() => setShowExplanation(false)}
+          >
+            <HelpCircle size={18} className="text-gray-500 cursor-help" />
+            {showExplanation && <ExplanationTooltip content={explanation} />}
+          </div>
+        </div>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={formattedData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            data={chartData}
+            margin={{ top: 5, right: 30, left: 20, bottom: 35 }}
+            syncId={syncId}
           >
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis
               dataKey="ds"
-              type="number"
-              scale="time"
-              domain={brushDomain || ['dataMin', 'dataMax']}
-              tickFormatter={(time) => format(new Date(time), 'MM-dd HH:mm')}
+              tick={{ fill: '#666', fontSize: 10 }}
+              tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+              angle={-45}
+              textAnchor="end"
+              height={60}
             />
-            <YAxis label={{ value: yAxisLabel, angle: -90, position: 'insideLeft' }} />
+            <YAxis
+              tick={{ fill: '#666', fontSize: 12 }}
+              label={{ value: isPrediction ? 'bpm' : 'ms', angle: -90, position: 'insideLeft', fill: '#666' }}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <Line type="monotone" dataKey={dataKey} stroke={color} dot={false} />
-            {addBrush && (
-            <Brush
-              dataKey="ds"
-              height={30}
-              stroke={color}
-              onChange={(domain) => {
-                if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
-                  const startTime = new Date(formattedData[domain.startIndex].ds).getTime();
-                  const endTime = new Date(formattedData[domain.endIndex].ds).getTime();
-                  onBrushChange([startTime, endTime]);
-                } else {
-                  onBrushChange(null);
-                }
-              }}
-              tickFormatter={(time) => format(new Date(time), 'MM-dd')}
-            />
-          )}
-        </LineChart>
-      </ResponsiveContainer>
+            <Legend verticalAlign="top" height={36} />
+            {isPredictionData(chartData[0]) && (
+              <Line
+                type="linear"
+                dataKey="y"
+                stroke={color}
+                name="BPM"
+                dot={{ r: 3, strokeWidth: 1 }}
+                strokeWidth={2}
+                connectNulls={false}
+              />
+            )}
+            {isAnalysisData(chartData[0]) && (
+              <Line
+                type="linear"
+                dataKey={dataKey}
+                stroke={color}
+                name={dataKey.toUpperCase()}
+                dot={{ r: 3, strokeWidth: 1 }}
+                strokeWidth={2}
+                connectNulls={false}
+              />
+            )}
+            {showBrush && (
+              <Brush
+                dataKey="ds"
+                height={30}
+                stroke={color}
+                onChange={handleBrushChange}
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     );
   };

@@ -209,12 +209,6 @@ export default function Home() {
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
-                brushDomain={brushDomain}
-                title="SDNN : 정상 심박 간격(NN intervals)의 표준편차"
-                dataKey="sdnn"
-                color="#8884d8"
-                yAxisLabel="ms"
-                addBrush={true}
               />
             )}
             {predictionGraphData.length > 0 && (
@@ -224,19 +218,15 @@ export default function Home() {
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
-                brushDomain={brushDomain}
-                title="심박수 BPM"
-                dataKey="y"
-                color="#82ca9d"
-                yAxisLabel="bpm"
               />
             )}
             {sleepData.length > 0 && (
               <SleepChart 
-                data={sleepData} 
-                onBrushChange={handleBrushChange}
-                brushDomain={brushDomain}
-              />
+              data={sleepData} 
+              onBrushChange={(domain) => {
+                setBrushDomain(domain);
+              }}
+            />
             )}
           </>
         )}
