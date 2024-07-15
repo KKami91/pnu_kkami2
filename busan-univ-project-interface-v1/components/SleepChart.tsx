@@ -76,7 +76,7 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
             dataKey="time"
             type="number"
             scale="time"
-            //domain={['dataMin', 'dataMax']}
+            domain={['dataMin', 'dataMax']}
             tickFormatter={formatXAxis}
             angle={-45}
             textAnchor="end"
