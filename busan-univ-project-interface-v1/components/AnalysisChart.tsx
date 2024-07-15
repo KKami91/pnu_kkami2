@@ -151,7 +151,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
                 connectNulls={false}
               />
             )}
-            {!isStep && (
+            {/* {!isStep && (
               <Brush
                 dataKey="ds"
                 height={30}
@@ -160,7 +160,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
                 startIndex={brushDomain ? brushDomain[0] : undefined}
                 endIndex={brushDomain ? brushDomain[1] : undefined}
               />
-            )}
+            )} */}
           </ChartComponent>
         </ResponsiveContainer>
       </div>
