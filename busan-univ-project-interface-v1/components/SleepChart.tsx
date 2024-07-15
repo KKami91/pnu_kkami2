@@ -11,6 +11,7 @@ interface SleepData {
 interface SleepChartProps {
   data: SleepData[];
   onBrushChange: (domain: [number, number] | null) => void;
+  brushDomain: [number, number] | null;
 }
 
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
@@ -26,7 +27,7 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
   return null;
 };
 
-const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
+const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange, brushDomain }) => {
   const chartData = useMemo(() => {
     if (data.length === 0) return [];
 
@@ -76,12 +77,8 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
             dataKey="time"
             type="number"
             scale="time"
-            domain={['dataMin', 'dataMax']}
-            tickFormatter={formatXAxis}
-            angle={-45}
-            textAnchor="end"
-            height={60}
-            interval="preserveStartEnd"
+            domain={brushDomain || ['dataMin', 'dataMax']}
+            tickFormatter={(time) => format(new Date(time), 'MM-dd HH:mm')}
           />
           <YAxis
             tickFormatter={(value) => value.toString()}
@@ -95,13 +92,6 @@ const SleepChart: React.FC<SleepChartProps> = ({ data, onBrushChange }) => {
             stroke="#8884d8" 
             fill="#8884d8" 
             isAnimationActive={false}
-          />
-          <Brush
-            dataKey="time"
-            height={30}
-            stroke="#8884d8"
-            onChange={handleBrushChange}
-            tickFormatter={formatXAxis}
           />
         </AreaChart>
       </ResponsiveContainer>
