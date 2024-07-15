@@ -9,7 +9,6 @@ interface GraphLayoutManagerProps {
   globalStartDate: Date;
   globalEndDate: Date;
   onBrushChange: (domain: [number, number] | null) => void;
-  brushDomain: [number, number] | null; // 추가: 브러시 상태
 }
 
 const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
@@ -19,15 +18,14 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   sleepData,
   globalStartDate,
   globalEndDate,
-  brushDomain, // 추가: 브러시 상태
   onBrushChange,
 }) => {
   const [columnsCount, setColumnsCount] = useState(1);
-  //const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+  const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
-  // const handleBrushChange = (domain: [number, number] | null) => {
-  //   setBrushDomain(domain);
-  // };
+  const handleBrushChange = (domain: [number, number] | null) => {
+    setBrushDomain(domain);
+  };
 
   const renderCharts = () => {
     const charts = [
@@ -37,7 +35,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        onBrushChange={onBrushChange}
+        onBrushChange={handleBrushChange}
         title="SDNN : 정상 심박 간격(NN intervals)의 표준편차"
         dataKey="sdnn"
         syncId="healthData"
@@ -48,7 +46,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        onBrushChange={onBrushChange}
+        onBrushChange={handleBrushChange}
         title="RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균"
         dataKey="rmssd"
         syncId="healthData"
@@ -60,7 +58,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        onBrushChange={onBrushChange}
+        onBrushChange={handleBrushChange}
         title="시간별 걸음 수"
         dataKey="step"
         syncId="healthData"
@@ -72,7 +70,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        onBrushChange={onBrushChange}
+        onBrushChange={handleBrushChange}
         title="심박수 BPM"
         dataKey="y"
         syncId="healthData"

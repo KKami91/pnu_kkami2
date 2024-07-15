@@ -239,7 +239,6 @@ export default function Home() {
             globalStartDate={globalStartDate}
             globalEndDate={globalEndDate}
             onBrushChange={handleBrushChange}
-            brushDomain={brushDomain} // 추가: 브러시 상태 전달
           />
         )}
           {!isLoadingDate && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && (
