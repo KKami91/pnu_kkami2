@@ -44,6 +44,8 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
           globalStartDate={globalStartDate}
           globalEndDate={globalEndDate}
           onBrushChange={onBrushChange}
+          title="SDNN : 정상 심박 간격(NN intervals)의 표준편차"
+          dataKey="sdnn"
         />
       ),
       visibleCharts.rmssd && (
@@ -53,6 +55,8 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
           globalStartDate={globalStartDate}
           globalEndDate={globalEndDate}
           onBrushChange={onBrushChange}
+          title="RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균"
+          dataKey="rmssd"
         />
       ),
       visibleCharts.step && (
@@ -62,6 +66,8 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
           globalStartDate={globalStartDate}
           globalEndDate={globalEndDate}
           onBrushChange={onBrushChange}
+          title="시간별 걸음 수"
+          dataKey="step"
         />
       ),
       visibleCharts.bpm && (
@@ -72,6 +78,8 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
           globalStartDate={globalStartDate}
           globalEndDate={globalEndDate}
           onBrushChange={onBrushChange}
+          title="심박수 BPM"
+          dataKey="y"
         />
       ),
       visibleCharts.sleep && (
@@ -124,19 +132,21 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         )}
       </div>
 
-      <div className="mb-4">
-        {Object.entries(visibleCharts).map(([key, value]) => (
-          <label key={key} className="mr-4">
-            <input
-              type="checkbox"
-              checked={value}
-              onChange={() => toggleChart(key as keyof typeof visibleCharts)}
-              className="mr-1"
-            />
-            {key.toUpperCase()}
-          </label>
-        ))}
-      </div>
+      {layoutType === 'separate' && (
+        <div className="mb-4">
+          {Object.entries(visibleCharts).map(([key, value]) => (
+            <label key={key} className="mr-4">
+              <input
+                type="checkbox"
+                checked={value}
+                onChange={() => toggleChart(key as keyof typeof visibleCharts)}
+                className="mr-1"
+              />
+              {key.toUpperCase()}
+            </label>
+          ))}
+        </div>
+      )}
 
       {layoutType === 'separate' ? renderSeparateCharts() : renderCombinedChart()}
     </div>
