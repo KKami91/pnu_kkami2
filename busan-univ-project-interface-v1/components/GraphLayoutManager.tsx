@@ -5,16 +5,20 @@ interface GraphLayoutManagerProps {
   analysisData: any[];
   predictionData: any[];
   stepData: any[];
+  sleepData: any[];
   globalStartDate: Date;
   globalEndDate: Date;
+  onBrushChange: (domain: [number, number] | null) => void;
 }
 
 const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   analysisData,
   predictionData,
   stepData,
+  sleepData,
   globalStartDate,
   globalEndDate,
+  onBrushChange,
 }) => {
   const [columnsCount, setColumnsCount] = useState(1);
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
