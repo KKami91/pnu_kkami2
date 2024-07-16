@@ -56,6 +56,7 @@ export default function Home() {
   const [sleepData, setSleepData] = useState<SleepData[]>([])
   const [stepData, setStepData] = useState<StepData[]>([])
   const [selectedDate, setSelectedDate] = useState('')
+  const [showGraphs, setShowGraphs] = useState(false)
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
@@ -76,6 +77,7 @@ export default function Home() {
     setSelectedDate(date)
     if (date) {
       setIsLoadingDate(true)
+      setShowGraphs(false) // 데이터 로딩 시작 시 그래프 숨김
       await Promise.all([
         fetchAnalysisGraphData(selectedUser, date),
         fetchPredictionGraphData(selectedUser, date),
@@ -83,6 +85,7 @@ export default function Home() {
         fetchSleepData(selectedUser, date)
       ])
       setIsLoadingDate(false)
+      setShowGraphs(true) // 데이터 로딩 완료 시 그래프 표시
     }
   }
 
@@ -207,7 +210,7 @@ export default function Home() {
       <div className="mt-8">
         {isLoadingDate ? (
           <SkeletonLoader />
-        ) : (
+        ) : showGraphs ? (
           <GraphLayoutManager
             analysisData={analysisGraphData}
             predictionData={predictionGraphData}
@@ -216,8 +219,8 @@ export default function Home() {
             globalStartDate={globalStartDate}
             globalEndDate={globalEndDate}
           />
-        )}
-        {!isLoadingDate && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && (
+        ) : null}
+        {showGraphs && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && (
           <div className="text-center text-red-500">No data available for the charts.</div>
         )}
       </div>
