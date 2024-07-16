@@ -29,29 +29,6 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   const renderCharts = () => {
     const charts = [
       <AnalysisChart
-        key="sdnn"
-        data={analysisData}
-        globalStartDate={globalStartDate}
-        globalEndDate={globalEndDate}
-        brushDomain={brushDomain}
-        onBrushChange={handleBrushChange}
-        title="SDNN : 정상 심박 간격(NN intervals)의 표준편차"
-        dataKey="sdnn"
-        syncId="healthData"
-        showBrush={true}
-      />,
-      <AnalysisChart
-        key="rmssd"
-        data={analysisData}
-        globalStartDate={globalStartDate}
-        globalEndDate={globalEndDate}
-        brushDomain={brushDomain}
-        title="RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균"
-        dataKey="rmssd"
-        syncId="healthData"
-        showBrush={false}
-      />,
-      <AnalysisChart
         key="step"
         data={stepData}
         isStep={true}
@@ -72,6 +49,29 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         brushDomain={brushDomain}
         title="심박수 BPM"
         dataKey="y"
+        syncId="healthData"
+        showBrush={false}
+      />,
+      <AnalysisChart
+        key="sdnn"
+        data={analysisData}
+        globalStartDate={globalStartDate}
+        globalEndDate={globalEndDate}
+        brushDomain={brushDomain}
+        onBrushChange={handleBrushChange}
+        title="SDNN : 정상 심박 간격(NN intervals)의 표준편차"
+        dataKey="sdnn"
+        syncId="healthData"
+        showBrush={true}
+      />,
+      <AnalysisChart
+        key="rmssd"
+        data={analysisData}
+        globalStartDate={globalStartDate}
+        globalEndDate={globalEndDate}
+        brushDomain={brushDomain}
+        title="RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균"
+        dataKey="rmssd"
         syncId="healthData"
         showBrush={false}
       />,
