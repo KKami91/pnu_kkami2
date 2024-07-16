@@ -151,7 +151,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="ds"
-                tick={{ fill: '#666', fontSize: 20 }}
+                tick={{ fill: '#666', fontSize: 12 }}
                 tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
                 angle={-45}
                 textAnchor="end"
@@ -184,7 +184,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="ds"
-                tick={{ fill: '#666', fontSize: 20 }}
+                tick={{ fill: '#666', fontSize: 12 }}
                 tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
                 angle={-45}
                 textAnchor="end"
