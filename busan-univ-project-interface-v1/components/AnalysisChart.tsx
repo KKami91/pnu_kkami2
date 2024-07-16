@@ -93,7 +93,10 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
       if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
         const startTime = new Date(formattedData[domain.startIndex].ds).getTime();
         const endTime = new Date(formattedData[domain.endIndex].ds).getTime();
-        onBrushChange([startTime, endTime]);
+        // 브러시 범위가 데이터 범위를 벗어나지 않도록 조정
+        const adjustedStartTime = Math.max(startTime, globalStartDate.getTime());
+        const adjustedEndTime = Math.min(endTime, globalEndDate.getTime());
+        onBrushChange([adjustedStartTime, adjustedEndTime]);
       } else {
         onBrushChange(null);
       }
@@ -185,16 +188,16 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
                 strokeWidth={2}
                 connectNulls={false}
               />
-              {showBrush && (
-                <Brush
-                  dataKey="ds"
-                  height={30}
-                  stroke="#8884d8"
-                  onChange={handleBrushChange}
-                  startIndex={brushDomain ? brushDomain[0] : undefined}
-                  endIndex={brushDomain ? brushDomain[1] : undefined}
-                />
-              )}
+                {showBrush && (
+                  <Brush
+                    dataKey="ds"
+                    height={30}
+                    stroke="#8884d8"
+                    onChange={handleBrushChange}
+                    startIndex={brushDomain ? Math.max(0, formattedData.findIndex(d => new Date(d.ds).getTime() >= brushDomain[0])) : undefined}
+                    endIndex={brushDomain ? Math.min(formattedData.length - 1, formattedData.findIndex(d => new Date(d.ds).getTime() >= brushDomain[1])) : undefined}
+                  />
+                )}
             </LineChart>
           )}
         </ResponsiveContainer>
