@@ -3,6 +3,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, L
 import { format, parseISO, addHours } from 'date-fns';
 import { HelpCircle } from 'lucide-react';
 
+
 interface AnalysisChartProps {
   data: any[];
   isStep?: boolean;
@@ -10,10 +11,11 @@ interface AnalysisChartProps {
   globalStartDate: Date;
   globalEndDate: Date;
   brushDomain: [number, number] | null;
-  onBrushChange: (domain: [number, number] | null) => void;
+  onBrushChange?: (domain: [number, number] | null) => void;
   title: string;
   dataKey: string;
   syncId: string;
+  showBrush: boolean;
 }
 
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
@@ -48,7 +50,8 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
   onBrushChange,
   title, 
   dataKey,
-  syncId
+  syncId,
+  showBrush
 }) => {
   const [showExplanation, setShowExplanation] = useState(false);
 
@@ -86,12 +89,14 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
   }, [data, globalStartDate, globalEndDate, isPrediction, isStep, dataKey]);
 
   const handleBrushChange = (domain: any) => {
-    if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
-      const startTime = new Date(formattedData[domain.startIndex].ds).getTime();
-      const endTime = new Date(formattedData[domain.endIndex].ds).getTime();
-      onBrushChange([startTime, endTime]);
-    } else {
-      onBrushChange(null);
+    if (onBrushChange) {
+      if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
+        const startTime = new Date(formattedData[domain.startIndex].ds).getTime();
+        const endTime = new Date(formattedData[domain.endIndex].ds).getTime();
+        onBrushChange([startTime, endTime]);
+      } else {
+        onBrushChange(null);
+      }
     }
   };
 
@@ -103,97 +108,101 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
     ? "* 전체적인 HRV를 나타내는 지표로써, 장기간의 기록에서 모든 주기성을 반영\n\n* SDNN이 높다면 전반적인 자율신경계의 변동성이 크다는 것을 의미, 건강한 심장 기능과 관련이 있습니다.\n\n* SDNN이 낮다면 자율신경계의 변동성이 낮아 스트레스에 취약할 수 있습니다. 또한, 종종 심혈관 질환과 연관이 있습니다."
     : "* 단기 HRV를 반영하며, 주로 보교감 신경계의 활동을 나타냄\n\nRMSSD가 높다면 부교감신경의 활성도가 높다는 것을 의미, 일반적으로 좋은 회복 능력과 관련이 있습니다.\n\n* RMSSD가 낮다면 부교감신경의 활성도가 낮아 스트레스,피로,우울증이 있을 수 있습니다.";
 
-  return (
-    <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8 relative">
-      <div className="flex items-center mb-4">
-        <h2 className="text-xl font-bold text-black mr-2">{title}</h2>
-        <div
-          className="relative"
-          onMouseEnter={() => setShowExplanation(true)}
-          onMouseLeave={() => setShowExplanation(false)}
-        >
-          <HelpCircle size={18} className="text-gray-500 cursor-help" />
-          {showExplanation && <ExplanationTooltip content={explanation} />}
+    return (
+      <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8 relative">
+        <div className="flex items-center mb-4">
+          <h2 className="text-xl font-bold text-black mr-2">{title}</h2>
+          <div
+            className="relative"
+            onMouseEnter={() => setShowExplanation(true)}
+            onMouseLeave={() => setShowExplanation(false)}
+          >
+            <HelpCircle size={18} className="text-gray-500 cursor-help" />
+            {showExplanation && <ExplanationTooltip content={explanation} />}
+          </div>
         </div>
+        <ResponsiveContainer width="100%" height="100%">
+          {isStep ? (
+            <BarChart
+              data={formattedData}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              syncId={syncId}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="ds"
+                tick={{ fill: '#666', fontSize: 10 }}
+                tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+                angle={-45}
+                textAnchor="end"
+                height={60}
+              />
+              <YAxis 
+                tick={{ fill: '#666', fontSize: 12 }}
+                label={{ value: 'steps', angle: -90, position: 'insideLeft', fill: '#666' }} 
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend verticalAlign="top" height={36} />
+              <Bar dataKey={dataKey} fill="#ffa726" name="Steps" />
+              {showBrush && (
+                <Brush
+                  dataKey="ds"
+                  height={30}
+                  stroke="#8884d8"
+                  onChange={handleBrushChange}
+                  startIndex={brushDomain ? brushDomain[0] : undefined}
+                  endIndex={brushDomain ? brushDomain[1] : undefined}
+                />
+              )}
+            </BarChart>
+          ) : (
+            <LineChart
+              data={formattedData}
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              syncId={syncId}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="ds"
+                tick={{ fill: '#666', fontSize: 10 }}
+                tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+                angle={-45}
+                textAnchor="end"
+                height={60}
+              />
+              <YAxis 
+                tick={{ fill: '#666', fontSize: 12 }}
+                label={{ value: isPrediction ? 'bpm' : 'ms', angle: -90, position: 'insideLeft', fill: '#666' }} 
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend verticalAlign="top" height={36} />
+              <Line 
+                type="linear" 
+                dataKey={dataKey} 
+                stroke={isPrediction ? "#FF5733" : "#8884d8"} 
+                name={isPrediction ? "BPM" : dataKey.toUpperCase()} 
+                dot={{ r: 3, strokeWidth: 1 }}
+                strokeWidth={2}
+                connectNulls={false}
+              />
+              {showBrush && (
+                <Brush
+                  dataKey="ds"
+                  height={30}
+                  stroke="#8884d8"
+                  onChange={handleBrushChange}
+                  startIndex={brushDomain ? brushDomain[0] : undefined}
+                  endIndex={brushDomain ? brushDomain[1] : undefined}
+                />
+              )}
+            </LineChart>
+          )}
+        </ResponsiveContainer>
       </div>
-      <ResponsiveContainer width="100%" height="100%">
-        {isStep ? (
-          <BarChart
-            data={formattedData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            syncId={syncId}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="ds"
-              tick={{ fill: '#666', fontSize: 10 }}
-              tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
-              angle={-45}
-              textAnchor="end"
-              height={60}
-            />
-            <YAxis 
-              tick={{ fill: '#666', fontSize: 12 }}
-              label={{ value: 'steps', angle: -90, position: 'insideLeft', fill: '#666' }} 
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend verticalAlign="top" height={36} />
-            <Bar dataKey={dataKey} fill="#ffa726" name="Steps" />
-            <Brush
-              dataKey="ds"
-              height={30}
-              stroke="#8884d8"
-              onChange={handleBrushChange}
-              startIndex={brushDomain ? brushDomain[0] : undefined}
-              endIndex={brushDomain ? brushDomain[1] : undefined}
-            />
-          </BarChart>
-        ) : (
-          <LineChart
-            data={formattedData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-            syncId={syncId}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="ds"
-              tick={{ fill: '#666', fontSize: 10 }}
-              tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
-              angle={-45}
-              textAnchor="end"
-              height={60}
-            />
-            <YAxis 
-              tick={{ fill: '#666', fontSize: 12 }}
-              label={{ value: isPrediction ? 'bpm' : 'ms', angle: -90, position: 'insideLeft', fill: '#666' }} 
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend verticalAlign="top" height={36} />
-            <Line 
-              type="linear" 
-              dataKey={dataKey} 
-              stroke={isPrediction ? "#FF5733" : "#8884d8"} 
-              name={isPrediction ? "BPM" : dataKey.toUpperCase()} 
-              dot={{ r: 3, strokeWidth: 1 }}
-              strokeWidth={2}
-              connectNulls={false}
-            />
-            <Brush
-              dataKey="ds"
-              height={30}
-              stroke="#8884d8"
-              onChange={handleBrushChange}
-              startIndex={brushDomain ? brushDomain[0] : undefined}
-              endIndex={brushDomain ? brushDomain[1] : undefined}
-            />
-          </LineChart>
-        )}
-      </ResponsiveContainer>
-    </div>
-  );
-};
-
-export default AnalysisChart;
+    );
+  };
+  
+  export default AnalysisChart;
 
 
 

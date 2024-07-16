@@ -38,6 +38,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         title="SDNN : 정상 심박 간격(NN intervals)의 표준편차"
         dataKey="sdnn"
         syncId="healthData"
+        showBrush={true}
       />,
       <AnalysisChart
         key="rmssd"
@@ -45,10 +46,10 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        onBrushChange={handleBrushChange}
         title="RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균"
         dataKey="rmssd"
         syncId="healthData"
+        showBrush={false}
       />,
       <AnalysisChart
         key="step"
@@ -57,10 +58,10 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        onBrushChange={handleBrushChange}
         title="시간별 걸음 수"
         dataKey="step"
         syncId="healthData"
+        showBrush={false}
       />,
       <AnalysisChart
         key="bpm"
@@ -69,19 +70,16 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        onBrushChange={handleBrushChange}
         title="심박수 BPM"
         dataKey="y"
         syncId="healthData"
+        showBrush={false}
       />,
       <SleepChart
         key="sleep"
         data={sleepData}
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
-        brushDomain={brushDomain}
-        onBrushChange={handleBrushChange}
-        syncId="healthData"
       />,
     ];
 

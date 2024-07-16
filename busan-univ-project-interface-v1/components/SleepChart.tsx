@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
 import { format, isValid } from 'date-fns';
 
@@ -12,17 +12,15 @@ interface SleepChartProps {
   data: SleepData[];
   globalStartDate: Date;
   globalEndDate: Date;
-  brushDomain: [number, number] | null;
-  onBrushChange: (domain: [number, number] | null) => void;
-  syncId: string;
 }
 
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
+  if (active && payload && payload.length > 0 && payload[0].value !== undefined) {
+    const stageMap = ['Wake', 'REM', 'Light', 'Deep', 'Unknown', 'Off-Wrist', 'Restless'];
     return (
       <div className="bg-white p-2 border border-gray-300 rounded shadow">
         <p className="text-sm font-bold text-black">{`Time: ${format(new Date(label), 'yyyy-MM-dd HH:mm')}`}</p>
-        <p className="text-sm text-black">{`Sleep Stage: ${payload[0].value}`}</p>
+        <p className="text-sm text-black">{`Sleep Stage: ${stageMap[payload[0].value]}`}</p>
       </div>
     );
   }
@@ -33,10 +31,9 @@ const SleepChart: React.FC<SleepChartProps> = ({
   data, 
   globalStartDate, 
   globalEndDate,
-  brushDomain,
-  onBrushChange,
-  syncId
 }) => {
+  const [localBrushDomain, setLocalBrushDomain] = useState<[number, number] | null>(null);
+
   const chartData = data.map(item => ({
     time: new Date(item.ds_start).getTime(),
     stage: parseInt(item.stage)
@@ -51,9 +48,9 @@ const SleepChart: React.FC<SleepChartProps> = ({
     if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
       const startTime = chartData[domain.startIndex].time;
       const endTime = chartData[domain.endIndex].time;
-      onBrushChange([startTime, endTime]);
+      setLocalBrushDomain([startTime, endTime]);
     } else {
-      onBrushChange(null);
+      setLocalBrushDomain(null);
     }
   };
 
@@ -64,7 +61,6 @@ const SleepChart: React.FC<SleepChartProps> = ({
         <AreaChart
           data={chartData}
           margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
-          syncId={syncId}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
@@ -75,9 +71,9 @@ const SleepChart: React.FC<SleepChartProps> = ({
             tickFormatter={tickFormatter}
           />
           <YAxis
-            tickFormatter={(value) => ['Wake', 'REM', 'Light', 'Deep'][value] || ''}
-            domain={[0, 3]}
-            ticks={[0, 1, 2, 3]}
+            tickFormatter={(value) => value.toString()}
+            domain={[0, 6]}
+            ticks={[0, 1, 2, 3, 4, 5, 6]}
           />
           <Tooltip content={<CustomTooltip />} />
           <Area type="stepAfter" dataKey="stage" stroke="#8884d8" fill="#8884d8" />
@@ -86,8 +82,8 @@ const SleepChart: React.FC<SleepChartProps> = ({
             height={30}
             stroke="#8884d8"
             onChange={handleBrushChange}
-            startIndex={brushDomain ? brushDomain[0] : undefined}
-            endIndex={brushDomain ? brushDomain[1] : undefined}
+            startIndex={localBrushDomain ? localBrushDomain[0] : undefined}
+            endIndex={localBrushDomain ? localBrushDomain[1] : undefined}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -96,3 +92,4 @@ const SleepChart: React.FC<SleepChartProps> = ({
 };
 
 export default SleepChart;
+
