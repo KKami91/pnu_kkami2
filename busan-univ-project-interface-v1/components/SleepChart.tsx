@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, isValid, parseISO, eachHourOfInterval } from 'date-fns';
+import { format, isValid, parseISO, eachMinuteOfInterval } from 'date-fns';
 
 interface SleepData {
   ds_start: string;
@@ -16,11 +16,10 @@ interface SleepChartProps {
 
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
   if (active && payload && payload.length > 0 && payload[0].value !== undefined) {
-    const stageMap = ['Wake', 'REM', 'Light', 'Deep', 'Unknown', 'Off-Wrist', 'Restless'];
     return (
       <div className="bg-white p-2 border border-gray-300 rounded shadow">
         <p className="text-sm font-bold text-black">{`Time: ${format(new Date(label), 'yyyy-MM-dd HH:mm')}`}</p>
-        <p className="text-sm text-black">{`Sleep Stage: ${stageMap[payload[0].value]} (${payload[0].value})`}</p>
+        <p className="text-sm text-black">{`Sleep Stage: ${payload[0].value}`}</p>
       </div>
     );
   }
@@ -35,9 +34,9 @@ const SleepChart: React.FC<SleepChartProps> = ({
   const [localBrushDomain, setLocalBrushDomain] = useState<[number, number] | null>(null);
 
   const chartData = useMemo(() => {
-    const hourlyData = eachHourOfInterval({ start: globalStartDate, end: globalEndDate })
-      .map(hour => ({
-        time: hour.getTime(),
+    const minuteData = eachMinuteOfInterval({ start: globalStartDate, end: globalEndDate })
+      .map(minute => ({
+        time: minute.getTime(),
         stage: 0
       }));
 
@@ -46,14 +45,14 @@ const SleepChart: React.FC<SleepChartProps> = ({
       const endTime = parseISO(item.ds_end).getTime();
       const stage = parseInt(item.stage);
 
-      hourlyData.forEach(hourData => {
-        if (hourData.time >= startTime && hourData.time < endTime) {
-          hourData.stage = stage;
+      minuteData.forEach(minuteItem => {
+        if (minuteItem.time >= startTime && minuteItem.time < endTime) {
+          minuteItem.stage = stage;
         }
       });
     });
 
-    return hourlyData;
+    return minuteData;
   }, [data, globalStartDate, globalEndDate]);
 
   const tickFormatter = (time: number) => {
