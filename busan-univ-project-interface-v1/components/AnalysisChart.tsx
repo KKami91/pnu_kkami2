@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, parseISO, addHours } from 'date-fns';
+import { format, parseISO, addHours, startOfHour, endOfHour, eachHourOfInterval } from 'date-fns';
 import { HelpCircle } from 'lucide-react';
 
 
@@ -57,10 +57,27 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
 
   const formattedData = useMemo(() => {
     if (isStep) {
-      return data.map(item => ({
-        ...item,
-        ds: format(parseISO(item.ds), 'yyyy-MM-dd HH:mm')
-      }));
+      // 시간별로 데이터를 집계
+      const hourlyData = data.reduce((acc, item) => {
+        const hour = startOfHour(new Date(item.ds));
+        const hourKey = format(hour, 'yyyy-MM-dd HH:mm');
+        if (!acc[hourKey]) {
+          acc[hourKey] = { ds: hourKey, step: 0 };
+        }
+        acc[hourKey].step += item.step;
+        return acc;
+      }, {});
+
+      // 모든 시간에 대해 데이터 포인트 생성
+      const allHours = eachHourOfInterval({
+        start: startOfHour(globalStartDate),
+        end: endOfHour(globalEndDate)
+      });
+
+      return allHours.map(hour => {
+        const hourKey = format(hour, 'yyyy-MM-dd HH:mm');
+        return hourlyData[hourKey] || { ds: hourKey, step: 0 };
+      });
     }
     
     const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
