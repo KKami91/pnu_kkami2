@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, addMinutes, isValid } from 'date-fns';
+import { format, isValid, parseISO, eachHourOfInterval } from 'date-fns';
 
 interface SleepData {
   ds_start: string;
@@ -16,10 +16,11 @@ interface SleepChartProps {
 
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
   if (active && payload && payload.length > 0 && payload[0].value !== undefined) {
+    const stageMap = ['Wake', 'REM', 'Light', 'Deep', 'Unknown', 'Off-Wrist', 'Restless'];
     return (
       <div className="bg-white p-2 border border-gray-300 rounded shadow">
         <p className="text-sm font-bold text-black">{`Time: ${format(new Date(label), 'yyyy-MM-dd HH:mm')}`}</p>
-        <p className="text-sm text-black">{`Sleep Stage: ${payload[0].value}`}</p>
+        <p className="text-sm text-black">{`Sleep Stage: ${stageMap[payload[0].value]} (${payload[0].value})`}</p>
       </div>
     );
   }
@@ -34,26 +35,25 @@ const SleepChart: React.FC<SleepChartProps> = ({
   const [localBrushDomain, setLocalBrushDomain] = useState<[number, number] | null>(null);
 
   const chartData = useMemo(() => {
-    const filledData = [];
-    let currentDate = new Date(globalStartDate);
-    const endDate = new Date(globalEndDate);
+    const hourlyData = eachHourOfInterval({ start: globalStartDate, end: globalEndDate })
+      .map(hour => ({
+        time: hour.getTime(),
+        stage: 0
+      }));
 
-    while (currentDate <= endDate) {
-      const existingData = data.find(item => {
-        const startDate = new Date(item.ds_start);
-        const endDate = new Date(item.ds_end);
-        return currentDate >= startDate && currentDate < endDate;
+    data.forEach(item => {
+      const startTime = parseISO(item.ds_start).getTime();
+      const endTime = parseISO(item.ds_end).getTime();
+      const stage = parseInt(item.stage);
+
+      hourlyData.forEach(hourData => {
+        if (hourData.time >= startTime && hourData.time < endTime) {
+          hourData.stage = stage;
+        }
       });
+    });
 
-      filledData.push({
-        time: currentDate.getTime(),
-        stage: existingData ? parseInt(existingData.stage) : 0
-      });
-
-      currentDate = addMinutes(currentDate, 1);
-    }
-
-    return filledData;
+    return hourlyData;
   }, [data, globalStartDate, globalEndDate]);
 
   const tickFormatter = (time: number) => {
@@ -63,9 +63,7 @@ const SleepChart: React.FC<SleepChartProps> = ({
 
   const handleBrushChange = (domain: any) => {
     if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
-      const startTime = chartData[domain.startIndex].time;
-      const endTime = chartData[domain.endIndex].time;
-      setLocalBrushDomain([startTime, endTime]);
+      setLocalBrushDomain([chartData[domain.startIndex].time, chartData[domain.endIndex].time]);
     } else {
       setLocalBrushDomain(null);
     }
@@ -84,7 +82,7 @@ const SleepChart: React.FC<SleepChartProps> = ({
             dataKey="time"
             type="number"
             scale="time"
-            domain={[globalStartDate.getTime(), globalEndDate.getTime()]}
+            domain={['dataMin', 'dataMax']}
             tickFormatter={tickFormatter}
           />
           <YAxis
@@ -98,8 +96,7 @@ const SleepChart: React.FC<SleepChartProps> = ({
             height={30}
             stroke="#8884d8"
             onChange={handleBrushChange}
-            startIndex={localBrushDomain ? chartData.findIndex(d => d.time >= localBrushDomain[0]) : undefined}
-            endIndex={localBrushDomain ? chartData.findIndex(d => d.time >= localBrushDomain[1]) : undefined}
+            tickFormatter={tickFormatter}
           />
         </AreaChart>
       </ResponsiveContainer>
@@ -108,4 +105,3 @@ const SleepChart: React.FC<SleepChartProps> = ({
 };
 
 export default SleepChart;
-
