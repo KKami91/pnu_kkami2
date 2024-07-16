@@ -145,13 +145,13 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
           {isStep ? (
             <BarChart
               data={formattedData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              margin={{ top: 5, right: 30, left: 20, bottom: 30 }}
               syncId={syncId}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="ds"
-                tick={{ fill: '#666', fontSize: 10 }}
+                tick={{ fill: '#666', fontSize: 20 }}
                 tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
                 angle={-45}
                 textAnchor="end"
@@ -178,13 +178,13 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
           ) : (
             <LineChart
               data={formattedData}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              margin={{ top: 5, right: 30, left: 20, bottom: 30 }}
               syncId={syncId}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="ds"
-                tick={{ fill: '#666', fontSize: 10 }}
+                tick={{ fill: '#666', fontSize: 20 }}
                 tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
                 angle={-45}
                 textAnchor="end"
