@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
-import { format, isValid } from 'date-fns';
+import { format, addMinutes, isValid } from 'date-fns';
 
 interface SleepData {
   ds_start: string;
@@ -16,11 +16,10 @@ interface SleepChartProps {
 
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
   if (active && payload && payload.length > 0 && payload[0].value !== undefined) {
-    const stageMap = ['Wake', 'REM', 'Light', 'Deep', 'Unknown', 'Off-Wrist', 'Restless'];
     return (
       <div className="bg-white p-2 border border-gray-300 rounded shadow">
         <p className="text-sm font-bold text-black">{`Time: ${format(new Date(label), 'yyyy-MM-dd HH:mm')}`}</p>
-        <p className="text-sm text-black">{`Sleep Stage: ${stageMap[payload[0].value]}`}</p>
+        <p className="text-sm text-black">{`Sleep Stage: ${payload[0].value}`}</p>
       </div>
     );
   }
@@ -34,10 +33,28 @@ const SleepChart: React.FC<SleepChartProps> = ({
 }) => {
   const [localBrushDomain, setLocalBrushDomain] = useState<[number, number] | null>(null);
 
-  const chartData = data.map(item => ({
-    time: new Date(item.ds_start).getTime(),
-    stage: parseInt(item.stage)
-  }));
+  const chartData = useMemo(() => {
+    const filledData = [];
+    let currentDate = new Date(globalStartDate);
+    const endDate = new Date(globalEndDate);
+
+    while (currentDate <= endDate) {
+      const existingData = data.find(item => {
+        const startDate = new Date(item.ds_start);
+        const endDate = new Date(item.ds_end);
+        return currentDate >= startDate && currentDate < endDate;
+      });
+
+      filledData.push({
+        time: currentDate.getTime(),
+        stage: existingData ? parseInt(existingData.stage) : 0
+      });
+
+      currentDate = addMinutes(currentDate, 1);
+    }
+
+    return filledData;
+  }, [data, globalStartDate, globalEndDate]);
 
   const tickFormatter = (time: number) => {
     const date = new Date(time);
@@ -71,7 +88,6 @@ const SleepChart: React.FC<SleepChartProps> = ({
             tickFormatter={tickFormatter}
           />
           <YAxis
-            tickFormatter={(value) => value.toString()}
             domain={[0, 6]}
             ticks={[0, 1, 2, 3, 4, 5, 6]}
           />
@@ -82,8 +98,8 @@ const SleepChart: React.FC<SleepChartProps> = ({
             height={30}
             stroke="#8884d8"
             onChange={handleBrushChange}
-            startIndex={localBrushDomain ? localBrushDomain[0] : undefined}
-            endIndex={localBrushDomain ? localBrushDomain[1] : undefined}
+            startIndex={localBrushDomain ? chartData.findIndex(d => d.time >= localBrushDomain[0]) : undefined}
+            endIndex={localBrushDomain ? chartData.findIndex(d => d.time >= localBrushDomain[1]) : undefined}
           />
         </AreaChart>
       </ResponsiveContainer>
