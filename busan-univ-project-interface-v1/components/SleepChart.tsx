@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush } from 'recharts';
+import React from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
 import { format, isValid } from 'date-fns';
 
 interface SleepData {
@@ -12,15 +12,31 @@ interface SleepChartProps {
   data: SleepData[];
   globalStartDate: Date;
   globalEndDate: Date;
+  brushDomain: [number, number] | null;
+  onBrushChange: (domain: [number, number] | null) => void;
+  syncId: string;
 }
+
+const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white p-2 border border-gray-300 rounded shadow">
+        <p className="text-sm font-bold text-black">{`Time: ${format(new Date(label), 'yyyy-MM-dd HH:mm')}`}</p>
+        <p className="text-sm text-black">{`Sleep Stage: ${payload[0].value}`}</p>
+      </div>
+    );
+  }
+  return null;
+};
 
 const SleepChart: React.FC<SleepChartProps> = ({ 
   data, 
   globalStartDate, 
-  globalEndDate
+  globalEndDate,
+  brushDomain,
+  onBrushChange,
+  syncId
 }) => {
-  const [localBrushDomain, setLocalBrushDomain] = useState<[number, number] | null>(null);
-
   const chartData = data.map(item => ({
     time: new Date(item.ds_start).getTime(),
     stage: parseInt(item.stage)
@@ -35,9 +51,9 @@ const SleepChart: React.FC<SleepChartProps> = ({
     if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
       const startTime = chartData[domain.startIndex].time;
       const endTime = chartData[domain.endIndex].time;
-      setLocalBrushDomain([startTime, endTime]);
+      onBrushChange([startTime, endTime]);
     } else {
-      setLocalBrushDomain(null);
+      onBrushChange(null);
     }
   };
 
@@ -48,31 +64,30 @@ const SleepChart: React.FC<SleepChartProps> = ({
         <AreaChart
           data={chartData}
           margin={{ top: 10, right: 30, left: 0, bottom: 30 }}
+          syncId={syncId}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="time"
             type="number"
             scale="time"
-            domain={localBrushDomain || ['dataMin', 'dataMax']}
+            domain={[globalStartDate.getTime(), globalEndDate.getTime()]}
             tickFormatter={tickFormatter}
           />
           <YAxis
-            tickFormatter={(value) => value.toString()}
-            domain={[0, 6]}
-            ticks={[0, 1, 2, 3, 4, 5, 6]}
+            tickFormatter={(value) => ['Wake', 'REM', 'Light', 'Deep'][value] || ''}
+            domain={[0, 3]}
+            ticks={[0, 1, 2, 3]}
           />
-          <Tooltip
-            labelFormatter={(label) => format(new Date(label), 'yyyy-MM-dd HH:mm')}
-            formatter={(value: number) => [`Stage ${value}`, '']}
-          />
+          <Tooltip content={<CustomTooltip />} />
           <Area type="stepAfter" dataKey="stage" stroke="#8884d8" fill="#8884d8" />
           <Brush
             dataKey="time"
             height={30}
             stroke="#8884d8"
             onChange={handleBrushChange}
-            tickFormatter={tickFormatter}
+            startIndex={brushDomain ? brushDomain[0] : undefined}
+            endIndex={brushDomain ? brushDomain[1] : undefined}
           />
         </AreaChart>
       </ResponsiveContainer>

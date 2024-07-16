@@ -7,13 +7,13 @@ import GraphLayoutManager from '../../components/GraphLayoutManager';
 import { min, max } from 'date-fns';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
-const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app';
+const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
 
 const LoadingSpinner = () => (
   <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] ml-2">
     <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
   </div>
-);
+)
 
 const SkeletonLoader = () => (
   <div className="animate-pulse">
@@ -21,59 +21,55 @@ const SkeletonLoader = () => (
     <div className="mt-4 h-4 bg-gray-300 rounded w-3/4"></div>
     <div className="mt-2 h-4 bg-gray-300 rounded w-1/2"></div>
   </div>
-);
+)
 
 interface AnalysisData {
-  ds: string;
-  sdnn: number | null;
-  rmssd: number | null;
+  ds: string
+  sdnn: number | null
+  rmssd: number | null
 }
 
 interface PredictionData {
-  ds: string;
-  y: number | null;
+  ds: string
+  y: number | null
 }
 
 interface SleepData {
-  ds_start: string;
-  ds_end: string;
-  stage: string;
+  ds_start: string
+  ds_end: string
+  stage: string
 }
 
 interface StepData {
-  ds: string;
-  step: number;
+  ds: string
+  step: number
 }
 
 export default function Home() {
-  // ... (이전 상태들은 그대로 유지)
   const [selectedUser, setSelectedUser] = useState('')
   const [message, setMessage] = useState('')
   const [analysisDates, setAnalysisDates] = useState([])
-  const [analysisSelectedDate, setAnalysisSelectedDate] = useState('')
   const [isLoadingUser, setIsLoadingUser] = useState(false)
   const [isLoadingDate, setIsLoadingDate] = useState(false)
   const [analysisGraphData, setAnalysisGraphData] = useState<AnalysisData[]>([])
   const [predictionGraphData, setPredictionGraphData] = useState<PredictionData[]>([])
-  //   const [analysisGraphData, setAnalysisGraphData] = useState<AnalysisData[]>([])
-//   const [predictionGraphData, setPredictionGraphData] = useState<PredictionData[]>([])
-  const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
-  const [sleepDates, setSleepDates] = useState<string[]>([]);
-  const [sleepSelectedDate, setSleepSelectedDate] = useState('');
-  const [sleepData, setSleepData] = useState<SleepData[]>([]);
-  const [stepData, setStepData] = useState<StepData[]>([]);
+  const [sleepData, setSleepData] = useState<SleepData[]>([])
+  const [stepData, setStepData] = useState<StepData[]>([])
   const [selectedDate, setSelectedDate] = useState('')
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
       ...analysisGraphData.map(item => new Date(item.ds)),
-      ...predictionGraphData.map(item => new Date(item.ds))
-    ];
+      ...predictionGraphData.map(item => new Date(item.ds)),
+      ...sleepData.map(item => new Date(item.ds_start)),
+      ...sleepData.map(item => new Date(item.ds_end)),
+      ...stepData.map(item => new Date(item.ds))
+    ]
     return {
       globalStartDate: allDates.length > 0 ? min(allDates) : new Date(),
       globalEndDate: allDates.length > 0 ? max(allDates) : new Date()
-    };
-  }, [analysisGraphData, predictionGraphData]);
+    }
+  }, [analysisGraphData, predictionGraphData, sleepData, stepData])
   
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
@@ -85,7 +81,7 @@ export default function Home() {
         fetchPredictionGraphData(selectedUser, date),
         fetchStepData(selectedUser, date),
         fetchSleepData(selectedUser, date)
-      ]);
+      ])
       setIsLoadingDate(false)
     }
   }
@@ -105,21 +101,18 @@ export default function Home() {
 
   const fetchAnalysisDates = async (user: string) => {
     try {
-      const response = await axios.get(`${API_URL}/analysis_dates/${user}`);
-      console.log('in analysisDates', response.data);
-      console.log(response.data.data);
-      setAnalysisDates(response.data.dates);
+      const response = await axios.get(`${API_URL}/analysis_dates/${user}`)
+      setAnalysisDates(response.data.dates)
     } catch (error) {
-      console.error('Error fetching analysis data:', error);
-      setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`);
-      setAnalysisDates([]);
+      console.error('Error fetching analysis data:', error)
+      setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`)
+      setAnalysisDates([])
     }
   }
+
   const checkDb = async (user: string) => {
     try {
-      const response = await axios.post(`${API_URL}/check_db`, { user_email: user })
-      console.log('in checkDb');
-      console.log(response);
+      await axios.post(`${API_URL}/check_db`, { user_email: user })
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
     }
@@ -127,66 +120,50 @@ export default function Home() {
 
   const fetchAnalysisGraphData = async (user: string, date: string) => {
     try {
-      const response = await axios.get(`${API_URL}/analysis_data/${user}/${date}`);
-      console.log('in analysisgraphData', response.data);
-      console.log(response.data.data);
-      setAnalysisGraphData(response.data.data);
+      const response = await axios.get(`${API_URL}/analysis_data/${user}/${date}`)
+      setAnalysisGraphData(response.data.data)
     } catch (error) {
-      console.log('error....');
-      console.error('Error fetching analysis graph data:', error);
-      setMessage(`Error fetching analysis data: ${error instanceof Error ? error.message : String(error)}`);
-      setAnalysisGraphData([]);
+      console.error('Error fetching analysis graph data:', error)
+      setMessage(`Error fetching analysis data: ${error instanceof Error ? error.message : String(error)}`)
+      setAnalysisGraphData([])
     }
   }
 
   const fetchPredictionGraphData = async (user: string, date: string) => {
     try {
-      const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`);
-      console.log('in predictiongrapedata', response.data);
-      console.log(response.data.data);
+      const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`)
       setPredictionGraphData(response.data.data.map((item: any) => ({
         ds: item.ds,
         y: item.y
-      })));
+      })))
     } catch (error) {
-      console.log('error....');
-      console.error('Error fetching prediction graph data:', error);
-      setMessage(`Error fetching prediction data: ${error instanceof Error ? error.message : String(error)}`);
-      setPredictionGraphData([]);
+      console.error('Error fetching prediction graph data:', error)
+      setMessage(`Error fetching prediction data: ${error instanceof Error ? error.message : String(error)}`)
+      setPredictionGraphData([])
     }
   }
 
   const fetchStepData = async (user: string, date: string) => {
     try {
-      const response = await axios.get(`${API_URL}/step_data/${user}/${date}`);
-      console.log('in step data', response.data);
-      console.log(response.data.data);
-      setStepData(response.data.data);
+      const response = await axios.get(`${API_URL}/step_data/${user}/${date}`)
+      setStepData(response.data.data)
     } catch (error) {
-      console.error('Error fetching step data:', error);
-      setMessage(`Error fetching step data: ${error instanceof Error ? error.message : String(error)}`);
-      setStepData([]);
+      console.error('Error fetching step data:', error)
+      setMessage(`Error fetching step data: ${error instanceof Error ? error.message : String(error)}`)
+      setStepData([])
     }
   }
 
   const fetchSleepData = async (user: string, date: string) => {
     try {
-      const response = await axios.get(`${API_URL}/sleep_data/${user}/${date}`);
-      console.log('in sleep data', response.data);
-      console.log(response.data.data);
-      setSleepData(response.data.data);
+      const response = await axios.get(`${API_URL}/sleep_data/${user}/${date}`)
+      setSleepData(response.data.data)
     } catch (error) {
-      console.log('error....');
-      console.error('Error fetching sleep data:', error);
-      setMessage(`Error fetching sleep data: ${error instanceof Error ? error.message : String(error)}`);
-      setSleepData([]);
+      console.error('Error fetching sleep data:', error)
+      setMessage(`Error fetching sleep data: ${error instanceof Error ? error.message : String(error)}`)
+      setSleepData([])
     }
   }
-
-  const handleBrushChange = (newDomain: [number, number] | null) => {
-    setBrushDomain(newDomain);
-  };
-
 
   return (
     <div className="container mx-auto p-4">
@@ -238,12 +215,11 @@ export default function Home() {
             sleepData={sleepData}
             globalStartDate={globalStartDate}
             globalEndDate={globalEndDate}
-            onBrushChange={handleBrushChange}
           />
         )}
-          {!isLoadingDate && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && (
-            <div className="text-center text-red-500">No data available for the charts.</div>
-          )}
+        {!isLoadingDate && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && (
+          <div className="text-center text-red-500">No data available for the charts.</div>
+        )}
       </div>
     </div>
   )

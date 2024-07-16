@@ -44,9 +44,11 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
   isPrediction = false, 
   globalStartDate, 
   globalEndDate, 
+  brushDomain,
+  onBrushChange,
   title, 
-  dataKey, 
-  onBrushChange 
+  dataKey,
+  syncId
 }) => {
   const [showExplanation, setShowExplanation] = useState(false);
 
@@ -119,6 +121,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
           <BarChart
             data={formattedData}
             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            syncId={syncId}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
@@ -141,12 +144,15 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
               height={30}
               stroke="#8884d8"
               onChange={handleBrushChange}
+              startIndex={brushDomain ? brushDomain[0] : undefined}
+              endIndex={brushDomain ? brushDomain[1] : undefined}
             />
           </BarChart>
         ) : (
           <LineChart
             data={formattedData}
             margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+            syncId={syncId}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
@@ -177,6 +183,8 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
               height={30}
               stroke="#8884d8"
               onChange={handleBrushChange}
+              startIndex={brushDomain ? brushDomain[0] : undefined}
+              endIndex={brushDomain ? brushDomain[1] : undefined}
             />
           </LineChart>
         )}

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import AnalysisChart from './AnalysisChart';
+import SleepChart from './SleepChart';
 
 interface GraphLayoutManagerProps {
   analysisData: any[];
@@ -8,7 +9,6 @@ interface GraphLayoutManagerProps {
   sleepData: any[];
   globalStartDate: Date;
   globalEndDate: Date;
-  onBrushChange: (domain: [number, number] | null) => void;
 }
 
 const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
@@ -18,14 +18,13 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   sleepData,
   globalStartDate,
   globalEndDate,
-  onBrushChange,
 }) => {
   const [columnsCount, setColumnsCount] = useState(1);
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
-  const handleBrushChange = (domain: [number, number] | null) => {
+  const handleBrushChange = useCallback((domain: [number, number] | null) => {
     setBrushDomain(domain);
-  };
+  }, []);
 
   const renderCharts = () => {
     const charts = [
@@ -75,6 +74,15 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         dataKey="y"
         syncId="healthData"
       />,
+      <SleepChart
+        key="sleep"
+        data={sleepData}
+        globalStartDate={globalStartDate}
+        globalEndDate={globalEndDate}
+        brushDomain={brushDomain}
+        onBrushChange={handleBrushChange}
+        syncId="healthData"
+      />,
     ];
 
     return (
@@ -93,7 +101,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
           onChange={(e) => setColumnsCount(Number(e.target.value))}
           className="border p-2 rounded"
         >
-          {[1, 2, 3, 4].map(num => (
+          {[1, 2, 3, 4, 5].map(num => (
             <option key={num} value={num}>{num}</option>
           ))}
         </select>
