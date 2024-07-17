@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import AnalysisChart from './AnalysisChart';
 import SleepChart from './SleepChart';
+import CombinedChart from './CombinedChart';
 
 interface GraphLayoutManagerProps {
   analysisData: any[];
@@ -10,6 +11,7 @@ interface GraphLayoutManagerProps {
   calorieData: any[];
   globalStartDate: Date;
   globalEndDate: Date;
+  viewMode: string;
 }
 
 const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
@@ -20,6 +22,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   calorieData,
   globalStartDate,
   globalEndDate,
+  viewMode,
 }) => {
   const [columnsCount, setColumnsCount] = useState(1);
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
@@ -28,7 +31,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
     setBrushDomain(domain);
   }, []);
 
-  const renderCharts = () => {
+  const renderSeparateCharts  = () => {
     const charts = [
       <AnalysisChart
         key="calorie"
@@ -107,7 +110,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   return (
     <div>
       <div className="mb-4">
-        <label className="ml-2">Columns:</label>
+        <label className="mr-2">Columns:</label>
         <select
           value={columnsCount}
           onChange={(e) => setColumnsCount(Number(e.target.value))}
@@ -118,7 +121,16 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
           ))}
         </select>
       </div>
-      {renderCharts()}
+      {viewMode === 'separate' ? renderSeparateCharts() : (
+        <CombinedChart
+          analysisData={analysisData}
+          predictionData={predictionData}
+          stepData={stepData}
+          calorieData={calorieData}
+          globalStartDate={globalStartDate}
+          globalEndDate={globalEndDate}
+        />
+      )}
     </div>
   );
 };

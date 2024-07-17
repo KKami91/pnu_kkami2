@@ -1,8 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-import AnalysisChart from '../../components/AnalysisChart';
-import SleepChart from '../../components/SleepChart';
 import GraphLayoutManager from '../../components/GraphLayoutManager';
 import { min, max } from 'date-fns';
 
@@ -63,6 +60,8 @@ export default function Home() {
   const [calorieData, setCalorieData] = useState<StepData[]>([])
   const [selectedDate, setSelectedDate] = useState('')
   const [showGraphs, setShowGraphs] = useState(false)
+  const [viewMode, setViewMode] = useState('separate')
+  const [isLoadingGraphs, setIsLoadingGraphs] = useState(false)
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
@@ -95,6 +94,14 @@ export default function Home() {
       setIsLoadingDate(false)
       setShowGraphs(true) // 데이터 로딩 완료 시 그래프 표시
     }
+  }
+
+  const handleViewModeChange = (mode: string) => {
+    setIsLoadingGraphs(true)
+    setViewMode(mode)
+    setTimeout(() => {
+      setIsLoadingGraphs(false)
+    }, 1000) // 스켈레톤 로딩을 1초 동안 보여줍니다.
   }
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -225,10 +232,24 @@ export default function Home() {
           {isLoadingDate && <LoadingSpinner />}
         </div>
       )}
-      
+      {selectedDate && (
+        <div className="mb-4">
+          <label className="mr-2">보는 방식:</label>
+          <select
+            value={viewMode}
+            onChange={(e) => handleViewModeChange(e.target.value)}
+            className="border p-2 rounded"
+          >
+            <option value="separate">여러개로</option>
+            <option value="combined">하나로</option>
+          </select>
+        </div>
+      )}
       {message && <p className="mt-4">{message}</p>}
       <div className="mt-8">
         {isLoadingDate ? (
+          <LoadingSpinner />
+        ) : isLoadingGraphs ? (
           <SkeletonLoader />
         ) : showGraphs ? (
           <GraphLayoutManager
@@ -239,6 +260,7 @@ export default function Home() {
             calorieData={calorieData}
             globalStartDate={globalStartDate}
             globalEndDate={globalEndDate}
+            viewMode={viewMode}
           />
         ) : null}
         {showGraphs && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && calorieData.length === 0 && (
