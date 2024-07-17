@@ -40,7 +40,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         title="시간별 칼로리 소모량"
         dataKey='calorie'
         syncId="healthData"
-        showBrush={false}
+        showBrush={true}
       />,
       <AnalysisChart
         key="step"
@@ -76,7 +76,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         title="SDNN : 정상 심박 간격(NN intervals)의 표준편차"
         dataKey="sdnn"
         syncId="healthData"
-        showBrush={true}
+        showBrush={false}
       />,
       <AnalysisChart
         key="rmssd"
