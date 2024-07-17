@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface CombinedChartProps {
   analysisData: any[];
@@ -56,11 +56,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     };
   });
 
-  const handleBrushChange = useCallback((domain: any) => {
-    if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
-      setBrushDomain([domain.startIndex, domain.endIndex]);
-    } else {
-      setBrushDomain(null);
+  const handleBrushChange = useCallback((newDomain: any) => {
+    if (newDomain && newDomain.startIndex !== undefined && newDomain.endIndex !== undefined) {
+      setBrushDomain([newDomain.startIndex, newDomain.endIndex]);
     }
   }, []);
 
@@ -74,7 +72,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
               checked={visibleCharts[chartName]}
               onChange={() => toggleChart(chartName)}
             />
-            {' '}{chartName.toUpperCase()}
+            {' '}{chartName.toUpperCase()}a
           </label>
         ))}
       </div>
@@ -83,16 +81,16 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="ds"
-            tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+            tickFormatter={(tick) => format(parseISO(tick), 'MM-dd HH:mm')}
           />
           <YAxis yAxisId="left" label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
           <YAxis yAxisId="right" orientation="right" label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} />
           <Tooltip />
           <Legend />
-          <Brush 
-            dataKey="ds" 
-            height={30} 
-            stroke="#8884d8" 
+          <Brush
+            dataKey="ds"
+            height={30}
+            stroke="#8884d8"
             onChange={handleBrushChange}
             startIndex={brushDomain ? brushDomain[0] : undefined}
             endIndex={brushDomain ? brushDomain[1] : undefined}
