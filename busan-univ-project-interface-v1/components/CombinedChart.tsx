@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import { format } from 'date-fns';
 
 interface CombinedChartProps {
@@ -42,12 +42,17 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }));
   };
 
-  const combinedData = analysisData.map(item => ({
-    ...item,
-    bpm: predictionData.find(p => p.ds === item.ds)?.y,
-    step: stepData.find(s => s.ds === item.ds)?.step,
-    calorie: calorieData.find(c => c.ds === item.ds)?.calorie,
-  }));
+  const combinedData = analysisData.map(item => {
+    const matchingPrediction = predictionData.find(p => p.ds === item.ds);
+    const matchingStep = stepData.find(s => s.ds === item.ds);
+    const matchingCalorie = calorieData.find(c => c.ds === item.ds);
+    return {
+      ...item,
+      bpm: matchingPrediction?.y,
+      step: matchingStep?.step || 0,
+      calorie: matchingCalorie?.calorie || 0,
+    };
+  });
 
   return (
     <div>
@@ -64,14 +69,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         ))}
       </div>
       <ResponsiveContainer width="100%" height={600}>
-        <LineChart data={combinedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <ComposedChart data={combinedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="ds"
             tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
           />
-          <YAxis yAxisId="left" />
-          <YAxis yAxisId="right" orientation="right" />
+          <YAxis yAxisId="left" label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
+          <YAxis yAxisId="right" orientation="right" label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} />
           <Tooltip />
           <Legend />
           <Brush dataKey="ds" height={30} stroke="#8884d8" />
@@ -90,7 +95,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           {visibleCharts.rmssd && (
             <Line yAxisId="left" type="monotone" dataKey="rmssd" stroke="#82ca9d" name="RMSSD" />
           )}
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
