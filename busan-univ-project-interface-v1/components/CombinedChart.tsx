@@ -62,6 +62,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }).sort((a, b) => a.timestamp - b.timestamp);
   }, [analysisData, predictionData, stepData, calorieData]);
 
+  const yAxisDomains = useMemo(() => {
+    const leftData = combinedData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
+    const rightData = combinedData.flatMap(d => [d.step, d.calorie]);
+    return {
+      left: [Math.min(...leftData), Math.max(...leftData)],
+      right: [0, Math.max(...rightData)],
+    };
+  }, [combinedData]);
+
   const handleBrushChange = useCallback((domain: any) => {
     if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
       const startTime = combinedData[domain.startIndex].timestamp;
@@ -98,8 +107,17 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             domain={brushDomain}
             tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
           />
-          <YAxis yAxisId="left" label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
-          <YAxis yAxisId="right" orientation="right" label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} />
+          <YAxis 
+            yAxisId="left" 
+            label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} 
+            domain={yAxisDomains.left}
+          />
+          <YAxis 
+            yAxisId="right" 
+            orientation="right" 
+            label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} 
+            domain={yAxisDomains.right}
+          />
           <Tooltip labelFormatter={(label) => format(new Date(label), 'yyyy-MM-dd HH:mm')} />
           <Legend />
           <Brush 
