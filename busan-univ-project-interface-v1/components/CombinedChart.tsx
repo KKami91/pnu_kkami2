@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceArea } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import React, { useState, useCallback } from 'react';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
+import { format } from 'date-fns';
 
 interface CombinedChartProps {
   analysisData: any[];
@@ -35,9 +35,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     rmssd: true,
   });
 
-  const [brushStart, setBrushStart] = useState<number | null>(null);
-  const [brushEnd, setBrushEnd] = useState<number | null>(null);
-  const [isBrushing, setIsBrushing] = useState(false);
+  const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const toggleChart = (chartName: keyof ChartVisibility) => {
     setVisibleCharts(prev => ({
@@ -46,46 +44,25 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }));
   };
 
-  const combinedData = useMemo(() => {
-    return analysisData.map(item => {
-      const matchingPrediction = predictionData.find(p => p.ds === item.ds);
-      const matchingStep = stepData.find(s => s.ds === item.ds);
-      const matchingCalorie = calorieData.find(c => c.ds === item.ds);
-      return {
-        ...item,
-        timestamp: new Date(item.ds).getTime(),
-        bpm: matchingPrediction?.y,
-        step: matchingStep?.step || 0,
-        calorie: matchingCalorie?.calorie || 0,
-      };
-    }).sort((a, b) => a.timestamp - b.timestamp);
-  }, [analysisData, predictionData, stepData, calorieData]);
+  const combinedData = analysisData.map(item => {
+    const matchingPrediction = predictionData.find(p => p.ds === item.ds);
+    const matchingStep = stepData.find(s => s.ds === item.ds);
+    const matchingCalorie = calorieData.find(c => c.ds === item.ds);
+    return {
+      ...item,
+      bpm: matchingPrediction?.y,
+      step: matchingStep?.step || 0,
+      calorie: matchingCalorie?.calorie || 0,
+    };
+  });
 
-  const handleMouseDown = useCallback((e: any) => {
-    if (e && e.activeLabel) {
-      setBrushStart(e.activeLabel);
-      setIsBrushing(true);
+  const handleBrushChange = useCallback((domain: any) => {
+    if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
+      setBrushDomain([domain.startIndex, domain.endIndex]);
+    } else {
+      setBrushDomain(null);
     }
   }, []);
-
-  const handleMouseMove = useCallback((e: any) => {
-    if (isBrushing && e && e.activeLabel) {
-      setBrushEnd(e.activeLabel);
-    }
-  }, [isBrushing]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsBrushing(false);
-  }, []);
-
-  const chartData = useMemo(() => {
-    if (brushStart !== null && brushEnd !== null) {
-      const start = Math.min(brushStart, brushEnd);
-      const end = Math.max(brushStart, brushEnd);
-      return combinedData.filter(d => d.timestamp >= start && d.timestamp <= end);
-    }
-    return combinedData;
-  }, [combinedData, brushStart, brushEnd]);
 
   return (
     <div>
@@ -102,28 +79,24 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         ))}
       </div>
       <ResponsiveContainer width="100%" height={600}>
-        <ComposedChart
-          data={chartData}
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-        >
+        <ComposedChart data={combinedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
-            dataKey="timestamp"
-            type="number"
-            scale="time"
-            domain={['dataMin', 'dataMax']}
+            dataKey="ds"
             tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
           />
           <YAxis yAxisId="left" label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
           <YAxis yAxisId="right" orientation="right" label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} />
-          <Tooltip labelFormatter={(label) => format(new Date(label), 'yyyy-MM-dd HH:mm')} />
+          <Tooltip />
           <Legend />
-          {brushStart !== null && brushEnd !== null && (
-            <ReferenceArea x1={brushStart} x2={brushEnd} strokeOpacity={0.3} />
-          )}
+          <Brush 
+            dataKey="ds" 
+            height={30} 
+            stroke="#8884d8" 
+            onChange={handleBrushChange}
+            startIndex={brushDomain ? brushDomain[0] : undefined}
+            endIndex={brushDomain ? brushDomain[1] : undefined}
+          />
           {visibleCharts.calorie && (
             <Bar yAxisId="right" dataKey="calorie" fill="#8884d8" name="Calories" />
           )}
