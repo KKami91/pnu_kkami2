@@ -95,7 +95,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             dataKey="timestamp"
             type="number"
             scale="time"
-            domain={[globalStartDate.getTime(), globalEndDate.getTime()]}
+            domain={brushDomain}
             tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
           />
           <YAxis yAxisId="left" label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
