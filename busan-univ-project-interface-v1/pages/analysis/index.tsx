@@ -183,6 +183,7 @@ export default function Home() {
     } catch (error) {
       console.error('Error fetching calorie data:', error)
       setMessage(`Error fetching calorie data: ${error instanceof Error ? error.message : String(error)}`)
+      setCalorieData([])
     }
   }
 
