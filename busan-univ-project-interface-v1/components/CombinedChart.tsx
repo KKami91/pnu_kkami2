@@ -70,6 +70,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
   }, [combinedData]);
 
+  const formatDateForBrush = (time: number) => {
+    return format(new Date(time), 'yyyy-MM-dd HH:mm');
+  };
+
   return (
     <div>
       <div className="mb-4">
@@ -105,7 +109,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             onChange={handleBrushChange}
             startIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[0])}
             endIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[1])}
-          />
+            travellerWidth={10}
+            gap={1}
+            tickFormatter={formatDateForBrush}
+          >
+            <XAxis 
+              dataKey="timestamp" 
+              tickFormatter={(tick) => format(new Date(tick), 'MM-dd')}
+            />
+          </Brush>
           {visibleCharts.calorie && (
             <Bar yAxisId="right" dataKey="calorie" fill="#8884d8" name="Calories" />
           )}
