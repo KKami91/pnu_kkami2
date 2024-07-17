@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface CombinedChartProps {
   analysisData: any[];
@@ -35,6 +35,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     rmssd: true,
   });
 
+  const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+
   const toggleChart = (chartName: keyof ChartVisibility) => {
     setVisibleCharts(prev => ({
       ...prev,
@@ -53,6 +55,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       calorie: matchingCalorie?.calorie || 0,
     };
   });
+
+  const handleBrushChange = useCallback((newDomain: any) => {
+    if (newDomain && newDomain.startIndex !== undefined && newDomain.endIndex !== undefined) {
+      setBrushDomain([newDomain.startIndex, newDomain.endIndex]);
+    }
+  }, []);
 
   return (
     <div>
@@ -73,13 +81,20 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="ds"
-            tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+            tickFormatter={(tick) => format(parseISO(tick), 'MM-dd HH:mm')}
           />
           <YAxis yAxisId="left" label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
           <YAxis yAxisId="right" orientation="right" label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} />
           <Tooltip />
           <Legend />
-          <Brush dataKey="ds" height={30} stroke="#8884d8" />
+          <Brush
+            dataKey="ds"
+            height={30}
+            stroke="#8884d8"
+            onChange={handleBrushChange}
+            startIndex={brushDomain ? brushDomain[0] : undefined}
+            endIndex={brushDomain ? brushDomain[1] : undefined}
+          />
           {visibleCharts.calorie && (
             <Bar yAxisId="right" dataKey="calorie" fill="#8884d8" name="Calories" />
           )}
