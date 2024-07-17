@@ -107,7 +107,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   return (
     <div>
       <div className="mb-4">
-        <label className="mr-2">Columns:</label>
+        <label className="ml-2">Columns:</label>
         <select
           value={columnsCount}
           onChange={(e) => setColumnsCount(Number(e.target.value))}
