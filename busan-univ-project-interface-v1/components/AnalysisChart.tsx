@@ -2,11 +2,13 @@ import React, { useState, useMemo } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, TooltipProps } from 'recharts';
 import { format, parseISO, addHours, startOfHour, endOfHour, eachHourOfInterval } from 'date-fns';
 import { HelpCircle } from 'lucide-react';
+import { brush } from 'd3';
 
 
 interface AnalysisChartProps {
   data: any[];
   isStep?: boolean;
+  isCalorie?: boolean;
   isPrediction?: boolean;
   globalStartDate: Date;
   globalEndDate: Date;
@@ -43,6 +45,7 @@ const ExplanationTooltip: React.FC<{ content: string }> = ({ content }) => (
 const AnalysisChart: React.FC<AnalysisChartProps> = ({ 
   data, 
   isStep = false, 
+  isCalorie = false,
   isPrediction = false, 
   globalStartDate, 
   globalEndDate, 
@@ -120,7 +123,9 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
     }
   };
 
-  const explanation = isStep
+  const explanation = isCalorie
+    ? "이 그래프는 시간별 칼로리 소모량을 보여줍니다."
+    : isStep
     ? "이 그래프는 시간별 걸음 수를 보여줍니다."
     : isPrediction
     ? "이 그래프는 예측된 심박수 데이터를 보여줍니다. 실제 측정값(BPM)을 나타내며, 향후 예측된 값들도 포함될 수 있습니다."
@@ -142,7 +147,41 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
           </div>
         </div>
         <ResponsiveContainer width="100%" height="100%">
-          {isStep ? (
+          { isCalorie ? (
+            <BarChart
+              data={formattedData}
+              margin={{ top: 5, right: 30, left: 20, bottom: 30 }}
+              syncId={syncId}
+            >
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey='ds'
+                tick={{ fill: '#666', fontSize: 12}}
+                tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+                angle={-45}
+                textAnchor="end"
+                height={60}
+              />
+              <YAxis
+                tick={{ fill: '#666', fontSize: 12 }}
+                label={{ value: 'calories', angle: -90, position: 'insideLeft', fill: '#666' }}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend verticalAlign='top' height={36} />
+              <Bar dataKey={dataKey} fill='#dd3261' name="Calories" />
+              {showBrush && (
+                <Brush
+                  dataKey='ds'
+                  height={30}
+                  stroke='#8884d8'
+                  onChange={handleBrushChange}
+                  startIndex={brushDomain ? brushDomain[0] : undefined}
+                  endIndex={brushDomain ? brushDomain[1] : undefined}
+                />
+              )}
+            </BarChart>
+          ) : 
+          isStep ? (
             <BarChart
               data={formattedData}
               margin={{ top: 5, right: 30, left: 20, bottom: 30 }}

@@ -45,6 +45,11 @@ interface StepData {
   step: number
 }
 
+interface CalorieData {
+  ds: string
+  calorie: number
+}
+
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('')
   const [message, setMessage] = useState('')
@@ -55,6 +60,7 @@ export default function Home() {
   const [predictionGraphData, setPredictionGraphData] = useState<PredictionData[]>([])
   const [sleepData, setSleepData] = useState<SleepData[]>([])
   const [stepData, setStepData] = useState<StepData[]>([])
+  const [calorieData, setCalorieData] = useState<StepData[]>([])
   const [selectedDate, setSelectedDate] = useState('')
   const [showGraphs, setShowGraphs] = useState(false)
 
@@ -64,13 +70,14 @@ export default function Home() {
       ...predictionGraphData.map(item => new Date(item.ds)),
       ...sleepData.map(item => new Date(item.ds_start)),
       ...sleepData.map(item => new Date(item.ds_end)),
-      ...stepData.map(item => new Date(item.ds))
+      ...stepData.map(item => new Date(item.ds)),
+      ...calorieData.map(item => new Date(item.ds))
     ]
     return {
       globalStartDate: allDates.length > 0 ? min(allDates) : new Date(),
       globalEndDate: allDates.length > 0 ? max(allDates) : new Date()
     }
-  }, [analysisGraphData, predictionGraphData, sleepData, stepData])
+  }, [analysisGraphData, predictionGraphData, sleepData, stepData, calorieData])
   
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
@@ -82,7 +89,8 @@ export default function Home() {
         fetchAnalysisGraphData(selectedUser, date),
         fetchPredictionGraphData(selectedUser, date),
         fetchStepData(selectedUser, date),
-        fetchSleepData(selectedUser, date)
+        fetchSleepData(selectedUser, date),
+        fetchCalorieData(selectedUser, date)
       ])
       setIsLoadingDate(false)
       setShowGraphs(true) // 데이터 로딩 완료 시 그래프 표시
@@ -168,6 +176,17 @@ export default function Home() {
     }
   }
 
+  const fetchCalorieData = async (user: string, date: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/calorie_data/${user}/${date}`)
+      setCalorieData(response.data.data)
+    } catch (error) {
+      console.error('Error fetching calorie data:', error)
+      setMessage(`Error fetching calorie data: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Heart Rate and Sleep Analysis Dashboard</h1>
@@ -216,11 +235,12 @@ export default function Home() {
             predictionData={predictionGraphData}
             stepData={stepData}
             sleepData={sleepData}
+            calorieData={calorieData}
             globalStartDate={globalStartDate}
             globalEndDate={globalEndDate}
           />
         ) : null}
-        {showGraphs && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && (
+        {showGraphs && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && calorieData.length === 0 && (
           <div className="text-center text-red-500">No data available for the charts.</div>
         )}
       </div>

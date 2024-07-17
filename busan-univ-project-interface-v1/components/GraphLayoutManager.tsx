@@ -7,6 +7,7 @@ interface GraphLayoutManagerProps {
   predictionData: any[];
   stepData: any[];
   sleepData: any[];
+  calorieData: any[];
   globalStartDate: Date;
   globalEndDate: Date;
 }
@@ -16,6 +17,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   predictionData,
   stepData,
   sleepData,
+  calorieData,
   globalStartDate,
   globalEndDate,
 }) => {
@@ -28,6 +30,18 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
 
   const renderCharts = () => {
     const charts = [
+      <AnalysisChart
+        key="calorie"
+        data={calorieData}
+        isCalorie={true}
+        globalStartDate={globalStartDate}
+        globalEndDate={globalEndDate}
+        brushDomain={brushDomain}
+        title="시간별 칼로리 소모량"
+        dataKey='calorie'
+        syncId="healthData"
+        showBrush={false}
+      />,
       <AnalysisChart
         key="step"
         data={stepData}
