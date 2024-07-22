@@ -83,11 +83,27 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return format(new Date(time), 'yyyy-MM-dd HH:mm');
   };
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="custom-tooltip" style={{ backgroundColor: 'rgba(255, 255, 255, 0.8)', padding: '10px', border: '1px solid #ccc' }}>
+          <p className="label" style={{ color: '#ff7300', fontWeight: 'bold' }}>{format(new Date(label), 'yyyy-MM-dd HH:mm')}</p>
+          {payload.map((pld: any) => (
+            <p key={pld.dataKey} style={{ color: pld.color }}>
+              {`${pld.name}: ${pld.value}`}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className='bg-white'>
       <div className="mb-4">
         {(Object.keys(visibleCharts) as Array<keyof ChartVisibility>).map((chartName) => (
-          <label key={chartName} className="mr-4">
+          <label key={chartName} className="mr-4 text-blue-600">
             <input
               type="checkbox"
               checked={visibleCharts[chartName]}
@@ -118,7 +134,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} 
             domain={yAxisDomains.right}
           />
-          <Tooltip labelFormatter={(label) => format(new Date(label), 'yyyy-MM-dd HH:mm')} />
+          <Tooltip content={<CustomTooltip />} />
           <Legend />
           <Brush 
             dataKey="timestamp" 
