@@ -141,7 +141,6 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
 
     return (
       <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg mb-8 relative">
-        {/* ... (기존 제목 및 설명 UI) */}
         <ResponsiveContainer width="100%" height="100%">
           { isCalorie || isStep ? (
             <BarChart

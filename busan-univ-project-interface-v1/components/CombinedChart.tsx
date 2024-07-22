@@ -84,7 +84,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   };
 
   return (
-    <div>
+    <div className='bg-white'>
       <div className="mb-4">
         {(Object.keys(visibleCharts) as Array<keyof ChartVisibility>).map((chartName) => (
           <label key={chartName} className="mr-4">
