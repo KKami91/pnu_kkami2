@@ -33,29 +33,28 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
     setBrushDomain(domain);
   }, []);
 
-  const renderSeparateCharts  = () => {
+  const renderSeparateCharts = () => {
     const charts = [
       <AnalysisChart
-        key="calorie"
-        data={calorieData}
-        isCalorie={true}
+        key="sdnn"
+        data={analysisData}
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        title="시간별 칼로리 소모량"
-        dataKey='calorie'
+        onBrushChange={handleBrushChange}
+        title="SDNN"
+        dataKey="sdnn"
         syncId="healthData"
         showBrush={true}
       />,
       <AnalysisChart
-        key="step"
-        data={stepData}
-        isStep={true}
+        key="rmssd"
+        data={analysisData}
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        title="시간별 걸음 수"
-        dataKey="step"
+        title="RMSSD"
+        dataKey="rmssd"
         syncId="healthData"
         showBrush={false}
       />,
@@ -66,31 +65,32 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        title="심박수 BPM"
+        title="Heart Rate (BPM)"
         dataKey="y"
         syncId="healthData"
         showBrush={false}
       />,
       <AnalysisChart
-        key="sdnn"
-        data={analysisData}
+        key="steps"
+        data={stepData}
+        isStep={true}
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        onBrushChange={handleBrushChange}
-        title="SDNN : 정상 심박 간격(NN intervals)의 표준편차"
-        dataKey="sdnn"
+        title="Steps"
+        dataKey="step"
         syncId="healthData"
         showBrush={false}
       />,
       <AnalysisChart
-        key="rmssd"
-        data={analysisData}
+        key="calories"
+        data={calorieData}
+        isCalorie={true}
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
         brushDomain={brushDomain}
-        title="RMSSD : 연속된 정상 심박 간격(NN intervals)차이의 제곱근 평균"
-        dataKey="rmssd"
+        title="Calories"
+        dataKey="calorie"
         syncId="healthData"
         showBrush={false}
       />,
@@ -99,16 +99,20 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         data={sleepData}
         globalStartDate={globalStartDate}
         globalEndDate={globalEndDate}
+        brushDomain={brushDomain}
+        onBrushChange={handleBrushChange}
       />,
     ];
 
     return (
-      <div className={`grid grid-cols-1 md:grid-cols-${columnCount} gap-4`}>
-        {charts.map((chart, index) => (
-          <div key={index} className="w-full">
-            {chart}
-          </div>
-        ))}
+      <div 
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
+          gap: '1rem'
+        }}
+      >
+        {charts}
       </div>
     );
   };
