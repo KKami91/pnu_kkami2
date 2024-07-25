@@ -28,9 +28,9 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
 }) => {
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
-  useEffect(() => {
+  // useEffect(() => {
 
-  }, [layout, columnCount]);
+  // }, [layout, columnCount]);
 
   const handleBrushChange = useCallback((domain: [number, number] | null) => {
     setBrushDomain(domain);

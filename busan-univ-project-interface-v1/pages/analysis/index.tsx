@@ -66,6 +66,7 @@ export default function Home() {
   const [layout, setLayout] = useState<'combined' | 'grid'>('combined');
   const [columnCount, setColumnCount] = useState(1);
   const [showLayoutMenu, setShowLayoutMenu] = useState(false);
+  const [selectedLayout, setSelectedLayout] = useState<'combined' | 'grid'>('combined');
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
@@ -124,13 +125,17 @@ export default function Home() {
   const handleLayoutChange = (newLayout: 'combined' | 'grid') => {
     setLayout(newLayout);
     setShowLayoutMenu(false);
-  }
+  };
 
   const handleColumnCountChange = (count: number) => {
     setColumnCount(count);
-    setLayout('grid');
+    setSelectedLayout('grid');
     setShowLayoutMenu(false);
-  }
+  };
+
+  const handleLayoutMenuToggle = () => {
+    setShowLayoutMenu(!showLayoutMenu);
+  };
 
   const fetchAnalysisDates = async (user: string) => {
     try {
@@ -265,15 +270,15 @@ export default function Home() {
         <div className="mb-4 flex items-center justify-end relative">
           <div className="flex items-center space-x-2">
             <button 
-              onClick={() => handleLayoutChange('combined')} 
-              className={`p-2 rounded ${layout === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+              onClick={() => setSelectedLayout('combined')} 
+              className={`p-2 rounded ${selectedLayout === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
             >
               <LaptopMinimal size={20} />
             </button>
             <div className="relative">
               <button 
-                onClick={() => setShowLayoutMenu(!showLayoutMenu)} 
-                className={`p-2 rounded ${layout === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                onClick={handleLayoutMenuToggle} 
+                className={`p-2 rounded ${selectedLayout === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
               >
                 <LayoutGrid size={20} />
               </button>
@@ -309,7 +314,7 @@ export default function Home() {
             calorieData={calorieData}
             globalStartDate={globalStartDate}
             globalEndDate={globalEndDate}
-            layout={layout}
+            layout={selectedLayout}
             columnCount={columnCount}
           />
         ) : null}

@@ -153,7 +153,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             // endIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[1])}
             // travellerWidth={10}
             // gap={1}
-            // tickFormatter={formatDateForBrush}
+            tickFormatter={formatDateForBrush}
           >
             <XAxis 
               dataKey="timestamp" 
