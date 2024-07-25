@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import AnalysisChart from './AnalysisChart';
 import SleepChart from './SleepChart';
 import CombinedChart from './CombinedChart';
@@ -32,6 +32,10 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   const handleBrushChange = useCallback((domain: [number, number] | null) => {
     setBrushDomain(domain);
   }, []);
+
+  useEffect(() => {
+    setBrushDomain(null);
+  }, [viewMode, columnCount]);
 
   const renderSeparateCharts = () => {
     const charts = [
@@ -112,7 +116,11 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
           gap: '1rem'
         }}
       >
-        {charts}
+        {charts.map((chart, index) => (
+          <div key={index} className="w-full">
+            {React.cloneElement(chart, { brushDomain, onBrushChange: handleBrushChange })}
+          </div>
+        ))}
       </div>
     );
   };
