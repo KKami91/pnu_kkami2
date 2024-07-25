@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import AnalysisChart from './AnalysisChart';
 import SleepChart from './SleepChart';
 import CombinedChart from './CombinedChart';
@@ -27,6 +27,10 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   columnCount,
 }) => {
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+
+  useEffect(() => {
+
+  }, [layout, columnCount]);
 
   const handleBrushChange = useCallback((domain: [number, number] | null) => {
     setBrushDomain(domain);

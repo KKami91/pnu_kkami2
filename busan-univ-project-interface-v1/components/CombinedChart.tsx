@@ -28,6 +28,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   calorieData,
   globalStartDate,
   globalEndDate,
+  // brushDomain,
   onBrushChange,
 }) => {
   const [visibleCharts, setVisibleCharts] = useState<ChartVisibility>({
@@ -78,9 +79,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
       const startTime = combinedData[domain.startIndex].timestamp;
       const endTime = combinedData[domain.endIndex].timestamp;
-      setBrushDomain([startTime, endTime]);
+      onBrushChange([startTime, endTime]);
+    } else {
+      onBrushChange(null);
     }
-  }, [combinedData]);
+  }, [combinedData, onBrushChange]);
 
   const formatDateForBrush = (time: number) => {
     return format(new Date(time), 'yyyy-MM-dd HH:mm');
@@ -144,11 +147,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             height={30} 
             stroke="#8884d8" 
             onChange={handleBrushChange}
-            startIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[0])}
-            endIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[1])}
-            travellerWidth={10}
-            gap={1}
-            tickFormatter={formatDateForBrush}
+            startIndex={brushDomain ? combinedData.findIndex(d => d.timestamp >= brushDomain[0]) : undefined}
+            endIndex={brushDomain ? combinedData.findIndex(d => d.timestamp >= brushDomain[1]) : undefined}
+            // startIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[0])}
+            // endIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[1])}
+            // travellerWidth={10}
+            // gap={1}
+            // tickFormatter={formatDateForBrush}
           >
             <XAxis 
               dataKey="timestamp" 
