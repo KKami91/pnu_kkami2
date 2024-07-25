@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import { format, parseISO } from 'date-fns';
 
@@ -30,7 +30,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   globalEndDate,
   onBrushChange,
 }) => {
-  const [visibleCharts, setVisibleCharts] = useState<ChartVisibility>({
+  const [visibleCharts, setVisibleCharts] = useState<{ [key: string]: boolean }>({
     calorie: true,
     step: true,
     bpm: true,
@@ -43,12 +43,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     globalEndDate.getTime()
   ]);
 
-  const toggleChart = (chartName: keyof ChartVisibility) => {
-    setVisibleCharts(prev => ({
-      ...prev,
-      [chartName]: !prev[chartName]
-    }));
-  };
 
   const combinedData = useMemo(() => {
     return analysisData.map(item => {
@@ -65,6 +59,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }).sort((a, b) => a.timestamp - b.timestamp);
   }, [analysisData, predictionData, stepData, calorieData]);
 
+  const filteredData = useMemo(() => {
+    if (!brushDomain) return combinedData;
+    return combinedData.filter(
+      item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+    );
+  }, [combinedData, brushDomain]);
+
   const yAxisDomains = useMemo(() => {
     const leftData = combinedData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
     const rightData = combinedData.flatMap(d => [d.step, d.calorie]);
@@ -78,9 +79,29 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
       const startTime = combinedData[domain.startIndex].timestamp;
       const endTime = combinedData[domain.endIndex].timestamp;
-      setBrushDomain([startTime, endTime]);
+      onBrushChange([startTime, endTime]);
+    } else {
+      onBrushChange(null);
     }
-  }, [combinedData]);
+  }, [combinedData, onBrushChange]);
+
+  const toggleChart = (chartName: string) => {
+    setVisibleCharts(prev => ({
+      ...prev,
+      [chartName]: !prev[chartName]
+    }));
+  };
+
+  useEffect(() => {
+    // 브러시 도메인이 null이면 전체 데이터 범위로 설정
+    if (!brushDomain) {
+      const startTime = combinedData[0]?.timestamp;
+      const endTime = combinedData[combinedData.length - 1]?.timestamp;
+      if (startTime && endTime) {
+        onBrushChange([startTime, endTime]);
+      }
+    }
+  }, [brushDomain, combinedData, onBrushChange]);
 
   const formatDateForBrush = (time: number) => {
     return format(new Date(time), 'yyyy-MM-dd HH:mm');
@@ -105,7 +126,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   return (
     <div className='bg-white'>
       <div className="mb-4">
-        {(Object.keys(visibleCharts) as Array<keyof ChartVisibility>).map((chartName) => (
+        {Object.keys(visibleCharts).map((chartName) => (
           <label key={chartName} className="mr-4 text-blue-600">
             <input
               type="checkbox"
@@ -117,44 +138,19 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         ))}
       </div>
       <ResponsiveContainer width="100%" height={600}>
-        <ComposedChart data={combinedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <ComposedChart data={filteredData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="timestamp"
             type="number"
             scale="time"
-            domain={brushDomain}
+            domain={['dataMin', 'dataMax']}
             tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
           />
-          <YAxis 
-            yAxisId="left" 
-            label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} 
-            domain={yAxisDomains.left}
-          />
-          <YAxis 
-            yAxisId="right" 
-            orientation="right" 
-            label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} 
-            domain={yAxisDomains.right}
-          />
+          <YAxis yAxisId="left" label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
+          <YAxis yAxisId="right" orientation="right" label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Brush 
-            dataKey="timestamp" 
-            height={30} 
-            stroke="#8884d8" 
-            onChange={handleBrushChange}
-            startIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[0])}
-            endIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[1])}
-            travellerWidth={10}
-            gap={1}
-            tickFormatter={formatDateForBrush}
-          >
-            <XAxis 
-              dataKey="timestamp" 
-              tickFormatter={(tick) => format(new Date(tick), 'MM-dd')}
-            />
-          </Brush>
           {visibleCharts.calorie && (
             <Bar yAxisId="right" dataKey="calorie" fill="#8884d8" name="Calories" />
           )}
@@ -170,6 +166,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           {visibleCharts.rmssd && (
             <Line yAxisId="left" type="monotone" dataKey="rmssd" stroke="#82ca9d" name="RMSSD" />
           )}
+          <Brush
+            dataKey="timestamp"
+            height={30}
+            stroke="#8884d8"
+            onChange={handleBrushChange}
+            tickFormatter={formatDateForBrush}
+          />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
