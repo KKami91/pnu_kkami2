@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import GraphLayoutManager from '../../components/GraphLayoutManager';
 import { min, max } from 'date-fns';
+import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
@@ -233,24 +234,26 @@ export default function Home() {
         </div>
       )}
       {selectedDate && (
-        <div className="mb-4">
-          <label className="mr-2">보는 방식:</label>
-          <select
-            value={viewMode}
-            onChange={(e) => handleViewModeChange(e.target.value)}
-            className="border p-2 rounded"
+        <div className="mb-4 flex items-center justify-end">
+          <label className="mr-2"></label>
+          <button
+            onClick={() => setViewMode('combined')}
+            className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
-            <option value="separate">여러개로</option>
-            <option value="combined">하나로</option>
-          </select>
+            <LaptopMinimal size={20} />
+          </button>
+          <button
+            onClick={() => setViewMode('separate')}
+            className={`p-2 rounded ${viewMode === 'separate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            <LayoutGrid size={20} />
+          </button>
         </div>
       )}
       {message && <p className="mt-4">{message}</p>}
       <div className="mt-8">
         {isLoadingDate ? (
           <LoadingSpinner />
-        ) : isLoadingGraphs ? (
-          <SkeletonLoader />
         ) : showGraphs ? (
           <GraphLayoutManager
             analysisData={analysisGraphData}
