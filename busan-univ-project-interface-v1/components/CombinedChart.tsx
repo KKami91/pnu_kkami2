@@ -9,6 +9,8 @@ interface CombinedChartProps {
   calorieData: any[];
   globalStartDate: Date;
   globalEndDate: Date;
+  brushDomain: [number, number] | null;
+  onBrushChange: (domain: [number, number] | null) => void;
 }
 
 type ChartVisibility = {
@@ -26,6 +28,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   calorieData,
   globalStartDate,
   globalEndDate,
+  onBrushChange,
 }) => {
   const [visibleCharts, setVisibleCharts] = useState<ChartVisibility>({
     calorie: true,

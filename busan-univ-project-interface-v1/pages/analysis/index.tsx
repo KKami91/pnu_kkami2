@@ -49,20 +49,22 @@ interface CalorieData {
 }
 
 export default function Home() {
-  const [selectedUser, setSelectedUser] = useState('')
-  const [message, setMessage] = useState('')
-  const [analysisDates, setAnalysisDates] = useState([])
-  const [isLoadingUser, setIsLoadingUser] = useState(false)
-  const [isLoadingDate, setIsLoadingDate] = useState(false)
-  const [analysisGraphData, setAnalysisGraphData] = useState<AnalysisData[]>([])
-  const [predictionGraphData, setPredictionGraphData] = useState<PredictionData[]>([])
-  const [sleepData, setSleepData] = useState<SleepData[]>([])
-  const [stepData, setStepData] = useState<StepData[]>([])
-  const [calorieData, setCalorieData] = useState<StepData[]>([])
-  const [selectedDate, setSelectedDate] = useState('')
-  const [showGraphs, setShowGraphs] = useState(false)
-  const [viewMode, setViewMode] = useState('separate')
-  const [isLoadingGraphs, setIsLoadingGraphs] = useState(false)
+  const [selectedUser, setSelectedUser] = useState('');
+  const [message, setMessage] = useState('');
+  const [analysisDates, setAnalysisDates] = useState([]);
+  const [isLoadingUser, setIsLoadingUser] = useState(false);
+  const [isLoadingDate, setIsLoadingDate] = useState(false);
+  const [analysisGraphData, setAnalysisGraphData] = useState<AnalysisData[]>([]);
+  const [predictionGraphData, setPredictionGraphData] = useState<PredictionData[]>([]);
+  const [sleepData, setSleepData] = useState<SleepData[]>([]);
+  const [stepData, setStepData] = useState<StepData[]>([]);
+  const [calorieData, setCalorieData] = useState<StepData[]>([]);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [showGraphs, setShowGraphs] = useState(false);
+  const [viewMode, setViewMode] = useState('combined');
+  const [isLoadingGraphs, setIsLoadingGraphs] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [columnCount, setColumnCount] = useState(1);
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
@@ -98,12 +100,21 @@ export default function Home() {
   }
 
   const handleViewModeChange = (mode: string) => {
-    setIsLoadingGraphs(true)
-    setViewMode(mode)
-    setTimeout(() => {
-      setIsLoadingGraphs(false)
-    }, 1000) // 스켈레톤 로딩을 1초 동안 보여줍니다.
-  }
+    //setIsLoadingGraphs(true)
+    setViewMode(mode);
+    if (mode === 'combined') {
+      setShowDropdown(false);
+    }
+    // setTimeout(() => {
+    //   setIsLoadingGraphs(false)
+    // }, 1000) // 스켈레톤 로딩을 1초 동안 보여줍니다.
+  };
+
+  const handleColumnCountChange = (count: number) => {
+    setColumnCount(count);
+    setViewMode('separate');
+    setShowDropdown(false);
+  };
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
@@ -234,23 +245,39 @@ export default function Home() {
         </div>
       )}
       {selectedDate && (
-        <div className="mb-4 flex items-center justify-end">
-          <label className="mr-2"></label>
+        <div className="mb-4 flex items-center justify-end relative">
           <button
-            onClick={() => setViewMode('combined')}
+            onClick={() => handleViewModeChange('combined')}
             className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
             <LaptopMinimal size={20} />
           </button>
-          <button
-            onClick={() => setViewMode('separate')}
-            className={`p-2 rounded ${viewMode === 'separate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            <LayoutGrid size={20} />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className={`p-2 rounded ${viewMode === 'separate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            >
+              <LayoutGrid size={20} />
+            </button>
+            {showDropdown && (
+              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                  {[1, 2, 3].map((count) => (
+                    <button
+                      key={count}
+                      onClick={() => handleColumnCountChange(count)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      role="menuitem"
+                    >
+                      {count} Column{count !== 1 ? 's' : ''}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
-      {message && <p className="mt-4">{message}</p>}
       <div className="mt-8">
         {isLoadingDate ? (
           <LoadingSpinner />
@@ -264,6 +291,7 @@ export default function Home() {
             globalStartDate={globalStartDate}
             globalEndDate={globalEndDate}
             viewMode={viewMode}
+            columnCount={columnCount}
           />
         ) : null}
         {showGraphs && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && calorieData.length === 0 && (

@@ -12,6 +12,7 @@ interface GraphLayoutManagerProps {
   globalStartDate: Date;
   globalEndDate: Date;
   viewMode: string;
+  columnCount: number;
 }
 
 const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
@@ -23,8 +24,9 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   globalStartDate,
   globalEndDate,
   viewMode,
+  columnCount,
 }) => {
-  const [columnsCount, setColumnsCount] = useState(1);
+  // const [columnsCount, setColumnsCount] = useState(1);
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const handleBrushChange = useCallback((domain: [number, number] | null) => {
@@ -101,26 +103,18 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
     ];
 
     return (
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columnsCount}, 1fr)`, gap: '1rem' }}>
-        {charts}
+      <div className={`grid grid-cols-1 md:grid-cols-${columnCount} gap-4`}>
+        {charts.map((chart, index) => (
+          <div key={index} className="w-full">
+            {chart}
+          </div>
+        ))}
       </div>
     );
   };
 
   return (
     <div>
-      <div className="mb-4">
-        <label className="mr-2">Columns:</label>
-        <select
-          value={columnsCount}
-          onChange={(e) => setColumnsCount(Number(e.target.value))}
-          className="border p-2 rounded"
-        >
-          {[1, 2, 3, 4, 5].map(num => (
-            <option key={num} value={num}>{num}</option>
-          ))}
-        </select>
-      </div>
       {viewMode === 'separate' ? renderSeparateCharts() : (
         <CombinedChart
           analysisData={analysisData}
@@ -129,6 +123,8 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
           calorieData={calorieData}
           globalStartDate={globalStartDate}
           globalEndDate={globalEndDate}
+          brushDomain={brushDomain}
+          onBrushChange={handleBrushChange}
         />
       )}
     </div>
