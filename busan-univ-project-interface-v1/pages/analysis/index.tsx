@@ -64,8 +64,8 @@ export default function Home() {
   const [viewMode, setViewMode] = useState('separate')
   const [isLoadingGraphs, setIsLoadingGraphs] = useState(false)
   const [layout, setLayout] = useState<'combined' | 'grid'>('combined');
-  // const [rowCount, setRowCount] = useState(2); // 초기값? 1로 해야 할 수도
   const [columnCount, setColumnCount] = useState(1);
+  const [showLayoutMenu, setShowLayoutMenu] = useState(false);
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
@@ -123,10 +123,13 @@ export default function Home() {
 
   const handleLayoutChange = (newLayout: 'combined' | 'grid') => {
     setLayout(newLayout);
+    setShowLayoutMenu(false);
   }
 
-  const handleColumnCountChange = () => {
-    setColumnCount(prevCount => prevCount % 3 + 1);
+  const handleColumnCountChange = (count: number) => {
+    setColumnCount(count);
+    setLayout('grid');
+    setShowLayoutMenu(false);
   }
 
   const fetchAnalysisDates = async (user: string) => {
@@ -259,7 +262,7 @@ export default function Home() {
       )} */}
       {message && <p className="mt-4">{message}</p>}
       {showGraphs && (
-        <div className="mb-4 flex items-center justify-end">
+        <div className="mb-4 flex items-center justify-end relative">
           <div className="flex items-center space-x-2">
             <button 
               onClick={() => handleLayoutChange('combined')} 
@@ -267,16 +270,30 @@ export default function Home() {
             >
               <LaptopMinimal size={20} />
             </button>
-            <button 
-              onClick={() => {
-                handleLayoutChange('grid');
-                handleColumnCountChange();
-              }} 
-              className={`p-2 rounded ${layout === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-            >
-              <LayoutGrid size={20} />
-              {layout === 'grid' && <span className="ml-1">{columnCount}</span>}
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowLayoutMenu(!showLayoutMenu)} 
+                className={`p-2 rounded ${layout === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+              >
+                <LayoutGrid size={20} />
+              </button>
+              {showLayoutMenu && (
+                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                  <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                    {[1, 2, 3].map((count) => (
+                      <button
+                        key={count}
+                        onClick={() => handleColumnCountChange(count)}
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                        role="menuitem"
+                      >
+                        {count} Column{count !== 1 ? 's' : ''}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -118,7 +118,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
       );
     } else {
       return (
-        <div className={`grid grid-cols-${columnCount} gap-4`}>
+        <div className={`grid grid-cols-1 md:grid-cols-${columnCount} gap-4`}>
           {charts.map((chart, index) => (
             <div key={index} className="w-full">
               {chart}
