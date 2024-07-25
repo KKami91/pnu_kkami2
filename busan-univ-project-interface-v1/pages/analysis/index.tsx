@@ -249,8 +249,6 @@ export default function Home() {
       <div className="mt-8">
         {isLoadingDate ? (
           <LoadingSpinner />
-        ) : isLoadingGraphs ? (
-          <SkeletonLoader />
         ) : showGraphs ? (
           <GraphLayoutManager
             analysisData={analysisGraphData}
@@ -260,7 +258,6 @@ export default function Home() {
             calorieData={calorieData}
             globalStartDate={globalStartDate}
             globalEndDate={globalEndDate}
-            viewMode={viewMode}
           />
         ) : null}
         {showGraphs && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && calorieData.length === 0 && (

@@ -12,6 +12,8 @@ interface SleepChartProps {
   data: SleepData[];
   globalStartDate: Date;
   globalEndDate: Date;
+  brushDomain: [number, number] | null;
+  onBrushChange: (domain: [number, number] | null) => void;
 }
 
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload, label }) => {
@@ -30,6 +32,8 @@ const SleepChart: React.FC<SleepChartProps> = ({
   data, 
   globalStartDate, 
   globalEndDate,
+  brushDomain,
+  onBrushChange
 }) => {
   const [localBrushDomain, setLocalBrushDomain] = useState<[number, number] | null>(null);
 
