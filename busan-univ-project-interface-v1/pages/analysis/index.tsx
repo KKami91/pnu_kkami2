@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import GraphLayoutManager from '../../components/GraphLayoutManager';
 import { min, max } from 'date-fns';
-import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
@@ -63,10 +62,6 @@ export default function Home() {
   const [showGraphs, setShowGraphs] = useState(false)
   const [viewMode, setViewMode] = useState('separate')
   const [isLoadingGraphs, setIsLoadingGraphs] = useState(false)
-  const [layout, setLayout] = useState<'combined' | 'grid'>('combined');
-  const [columnCount, setColumnCount] = useState(1);
-  const [showLayoutMenu, setShowLayoutMenu] = useState(false);
-  const [selectedLayout, setSelectedLayout] = useState<'combined' | 'grid'>('combined');
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
@@ -121,21 +116,6 @@ export default function Home() {
       setIsLoadingUser(false)
     }
   }
-
-  const handleLayoutChange = (newLayout: 'combined' | 'grid') => {
-    setLayout(newLayout);
-    setShowLayoutMenu(false);
-  };
-
-  const handleColumnCountChange = (count: number) => {
-    setColumnCount(count);
-    setSelectedLayout('grid');
-    setShowLayoutMenu(false);
-  };
-
-  const handleLayoutMenuToggle = () => {
-    setShowLayoutMenu(!showLayoutMenu);
-  };
 
   const fetchAnalysisDates = async (user: string) => {
     try {
@@ -252,7 +232,7 @@ export default function Home() {
           {isLoadingDate && <LoadingSpinner />}
         </div>
       )}
-      {/* {selectedDate && (
+      {selectedDate && (
         <div className="mb-4">
           <label className="mr-2">보는 방식:</label>
           <select
@@ -264,47 +244,13 @@ export default function Home() {
             <option value="combined">하나로</option>
           </select>
         </div>
-      )} */}
-      {message && <p className="mt-4">{message}</p>}
-      {showGraphs && (
-        <div className="mb-4 flex items-center justify-end relative">
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={() => setSelectedLayout('combined')} 
-              className={`p-2 rounded ${selectedLayout === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-            >
-              <LaptopMinimal size={20} />
-            </button>
-            <div className="relative">
-              <button 
-                onClick={handleLayoutMenuToggle} 
-                className={`p-2 rounded ${selectedLayout === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-              >
-                <LayoutGrid size={20} />
-              </button>
-              {showLayoutMenu && (
-                <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                  <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                    {[1, 2, 3].map((count) => (
-                      <button
-                        key={count}
-                        onClick={() => handleColumnCountChange(count)}
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                        role="menuitem"
-                      >
-                        {count} Column{count !== 1 ? 's' : ''}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
       )}
+      {message && <p className="mt-4">{message}</p>}
       <div className="mt-8">
         {isLoadingDate ? (
           <LoadingSpinner />
+        ) : isLoadingGraphs ? (
+          <SkeletonLoader />
         ) : showGraphs ? (
           <GraphLayoutManager
             analysisData={analysisGraphData}
@@ -314,8 +260,7 @@ export default function Home() {
             calorieData={calorieData}
             globalStartDate={globalStartDate}
             globalEndDate={globalEndDate}
-            layout={selectedLayout}
-            columnCount={columnCount}
+            viewMode={viewMode}
           />
         ) : null}
         {showGraphs && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && calorieData.length === 0 && (

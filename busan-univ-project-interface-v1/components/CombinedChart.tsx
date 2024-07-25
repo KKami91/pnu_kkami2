@@ -9,8 +9,6 @@ interface CombinedChartProps {
   calorieData: any[];
   globalStartDate: Date;
   globalEndDate: Date;
-  brushDomain: [number, number] | null;
-  onBrushChange: (domain: [number, number] | null) => void;
 }
 
 type ChartVisibility = {
@@ -28,8 +26,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   calorieData,
   globalStartDate,
   globalEndDate,
-  // brushDomain,
-  onBrushChange,
 }) => {
   const [visibleCharts, setVisibleCharts] = useState<ChartVisibility>({
     calorie: true,
@@ -79,11 +75,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
       const startTime = combinedData[domain.startIndex].timestamp;
       const endTime = combinedData[domain.endIndex].timestamp;
-      onBrushChange([startTime, endTime]);
-    } else {
-      onBrushChange(null);
+      setBrushDomain([startTime, endTime]);
     }
-  }, [combinedData, onBrushChange]);
+  }, [combinedData]);
 
   const formatDateForBrush = (time: number) => {
     return format(new Date(time), 'yyyy-MM-dd HH:mm');
@@ -147,12 +141,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             height={30} 
             stroke="#8884d8" 
             onChange={handleBrushChange}
-            startIndex={brushDomain ? combinedData.findIndex(d => d.timestamp >= brushDomain[0]) : undefined}
-            endIndex={brushDomain ? combinedData.findIndex(d => d.timestamp >= brushDomain[1]) : undefined}
-            // startIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[0])}
-            // endIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[1])}
-            // travellerWidth={10}
-            // gap={1}
+            startIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[0])}
+            endIndex={combinedData.findIndex(d => d.timestamp >= brushDomain[1])}
+            travellerWidth={10}
+            gap={1}
             tickFormatter={formatDateForBrush}
           >
             <XAxis 
