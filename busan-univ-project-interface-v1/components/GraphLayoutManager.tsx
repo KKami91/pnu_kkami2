@@ -12,7 +12,7 @@ interface GraphLayoutManagerProps {
   globalStartDate: Date;
   globalEndDate: Date;
   layout: 'combined' | 'grid';
-  rowCount: number;
+  columnCount: number;
 }
 
 const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
@@ -24,7 +24,7 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
   globalStartDate,
   globalEndDate,
   layout,
-  rowCount,
+  columnCount,
 }) => {
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
@@ -117,10 +117,13 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         />
       );
     } else {
-      const columns = Math.ceil(charts.length / rowCount);
       return (
-        <div className={`grid grid-cols-${columns} gap-4`}>
-          {charts}
+        <div className={`grid grid-cols-${columnCount} gap-4`}>
+          {charts.map((chart, index) => (
+            <div key={index} className="w-full">
+              {chart}
+            </div>
+          ))}
         </div>
       );
     }

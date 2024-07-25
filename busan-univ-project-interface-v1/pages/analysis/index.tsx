@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import GraphLayoutManager from '../../components/GraphLayoutManager';
 import { min, max } from 'date-fns';
-import { Menu, LayoutGrid } from 'lucide-react';
+import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
@@ -64,7 +64,8 @@ export default function Home() {
   const [viewMode, setViewMode] = useState('separate')
   const [isLoadingGraphs, setIsLoadingGraphs] = useState(false)
   const [layout, setLayout] = useState<'combined' | 'grid'>('combined');
-  const [rowCount, setRowCount] = useState(2); // 초기값? 1로 해야 할 수도
+  // const [rowCount, setRowCount] = useState(2); // 초기값? 1로 해야 할 수도
+  const [columnCount, setColumnCount] = useState(1);
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
@@ -124,8 +125,8 @@ export default function Home() {
     setLayout(newLayout);
   }
 
-  const handleRowCountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setRowCount(Number(e.target.value));
+  const handleColumnCountChange = () => {
+    setColumnCount(prevCount => prevCount % 3 + 1);
   }
 
   const fetchAnalysisDates = async (user: string) => {
@@ -258,36 +259,25 @@ export default function Home() {
       )} */}
       {message && <p className="mt-4">{message}</p>}
       {showGraphs && (
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex items-center justify-end">
           <div className="flex items-center space-x-2">
             <button 
               onClick={() => handleLayoutChange('combined')} 
               className={`p-2 rounded ${layout === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
             >
-              <Menu size={20} />
+              <LaptopMinimal size={20} />
             </button>
             <button 
-              onClick={() => handleLayoutChange('grid')} 
+              onClick={() => {
+                handleLayoutChange('grid');
+                handleColumnCountChange();
+              }} 
               className={`p-2 rounded ${layout === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
             >
               <LayoutGrid size={20} />
+              {layout === 'grid' && <span className="ml-1">{columnCount}</span>}
             </button>
           </div>
-          {layout === 'grid' && (
-            <div className="flex items-center space-x-2">
-              <label htmlFor="rowCount">Rows:</label>
-              <select 
-                id="rowCount" 
-                value={rowCount} 
-                onChange={handleRowCountChange}
-                className="border p-1 rounded"
-              >
-                {[1, 2, 3].map(num => (
-                  <option key={num} value={num}>{num}</option>
-                ))}
-              </select>
-            </div>
-          )}
         </div>
       )}
       <div className="mt-8">
@@ -303,7 +293,7 @@ export default function Home() {
             globalStartDate={globalStartDate}
             globalEndDate={globalEndDate}
             layout={layout}
-            rowCount={rowCount}
+            columnCount={columnCount}
           />
         ) : null}
         {showGraphs && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && calorieData.length === 0 && (
