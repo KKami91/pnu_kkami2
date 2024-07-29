@@ -323,7 +323,7 @@ export default function Home() {
       {selectedDate && (
         <div className="mb-4 flex items-center justify-end relative">
           <button
-            onClick={() => handleViewModeChange('combined')}
+            onClick={() => handleViewModeChange('separate')}
             className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
             <LaptopMinimal size={20} />
