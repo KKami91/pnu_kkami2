@@ -69,7 +69,7 @@ export default function Home() {
   const [calorieData, setCalorieData] = useState<StepData[]>([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [showGraphs, setShowGraphs] = useState(false);
-  const [viewMode, setViewMode] = useState('separate');
+  const [viewMode, setViewMode] = useState('combined');
   const [isLoadingGraphs, setIsLoadingGraphs] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [columnCount, setColumnCount] = useState(1);
