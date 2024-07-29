@@ -48,6 +48,14 @@ interface CalorieData {
   calorie: number
 }
 
+const measureTime = async <T extends any>(fn: () => Promise<T>, fnName: string): Promise<T> => {
+  const start = performance.now();
+  const result = await fn();
+  const end = performance.now();
+  console.log(`${fnName} 걸린 시간 ${end - start} ms`);
+  return result
+};
+
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('');
   const [message, setMessage] = useState('');
@@ -80,14 +88,21 @@ export default function Home() {
       globalEndDate: allDates.length > 0 ? max(allDates) : new Date()
     }
   }, [analysisGraphData, predictionGraphData, sleepData, stepData, calorieData])
+
+
+
   
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
+
+    
+    
     setSelectedDate(date)
     if (date) {
       setIsLoadingDate(true)
       setShowGraphs(false) // 데이터 로딩 시작 시 그래프 숨김
       await Promise.all([
+
         fetchAnalysisGraphData(selectedUser, date),
         fetchPredictionGraphData(selectedUser, date),
         fetchStepData(selectedUser, date),
@@ -118,13 +133,24 @@ export default function Home() {
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
+
+
     setSelectedUser(user)
     setSelectedDate('')
     setAnalysisDates([])
     if (user) {
       setIsLoadingUser(true)
+      // DB체크(파이썬 서버) 걸린 시간 체크
+      const start = performance.now();
       await checkDb(user)
+      const end = performance.now();
+      console.log(`DB체크 걸린 시간(checkDb) ${end - start} ms`);
+
+      // 날짜 가져오는데 걸린 시간 체크
+      const start2 = performance.now();
       await fetchAnalysisDates(user)
+      const end2 = performance.now();
+      console.log(`날짜 가져오는데 걸린 시간(fetchAnalysisDates) ${end2 - start2} ms`); 
       setIsLoadingUser(false)
     }
   }
@@ -150,8 +176,18 @@ export default function Home() {
 
   const fetchAnalysisGraphData = async (user: string, date: string) => {
     try {
+      // 분석 데이터 가져오는데 걸린 시간 체크 
+      const start = performance.now();
       const response = await axios.get(`${API_URL}/analysis_data/${user}/${date}`)
+      const end = performance.now();
+      console.log(`분석 데이터 가져오는데 걸린 시간(analysis_data) ${end - start} ms`);
+
+      // 분석 데이터 그리는데 걸린 시간 체크
+      const start2 = performance.now();
       setAnalysisGraphData(response.data.data)
+      const end2 = performance.now();
+      console.log(`날짜 선택에서 걸린 시간(setAnalysisGraphData) ${end2 - start2} ms`); 
+
     } catch (error) {
       console.error('Error fetching analysis graph data:', error)
       setMessage(`Error fetching analysis data: ${error instanceof Error ? error.message : String(error)}`)
@@ -161,11 +197,21 @@ export default function Home() {
 
   const fetchPredictionGraphData = async (user: string, date: string) => {
     try {
+      // 분석 데이터 가져오는데 걸린 시간 체크
+      const start = performance.now();
       const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`)
+      const end = performance.now();
+      console.log(`분석 데이터 가져오는데 걸린 시간(prediction_data) ${end - start} ms`);
+
+      // 분석 데이터 그리는데 걸린 시간 체크
+      const start2 = performance.now();
       setPredictionGraphData(response.data.data.map((item: any) => ({
         ds: item.ds,
         y: item.y
       })))
+      const end2 = performance.now();
+      console.log(`분석 데이터 그리는데 걸린 시간(setPredictionGraphData) ${end2 - start2} ms`);  
+
     } catch (error) {
       console.error('Error fetching prediction graph data:', error)
       setMessage(`Error fetching prediction data: ${error instanceof Error ? error.message : String(error)}`)
@@ -175,8 +221,18 @@ export default function Home() {
 
   const fetchStepData = async (user: string, date: string) => {
     try {
+      // 걸음수 데이터 가져오는데 걸린 시간 체크
+      const start = performance.now();
       const response = await axios.get(`${API_URL}/step_data/${user}/${date}`)
+      const end = performance.now();
+      console.log(`걸음수 데이터 가져오는데 걸린 시간(step_data) ${end - start} ms`);
+
+      // 걸음수 데이터 그래프 그리는데 걸린 시간 체크
+      const start2 = performance.now();
       setStepData(response.data.data)
+      const end2 = performance.now();
+      console.log(`걸음수 데이터 그리는데 걸린 시간(setStepData) ${end2 - start2} ms`);
+
     } catch (error) {
       console.error('Error fetching step data:', error)
       setMessage(`Error fetching step data: ${error instanceof Error ? error.message : String(error)}`)
@@ -186,8 +242,18 @@ export default function Home() {
 
   const fetchSleepData = async (user: string, date: string) => {
     try {
+      // 수면 데이터 가져오는데 걸린 시간 체크
+      const start = performance.now();
       const response = await axios.get(`${API_URL}/sleep_data/${user}/${date}`)
+      const end = performance.now();
+      console.log(`수면 데이터 가져오는데 걸린 시간(sleep_data) ${end - start} ms`);
+
+      // 수면 데이터 그래프 그리는데 걸린 시간 체크
+      const start2 = performance.now();
       setSleepData(response.data.data)
+      const end2 = performance.now();
+      console.log(`수면 데이터 그래프 그리는데 걸린 시간(setSleepData) ${end2 - start2} ms`);      
+
     } catch (error) {
       console.error('Error fetching sleep data:', error)
       setMessage(`Error fetching sleep data: ${error instanceof Error ? error.message : String(error)}`)
@@ -197,8 +263,18 @@ export default function Home() {
 
   const fetchCalorieData = async (user: string, date: string) => {
     try {
+      // 칼로리 데이터 가져오는데 걸린 시간 체크
+      const start = performance.now();
       const response = await axios.get(`${API_URL}/calorie_data/${user}/${date}`)
+      const end = performance.now();
+      console.log(`칼로리 데이터 가져오는데 걸린 시간(calorie_data) ${end - start} ms`);
+
+      // 칼로리 데이터 그래프 그리는데 걸린 시간 체크
+      const start2 = performance.now();      
       setCalorieData(response.data.data)
+      const end2 = performance.now();
+      console.log(`칼로리 데이터 그래프 그리는데 걸린 시간(setCalorieData) ${end2 - start2} ms`);
+
     } catch (error) {
       console.error('Error fetching calorie data:', error)
       setMessage(`Error fetching calorie data: ${error instanceof Error ? error.message : String(error)}`)
