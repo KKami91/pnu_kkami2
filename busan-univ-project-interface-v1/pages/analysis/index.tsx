@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import GraphLayoutManager from '../../components/GraphLayoutManager';
 import { min, max } from 'date-fns';
+
 import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
@@ -21,32 +22,43 @@ const SkeletonLoader = () => (
   </div>
 )
 
-interface AnalysisData {
-  ds: string
-  sdnn: number | null
-  rmssd: number | null
+interface CalorieData {
+  ds : string;
+  calorie : number;
 }
 
 interface PredictionData {
-  ds: string
-  y: number | null
+  ds : string;
+  y : number;
+  yhat : number;
 }
 
-interface SleepData {
-  ds_start: string
-  ds_end: string
-  stage: string
+interface AnalysisData {
+  ds : string;
+  sdnn : number;
+  rmssd : number;
 }
 
 interface StepData {
-  ds: string
-  step: number
+  ds : string;
+  step : number;
 }
 
-interface CalorieData {
-  ds: string
-  calorie: number
+interface SleepData {
+  ds_start : string;
+  ds_end : string;
+  stage : string;
 }
+
+
+interface AllData {
+  calorieData: CalorieData[];
+  predictionData: PredictionData[];
+  analysisData: AnalysisData[];
+  stepData: StepData[];
+  sleepData: SleepData[];
+}
+
 
 const measureTime = async <T extends any>(fn: () => Promise<T>, fnName: string): Promise<T> => {
   const start = performance.now();
@@ -74,8 +86,16 @@ export default function Home() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [columnCount, setColumnCount] = useState(1);
 
+  // MongoDB
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [allData, setAllData] = useState<AllData | null>(null);
+
   // 시간 체크하기 위해
   const [renderStartTime, setRenderStartTime] = useState<number | null>(null);
+
+  
 
   useEffect(() => {
     if (showGraphs && renderStartTime !== null) {
@@ -90,21 +110,52 @@ export default function Home() {
     }
   }, [showGraphs, analysisGraphData, predictionGraphData, sleepData, stepData, calorieData, renderStartTime]);
 
-  const { globalStartDate, globalEndDate } = useMemo(() => {
-    const allDates = [
-      ...analysisGraphData.map(item => new Date(item.ds)),
-      ...predictionGraphData.map(item => new Date(item.ds)),
-      ...sleepData.map(item => new Date(item.ds_start)),
-      ...sleepData.map(item => new Date(item.ds_end)),
-      ...stepData.map(item => new Date(item.ds)),
-      ...calorieData.map(item => new Date(item.ds))
-    ]
-    return {
-      globalStartDate: allDates.length > 0 ? min(allDates) : new Date(),
-      globalEndDate: allDates.length > 0 ? max(allDates) : new Date()
-    }
-  }, [analysisGraphData, predictionGraphData, sleepData, stepData, calorieData])
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get<AllData>('/api/getData');
+        setAllData(response.data);
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to fetch data');
+        setLoading(false);
+      }
+    };
 
+    fetchData();
+  }, []);
+
+  // const { globalStartDate, globalEndDate } = useMemo(() => {
+  //   const allDates = [
+  //     ...analysisGraphData.map(item => new Date(item.ds)),
+  //     ...predictionGraphData.map(item => new Date(item.ds)),
+  //     ...sleepData.map(item => new Date(item.ds_start)),
+  //     ...sleepData.map(item => new Date(item.ds_end)),
+  //     ...stepData.map(item => new Date(item.ds)),
+  //     ...calorieData.map(item => new Date(item.ds))
+  //   ]
+  //   return {
+  //     globalStartDate: allDates.length > 0 ? min(allDates) : new Date(),
+  //     globalEndDate: allDates.length > 0 ? max(allDates) : new Date()
+  //   }
+  // }, [analysisGraphData, predictionGraphData, sleepData, stepData, calorieData])
+
+  const { globalStartDate, globalEndDate } = useMemo(() => {
+    if (!allData) return { globalStartDate: new Date(), globalEndDate: new Date() };
+
+    const allDates = [
+      ...allData.calorieData.map(item => new Date(item.ds)),
+      ...allData.predictionData.map(item => new Date(item.ds)),
+      ...allData.analysisData.map(item => new Date(item.ds)),
+      ...allData.stepData.map(item => new Date(item.ds)),
+      ...allData.sleepData.flatMap(item => [new Date(item.ds_start), new Date(item.ds_end)])
+    ];
+
+    return {
+      globalStartDate: min(allDates),
+      globalEndDate: max(allDates)
+    };
+  }, [allData]);
 
 
   
@@ -302,101 +353,158 @@ export default function Home() {
     }
   }
 
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!allData) return <div>No data available</div>;
 
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Heart Rate and Sleep Analysis Dashboard</h1>
-      <div className="mb-4 flex items-center">
-        <label className="mr-2">계정 선택:</label>
-        <select 
-          value={selectedUser} 
-          onChange={handleUserSelect}
-          className="border p-2 rounded mr-2"
+      
+      <div className="mb-4 flex items-center justify-end relative">
+        <button
+          onClick={() => handleViewModeChange('combined')}
+          className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
         >
-          <option value="">Select a user</option>
-          {users.map(user => (
-            <option key={user} value={user}>{user}</option>
-          ))}
-        </select>
-        {isLoadingUser && <LoadingSpinner />}
-      </div>
-      {selectedUser && (
-        <div className="mb-4 flex items-center">
-          <label className="mr-2">분석 날짜:</label>
-          {analysisDates.length > 0 ? (
-            <select 
-              value={selectedDate} 
-              onChange={handleDateSelect}
-              className="border p-2 rounded mr-2"
-            >
-              <option value="">Select a date</option>
-              {analysisDates.map(date => (
-                <option key={date} value={date}>{date}</option>
-              ))}
-            </select>
-          ) : (
-            <p>No analysis dates available</p>
-          )}
-          {isLoadingDate && <LoadingSpinner />}
-        </div>
-      )}
-      {selectedDate && (
-        <div className="mb-4 flex items-center justify-end relative">
+          <LaptopMinimal size={20} />
+        </button>
+        <div className="relative">
           <button
-            onClick={() => handleViewModeChange('combined')}
-            className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            onClick={() => setShowDropdown(!showDropdown)}
+            className={`p-2 rounded ${viewMode === 'separate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
-            <LaptopMinimal size={20} />
+            <LayoutGrid size={20} />
           </button>
-          <div className="relative">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className={`p-2 rounded ${viewMode === 'separate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-            >
-              <LayoutGrid size={20} />
-            </button>
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                  {[1, 2, 3].map((count) => (
-                    <button
-                      key={count}
-                      onClick={() => handleColumnCountChange(count)}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      role="menuitem"
-                    >
-                      {count} Column{count !== 1 ? 's' : ''}
-                    </button>
-                  ))}
-                </div>
+          {showDropdown && (
+            <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+              <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                {[1, 2, 3].map((count) => (
+                  <button
+                    key={count}
+                    onClick={() => handleColumnCountChange(count)}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                    role="menuitem"
+                  >
+                    {count} Column{count !== 1 ? 's' : ''}
+                  </button>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
       <div className="mt-8">
-        {isLoadingDate ? (
-          <LoadingSpinner />
-        ) : showGraphs ? (
-          <GraphLayoutManager
-            analysisData={analysisGraphData}
-            predictionData={predictionGraphData}
-            stepData={stepData}
-            sleepData={sleepData}
-            calorieData={calorieData}
-            globalStartDate={globalStartDate}
-            globalEndDate={globalEndDate}
-            viewMode={viewMode}
-            columnCount={columnCount}
-          />
-        ) : null}
-        {showGraphs && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && calorieData.length === 0 && (
-          <div className="text-center text-red-500">No data available for the charts.</div>
-        )}
+        <GraphLayoutManager
+          analysisData={allData.analysisData}
+          predictionData={allData.predictionData}
+          stepData={allData.stepData}
+          sleepData={allData.sleepData}
+          calorieData={allData.calorieData}
+          globalStartDate={globalStartDate}
+          globalEndDate={globalEndDate}
+          viewMode={viewMode}
+          columnCount={columnCount}
+        />
       </div>
     </div>
   )
 }
+
+//   return (
+//     <div className="container mx-auto p-4">
+//       <h1 className="text-2xl font-bold mb-4">Heart Rate and Sleep Analysis Dashboard</h1>
+//       <div className="mb-4 flex items-center">
+//         <label className="mr-2">계정 선택:</label>
+//         <select 
+//           value={selectedUser} 
+//           onChange={handleUserSelect}
+//           className="border p-2 rounded mr-2"
+//         >
+//           <option value="">Select a user</option>
+//           {users.map(user => (
+//             <option key={user} value={user}>{user}</option>
+//           ))}
+//         </select>
+//         {isLoadingUser && <LoadingSpinner />}
+//       </div>
+//       {selectedUser && (
+//         <div className="mb-4 flex items-center">
+//           <label className="mr-2">분석 날짜:</label>
+//           {analysisDates.length > 0 ? (
+//             <select 
+//               value={selectedDate} 
+//               onChange={handleDateSelect}
+//               className="border p-2 rounded mr-2"
+//             >
+//               <option value="">Select a date</option>
+//               {analysisDates.map(date => (
+//                 <option key={date} value={date}>{date}</option>
+//               ))}
+//             </select>
+//           ) : (
+//             <p>No analysis dates available</p>
+//           )}
+//           {isLoadingDate && <LoadingSpinner />}
+//         </div>
+//       )}
+//       {selectedDate && (
+//         <div className="mb-4 flex items-center justify-end relative">
+//           <button
+//             onClick={() => handleViewModeChange('combined')}
+//             className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+//           >
+//             <LaptopMinimal size={20} />
+//           </button>
+//           <div className="relative">
+//             <button
+//               onClick={() => setShowDropdown(!showDropdown)}
+//               className={`p-2 rounded ${viewMode === 'separate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+//             >
+//               <LayoutGrid size={20} />
+//             </button>
+//             {showDropdown && (
+//               <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+//                 <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+//                   {[1, 2, 3].map((count) => (
+//                     <button
+//                       key={count}
+//                       onClick={() => handleColumnCountChange(count)}
+//                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+//                       role="menuitem"
+//                     >
+//                       {count} Column{count !== 1 ? 's' : ''}
+//                     </button>
+//                   ))}
+//                 </div>
+//               </div>
+//             )}
+//           </div>
+//         </div>
+//       )}
+//       <div className="mt-8">
+//         {isLoadingDate ? (
+//           <LoadingSpinner />
+//         ) : showGraphs ? (
+//           <GraphLayoutManager
+//             analysisData={analysisGraphData}
+//             predictionData={predictionGraphData}
+//             stepData={stepData}
+//             sleepData={sleepData}
+//             calorieData={calorieData}
+//             globalStartDate={globalStartDate}
+//             globalEndDate={globalEndDate}
+//             viewMode={viewMode}
+//             columnCount={columnCount}
+//           />
+//         ) : null}
+//         {showGraphs && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && calorieData.length === 0 && (
+//           <div className="text-center text-red-500">No data available for the charts.</div>
+//         )}
+//       </div>
+//     </div>
+//   )
+// }
 
 // import { useState, useEffect, useMemo } from 'react'
 // import axios from 'axios'
