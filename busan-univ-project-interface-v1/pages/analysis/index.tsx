@@ -113,7 +113,7 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get<AllData>('/api/getData');
+        const response = await axios.get<AllData>('../api/getData');
         setAllData(response.data);
         setLoading(false);
       } catch (err) {
