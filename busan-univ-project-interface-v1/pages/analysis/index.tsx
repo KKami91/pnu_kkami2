@@ -101,6 +101,7 @@ export default function Home() {
     if (date) {
       setIsLoadingDate(true)
       setShowGraphs(false) // 데이터 로딩 시작 시 그래프 숨김
+      const start = performance.now();
       await Promise.all([
 
         fetchAnalysisGraphData(selectedUser, date),
@@ -111,6 +112,8 @@ export default function Home() {
       ])
       setIsLoadingDate(false)
       setShowGraphs(true) // 데이터 로딩 완료 시 그래프 표시
+      const end = performance.now();
+      console.log(`전체 그래프가 그려지는데 걸리는 시간? ${end - start} ms`);
     }
   }
 
