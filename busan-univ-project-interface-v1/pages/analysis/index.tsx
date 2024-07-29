@@ -69,7 +69,7 @@ export default function Home() {
   const [calorieData, setCalorieData] = useState<StepData[]>([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [showGraphs, setShowGraphs] = useState(false);
-  const [viewMode, setViewMode] = useState('combined');
+  const [viewMode, setViewMode] = useState('separate');
   const [isLoadingGraphs, setIsLoadingGraphs] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [columnCount, setColumnCount] = useState(1);
@@ -323,7 +323,7 @@ export default function Home() {
       {selectedDate && (
         <div className="mb-4 flex items-center justify-end relative">
           <button
-            onClick={() => handleViewModeChange('separate')}
+            onClick={() => handleViewModeChange('combined')}
             className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
             <LaptopMinimal size={20} />
