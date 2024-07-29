@@ -74,6 +74,22 @@ export default function Home() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [columnCount, setColumnCount] = useState(1);
 
+  // 시간 체크하기 위해
+  const [renderStartTime, setRenderStartTime] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (showGraphs && renderStartTime !== null) {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const renderEndTime = performance.now();
+          const totalRenderTime = renderEndTime - renderStartTime;
+          console.log(`전체 렌더링 완료 시간: ${totalRenderTime} ms`);
+          setRenderStartTime(null);
+        });
+      });
+    }
+  }, [showGraphs, analysisGraphData, predictionGraphData, sleepData, stepData, calorieData, renderStartTime]);
+
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
       ...analysisGraphData.map(item => new Date(item.ds)),
@@ -102,6 +118,7 @@ export default function Home() {
       setIsLoadingDate(true)
       setShowGraphs(false) // 데이터 로딩 시작 시 그래프 숨김
       const start = performance.now();
+      setRenderStartTime(start);
       await Promise.all([
 
         fetchAnalysisGraphData(selectedUser, date),
@@ -112,8 +129,8 @@ export default function Home() {
       ])
       setIsLoadingDate(false)
       setShowGraphs(true) // 데이터 로딩 완료 시 그래프 표시
-      const end = performance.now();
-      console.log(`전체 그래프가 그려지는데 걸리는 시간? ${end - start} ms`);
+      // const end = performance.now();
+      // console.log(`전체 그래프가 그려지는데 걸리는 시간? ${end - start} ms`);
     }
   }
 
