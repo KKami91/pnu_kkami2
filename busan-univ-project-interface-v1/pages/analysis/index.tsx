@@ -68,6 +68,7 @@ export default function Home() {
   const [columnCount, setColumnCount] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [isRenderingGraphs, setIsRenderingGraphs] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -104,8 +105,7 @@ export default function Home() {
     const date = e.target.value
     setSelectedDate(date)
     if (date) {
-      setIsLoadingGraphs(true)
-      setIsRenderingGraphs(true)
+      setIsLoading(true)
       setError(null)
       setShowGraphs(false)
       setRenderTime(null)
@@ -126,14 +126,12 @@ export default function Home() {
         setShowGraphs(true)
       } catch (error) {
         setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
-      } finally {
-        setIsLoadingGraphs(false)
       }
     }
   }
 
   const handleViewModeChange = (mode: string) => {
-    setIsRenderingGraphs(true);
+    setIsLoading(true);
     setViewMode(mode);
     if (mode === 'combined') {
       setShowDropdown(false);
@@ -141,7 +139,7 @@ export default function Home() {
   };
 
   const handleColumnCountChange = (count: number) => {
-    setIsRenderingGraphs(true);
+    setIsLoading(true);
     setColumnCount(count);
     setViewMode('separate');
     setShowDropdown(false);
@@ -150,7 +148,7 @@ export default function Home() {
   useEffect(() => {
     if (showGraphs) {
       const timer = setTimeout(() => {
-        setIsRenderingGraphs(false);
+        setIsLoading(false);
         if (startTimeRef.current !== null) {
           const endTime = performance.now();
           const totalTime = endTime - startTimeRef.current;
@@ -341,7 +339,7 @@ export default function Home() {
         </div>
       )}
       <div className="mt-8">
-        {(isLoadingGraphs || isRenderingGraphs) ? (
+        {isLoading ? (
           <SkeletonLoader viewMode={viewMode} columns={columnCount} />
         ) : error ? (
           <div className="text-center text-red-500">{error}</div>
