@@ -95,6 +95,17 @@ export default function Home() {
   // 시간 체크하기 위해
   const [renderStartTime, setRenderStartTime] = useState<number | null>(null);
 
+  useEffect(() => {
+    if (selectedUser) {
+      fetchAnalysisDates(selectedUser);
+    }
+  }, [selectedUser]);
+
+  useEffect(() => {
+    if (selectedUser && selectedDate) {
+      fetchData(selectedUser, selectedDate);
+    }
+  }, [selectedUser, selectedDate]);
   
 
   useEffect(() => {
@@ -124,6 +135,33 @@ export default function Home() {
 
     fetchData();
   }, []);
+
+  const fetchData = async (user: string, date: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [calorieResponse, predictionResponse, analysisResponse, stepResponse, sleepResponse] = await Promise.all([
+        axios.get(`/api/calorie_data/${user}/${date}`),
+        axios.get(`/api/prediction_data/${user}/${date}`),
+        axios.get(`/api/analysis_data/${user}/${date}`),
+        axios.get(`/api/step_data/${user}/${date}`),
+        axios.get(`/api/sleep_data/${user}/${date}`)
+      ]);
+
+      setAllData({
+        calorieData: calorieResponse.data.data,
+        predictionData: predictionResponse.data.data,
+        analysisData: analysisResponse.data.data,
+        stepData: stepResponse.data.data,
+        sleepData: sleepResponse.data.data
+      });
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      setError('Error fetching data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // const { globalStartDate, globalEndDate } = useMemo(() => {
   //   const allDates = [
@@ -156,7 +194,6 @@ export default function Home() {
       globalEndDate: max(allDates)
     };
   }, [allData]);
-
 
   
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -228,14 +265,13 @@ export default function Home() {
 
   const fetchAnalysisDates = async (user: string) => {
     try {
-      const response = await axios.get(`${API_URL}/analysis_dates/${user}`)
-      setAnalysisDates(response.data.dates)
+      const response = await axios.get(`/api/analysis_dates/${user}`);
+      setAnalysisDates(response.data.dates);
     } catch (error) {
-      console.error('Error fetching analysis data:', error)
-      setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`)
-      setAnalysisDates([])
+      console.error('Error fetching analysis dates:', error);
+      setError('Error fetching analysis dates');
     }
-  }
+  };
 
   const checkDb = async (user: string) => {
     try {
@@ -361,54 +397,94 @@ export default function Home() {
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Heart Rate and Sleep Analysis Dashboard</h1>
       
-      <div className="mb-4 flex items-center justify-end relative">
-        <button
-          onClick={() => handleViewModeChange('combined')}
-          className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+      <div className="mb-4 flex items-center">
+        <label className="mr-2">계정 선택:</label>
+        <select 
+          value={selectedUser} 
+          onChange={handleUserSelect}
+          className="border p-2 rounded mr-2"
         >
-          <LaptopMinimal size={20} />
-        </button>
-        <div className="relative">
-          <button
-            onClick={() => setShowDropdown(!showDropdown)}
-            className={`p-2 rounded ${viewMode === 'separate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            <LayoutGrid size={20} />
-          </button>
-          {showDropdown && (
-            <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-              <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                {[1, 2, 3].map((count) => (
-                  <button
-                    key={count}
-                    onClick={() => handleColumnCountChange(count)}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                    role="menuitem"
-                  >
-                    {count} Column{count !== 1 ? 's' : ''}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+          <option value="">Select a user</option>
+          {users.map(user => (
+            <option key={user} value={user}>{user}</option>
+          ))}
+        </select>
       </div>
 
+      {selectedUser && (
+        <div className="mb-4 flex items-center">
+          <label className="mr-2">분석 날짜:</label>
+          {analysisDates.length > 0 ? (
+            <select 
+              value={selectedDate} 
+              onChange={handleDateSelect}
+              className="border p-2 rounded mr-2"
+            >
+              <option value="">Select a date</option>
+              {analysisDates.map(date => (
+                <option key={date} value={date}>{date}</option>
+              ))}
+            </select>
+          ) : (
+            <p>No analysis dates available</p>
+          )}
+        </div>
+      )}
+
+      {selectedDate && (
+        <div className="mb-4 flex items-center justify-end relative">
+          <button
+            onClick={() => handleViewModeChange('combined')}
+            className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            <LaptopMinimal size={20} />
+          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowDropdown(!showDropdown)}
+              className={`p-2 rounded ${viewMode === 'separate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            >
+              <LayoutGrid size={20} />
+            </button>
+            {showDropdown && (
+              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
+                  {[1, 2, 3].map((count) => (
+                    <button
+                      key={count}
+                      onClick={() => handleColumnCountChange(count)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                      role="menuitem"
+                    >
+                      {count} Column{count !== 1 ? 's' : ''}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mt-8">
-        <GraphLayoutManager
-          analysisData={allData.analysisData}
-          predictionData={allData.predictionData}
-          stepData={allData.stepData}
-          sleepData={allData.sleepData}
-          calorieData={allData.calorieData}
-          globalStartDate={globalStartDate}
-          globalEndDate={globalEndDate}
-          viewMode={viewMode}
-          columnCount={columnCount}
-        />
+        {loading && <div>Loading...</div>}
+        {error && <div>Error: {error}</div>}
+        {!loading && !error && allData && (
+          <GraphLayoutManager
+            analysisData={allData.analysisData}
+            predictionData={allData.predictionData}
+            stepData={allData.stepData}
+            sleepData={allData.sleepData}
+            calorieData={allData.calorieData}
+            globalStartDate={globalStartDate}
+            globalEndDate={globalEndDate}
+            viewMode={viewMode}
+            columnCount={columnCount}
+          />
+        )}
       </div>
     </div>
-  )
+  );
 }
 
 //   return (

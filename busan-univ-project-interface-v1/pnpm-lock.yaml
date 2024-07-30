@@ -33,7 +33,7 @@ importers:
         specifier: ^2.6.3
         version: 2.6.3
       aws-sdk:
-        specifier: ^2.1619.0
+        specifier: ^2.1622.0
         version: 2.1622.0
       axios:
         specifier: ^1.6.8
@@ -87,10 +87,10 @@ importers:
         specifier: ^9.1.0
         version: 9.1.0
       react:
-        specifier: ^18
+        specifier: ^18.3.1
         version: 18.3.1
       react-dom:
-        specifier: ^18
+        specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
       react-native:
         specifier: ^0.74.1
@@ -121,31 +121,31 @@ importers:
         specifier: ^7.4.3
         version: 7.4.3
       '@types/node':
-        specifier: ^20
+        specifier: ^20.12.8
         version: 20.12.8
       '@types/plotly.js':
-        specifier: ^2.29.3
+        specifier: ^2.29.4
         version: 2.29.4
       '@types/react':
         specifier: ^18.3.1
         version: 18.3.1
       '@types/react-dom':
-        specifier: ^18
+        specifier: ^18.3.0
         version: 18.3.0
       eslint:
-        specifier: ^8
+        specifier: ^8.57.0
         version: 8.57.0
       eslint-config-next:
         specifier: 14.2.3
         version: 14.2.3(eslint@8.57.0)(typescript@5.4.5)
       postcss:
-        specifier: ^8
+        specifier: ^8.4.38
         version: 8.4.38
       tailwindcss:
-        specifier: ^3.4.1
+        specifier: ^3.4.3
         version: 3.4.3
       typescript:
-        specifier: ^5
+        specifier: ^5.4.5
         version: 5.4.5
 
 packages:
@@ -3511,6 +3511,10 @@ packages:
     resolution: {integrity: sha512-B9/wizE4WngqQftFPmdaMYlXoJlJOYxGQOanC77fq9k8+Z0v5dDSVh+3glErdIROP//s/jgb7ZuxKfB8nVyo0g==}
     hasBin: true
 
+  fast-xml-parser@4.4.1:
+    resolution: {integrity: sha512-xkjOecfnKGkSsOwtZ5Pz7Us/T6mrbPQrq0nh+aCO5V9nk5NLWmasAHumTKjiPJPWANe+kAZ84Jc8ooJkzZ88Sw==}
+    hasBin: true
+
   fastq@1.17.1:
     resolution: {integrity: sha512-sRVD3lWVIXWg6By68ZN7vho9a1pQcN/WBFaAAsDDFzlJjvoGx0P8z7V1t72grFJfJhu3YPZBuu25f7Kaw2jN1w==}
 
@@ -4917,6 +4921,10 @@ packages:
 
   pbf@3.2.1:
     resolution: {integrity: sha512-ClrV7pNOn7rtmoQVF4TS1vyU0WhYRnP92fzbfF75jAIwpnzdJXf8iTd4CMEqO4yUenH6NDqLiwjqlh6QgZzgLQ==}
+    hasBin: true
+
+  pbf@3.3.0:
+    resolution: {integrity: sha512-XDF38WCH3z5OV/OVa8GKUNtLAyneuzbCisx7QUCF8Q6Nutx0WnJrQe5O+kOtBlLfRNUws98Y58Lblp+NJG5T4Q==}
     hasBin: true
 
   performance-now@2.1.0:
@@ -8209,7 +8217,7 @@ snapshots:
       chalk: 4.1.2
       execa: 5.1.1
       fast-glob: 3.3.2
-      fast-xml-parser: 4.2.5
+      fast-xml-parser: 4.4.1
       logkitty: 0.7.1
     transitivePeerDependencies:
       - encoding
@@ -8220,7 +8228,7 @@ snapshots:
       chalk: 4.1.2
       execa: 5.1.1
       fast-glob: 3.3.2
-      fast-xml-parser: 4.2.5
+      fast-xml-parser: 4.4.1
       ora: 5.4.1
     transitivePeerDependencies:
       - encoding
@@ -10725,6 +10733,10 @@ snapshots:
     dependencies:
       strnum: 1.0.5
 
+  fast-xml-parser@4.4.1:
+    dependencies:
+      strnum: 1.0.5
+
   fastq@1.17.1:
     dependencies:
       reusify: 1.0.4
@@ -11802,7 +11814,7 @@ snapshots:
       gl-matrix: 3.4.3
       grid-index: 1.1.0
       murmurhash-js: 1.0.0
-      pbf: 3.2.1
+      pbf: 3.3.0
       potpack: 1.0.2
       quickselect: 2.0.0
       rw: 1.3.3
@@ -12353,6 +12365,11 @@ snapshots:
   path-type@4.0.0: {}
 
   pbf@3.2.1:
+    dependencies:
+      ieee754: 1.2.1
+      resolve-protobuf-schema: 2.1.0
+
+  pbf@3.3.0:
     dependencies:
       ieee754: 1.2.1
       resolve-protobuf-schema: 2.1.0
