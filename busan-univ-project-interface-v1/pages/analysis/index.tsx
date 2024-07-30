@@ -107,6 +107,21 @@ export default function Home() {
     }
   }, [selectedUser, selectedDate]);
   
+  useEffect(() => {
+    fetchData();  // 초기 로딩 시 사용자와 날짜 없이 호출
+  }, []);
+  
+  useEffect(() => {
+    if (selectedUser) {
+      fetchData(selectedUser);  // 사용자 선택 시 호출
+    }
+  }, [selectedUser]);
+  
+  useEffect(() => {
+    if (selectedUser && selectedDate) {
+      fetchData(selectedUser, selectedDate);  // 사용자와 날짜 모두 선택 시 호출
+    }
+  }, [selectedUser, selectedDate]);
 
   useEffect(() => {
     if (showGraphs && renderStartTime !== null) {
@@ -121,37 +136,50 @@ export default function Home() {
     }
   }, [showGraphs, analysisGraphData, predictionGraphData, sleepData, stepData, calorieData, renderStartTime]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        console.log('before mongodb');
-        const response = await axios.get<AllData>('https://pnu-kkami2.vercel.app/api/mongodb');
-        console.log('after mongodb');
-        setAllData(response.data);
-        console.log(response.data);
-        setLoading(false);
-      } catch (err) {
-        setError('Failed to fetch data');
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const fetchData = async (user: string, date: string) => {
+  const fetchData = async (user?: string, date?: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`../api/getData?user=${user}&date=${date}`);
+      let url = '/api/mongodb';
+      if (user) {
+        url += `?user=${user}`;
+        if (date) {
+          url += `&date=${date}`;
+        }
+      }
+      
+      console.log('Fetching data from:', url);
+      const response = await axios.get<AllData>(url);
+      console.log('Data fetched successfully');
+      
       setAllData(response.data);
+      
+      // analysisDates가 AllData에 포함되어 있으므로 직접 설정
+      setAnalysisDates((response.data as AllData).analysisDates || []);
+      
+      setLoading(false);
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Error fetching data');
-    } finally {
       setLoading(false);
     }
   };
+  
+  useEffect(() => {
+    fetchData();  // 초기 로딩 시 사용자와 날짜 없이 호출
+  }, []);
+  
+  useEffect(() => {
+    if (selectedUser) {
+      fetchData(selectedUser);  // 사용자 선택 시 호출
+    }
+  }, [selectedUser]);
+  
+  useEffect(() => {
+    if (selectedUser && selectedDate) {
+      fetchData(selectedUser, selectedDate);  // 사용자와 날짜 모두 선택 시 호출
+    }
+  }, [selectedUser, selectedDate]);
 
   // const { globalStartDate, globalEndDate } = useMemo(() => {
   //   const allDates = [

@@ -37,7 +37,7 @@ interface AllData {
   analysisData: AnalysisData[];
   stepData: StepData[];
   sleepData: SleepData[];
-  analysisDates: string[];
+  analysisDates?: string[];
 }
 
 
@@ -55,44 +55,35 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AllData | { error: string }>
 ) {
-  console.log(`req ${req.query}`);
-  console.log(`res ${res}`);
   const { user, date } = req.query;
-  console.log(`user ${user}`);
-  console.log(`date ${date}`);
-
-  if (!user) {
-    return res.status(400).json({ error: 'User is required' });
-  }
-  console.log('before client');
   const client = new MongoClient(uri);
-  console.log('after client' , client);
 
   try {
-    console.log('in try');
     await client.connect();
     const db: Db = client.db('prophetdb');
-    console.log('db', db);
 
+    // 항상 분석 날짜 가져오기
+    const analysisDates = await db.collection('analysis_results').distinct('analysis_date');
 
-
-    // 분석 날짜 가져오기
-    const analysisDates = await db.collection('analysis_results').distinct('analysis_date', { user_email: user });
-    console.log('analysisDates', analysisDates);
-
-    // 특정 날짜가 제공된 경우에만 해당 날짜의 데이터를 가져옵니다.
     let calorieData: CalorieData[] = [];
     let predictionData: PredictionData[] = [];
     let analysisData: AnalysisData[] = [];
     let stepData: StepData[] = [];
     let sleepData: SleepData[] = [];
 
-    if (date) {
-      calorieData = await db.collection<CalorieData>('calorie_results').find({ user_email: user, calorie_date: date }).toArray();
-      predictionData = await db.collection<PredictionData>('prediction_results').find({ user_email: user, prediction_date: date }).toArray();
-      analysisData = await db.collection<AnalysisData>('analysis_results').find({ user_email: user, analysis_date: date }).toArray();
-      stepData = await db.collection<StepData>('step_results').find({ user_email: user, step_date: date }).toArray();
-      sleepData = await db.collection<SleepData>('sleep_results').find({ user_email: user, sleep_date: date }).toArray();
+    if (user) {
+      const query = date ? { user_email: user, analysis_date: date } : { user_email: user };
+      
+      // 날짜가 지정되지 않은 경우 가장 최근 날짜 사용
+      const latestDate = date || (await db.collection('analysis_results').find({ user_email: user }).sort({ analysis_date: -1 }).limit(1).toArray())[0]?.analysis_date;
+
+      if (latestDate) {
+        calorieData = await db.collection<CalorieData>('calorie_results').find({ user_email: user, calorie_date: latestDate }).toArray();
+        predictionData = await db.collection<PredictionData>('prediction_results').find({ user_email: user, prediction_date: latestDate }).toArray();
+        analysisData = await db.collection<AnalysisData>('analysis_results').find({ user_email: user, analysis_date: latestDate }).toArray();
+        stepData = await db.collection<StepData>('step_results').find({ user_email: user, step_date: latestDate }).toArray();
+        sleepData = await db.collection<SleepData>('sleep_results').find({ user_email: user, sleep_date: latestDate }).toArray();
+      }
     }
 
     const allData: AllData = {
@@ -101,7 +92,7 @@ export default async function handler(
       analysisData,
       stepData,
       sleepData,
-      analysisDates
+      analysisDates: analysisDates || [] // 항상 배열 형태로 반환
     };
 
     res.status(200).json(allData);
