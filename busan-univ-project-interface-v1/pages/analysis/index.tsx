@@ -102,6 +102,7 @@ export default function Home() {
       setError(null)
       setShowGraphs(false)
       try {
+        const start = performance.now();
         const [analysisData, predictionData, stepData, sleepData, calorieData] = await Promise.all([
           fetchData('analysis_results', selectedUser, date),
           fetchData('prediction_results', selectedUser, date),
@@ -109,12 +110,40 @@ export default function Home() {
           fetchData('sleep_results', selectedUser, date),
           fetchData('calorie_results', selectedUser, date)
         ]);
+        const end = performance.now();
+        console.log(`모든 데이터 가져오는데 걸리는 시간 ${end - start} ms`);
+
+        const analysis_start = performance.now();
         setAnalysisGraphData(analysisData);
+        const analysis_end = performance.now();
+        console.log(`setAnalysisGraphData 분석 그래프 나오는데 걸린 시간 ${analysis_end - analysis_start} ms`);
+
+        const prediction_start = performance.now();
         setPredictionGraphData(predictionData);
+        const prediction_end = performance.now();
+        console.log(`setPredictionGraphData 예측 그래프 나오는데 걸린 시간 ${prediction_end - prediction_start} ms`);
+
+        const step_start = performance.now();
         setStepData(stepData);
+        const step_end = performance.now();
+        console.log(`setStepData 걸음수 그래프 나오는데 걸린 시간 ${step_end - step_start} ms`);
+
+        const sleep_start = performance.now();
         setSleepData(sleepData);
+        const sleep_end = performance.now();
+        console.log(`setSleepData 수면 그래프 나오는데 걸린 시간 ${sleep_end - sleep_start} ms`);
+
+        const calorie_start = performance.now();
         setCalorieData(calorieData);
+        const calorie_end = performance.now();
+        console.log(`setCalorieData 칼로리 그래프 나오는데 걸린 시간 ${calorie_end - calorie_start} ms`);
+
+
+        const show_start = performance.now();
         setShowGraphs(true)
+        const show_end = performance.now();
+        console.log(`그래프 그려주는데 걸린 시간 ${show_end - show_start} ms`);
+
       } catch (error) {
         setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
       } finally {
@@ -147,8 +176,15 @@ export default function Home() {
     setAnalysisDates([])
     if (user) {
       setIsLoadingUser(true)
+      const start = performance.now();
       await checkDb(user)
+      const end = performance.now();
+      console.log(`checkDb 걸린 시간 : ${end - start} ms`)
+
+      const start2 = performance.now();
       await fetchAnalysisDates(user)
+      const end2 = performance.now();
+      console.log(`fetchAnalysisDates date가져오는데 걸린 시간 : ${end2 - start2} ms`)
       setIsLoadingUser(false)
     }
   }
@@ -172,63 +208,63 @@ export default function Home() {
     }
   }
 
-  const fetchAnalysisGraphData = async (user: string, date: string) => {
-    try {
-      const response = await axios.get(`${API_URL}/analysis_data/${user}/${date}`)
-      setAnalysisGraphData(response.data.data)
-    } catch (error) {
-      console.error('Error fetching analysis graph data:', error)
-      setMessage(`Error fetching analysis data: ${error instanceof Error ? error.message : String(error)}`)
-      setAnalysisGraphData([])
-    }
-  }
+  // const fetchAnalysisGraphData = async (user: string, date: string) => {
+  //   try {
+  //     const response = await axios.get(`${API_URL}/analysis_data/${user}/${date}`)
+  //     setAnalysisGraphData(response.data.data)
+  //   } catch (error) {
+  //     console.error('Error fetching analysis graph data:', error)
+  //     setMessage(`Error fetching analysis data: ${error instanceof Error ? error.message : String(error)}`)
+  //     setAnalysisGraphData([])
+  //   }
+  // }
 
-  const fetchPredictionGraphData = async (user: string, date: string) => {
-    try {
-      const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`)
-      setPredictionGraphData(response.data.data.map((item: any) => ({
-        ds: item.ds,
-        y: item.y
-      })))
-    } catch (error) {
-      console.error('Error fetching prediction graph data:', error)
-      setMessage(`Error fetching prediction data: ${error instanceof Error ? error.message : String(error)}`)
-      setPredictionGraphData([])
-    }
-  }
+  // const fetchPredictionGraphData = async (user: string, date: string) => {
+  //   try {
+  //     const response = await axios.get(`${API_URL}/prediction_data/${user}/${date}`)
+  //     setPredictionGraphData(response.data.data.map((item: any) => ({
+  //       ds: item.ds,
+  //       y: item.y
+  //     })))
+  //   } catch (error) {
+  //     console.error('Error fetching prediction graph data:', error)
+  //     setMessage(`Error fetching prediction data: ${error instanceof Error ? error.message : String(error)}`)
+  //     setPredictionGraphData([])
+  //   }
+  // }
 
-  const fetchStepData = async (user: string, date: string) => {
-    try {
-      const response = await axios.get(`${API_URL}/step_data/${user}/${date}`)
-      setStepData(response.data.data)
-    } catch (error) {
-      console.error('Error fetching step data:', error)
-      setMessage(`Error fetching step data: ${error instanceof Error ? error.message : String(error)}`)
-      setStepData([])
-    }
-  }
+  // const fetchStepData = async (user: string, date: string) => {
+  //   try {
+  //     const response = await axios.get(`${API_URL}/step_data/${user}/${date}`)
+  //     setStepData(response.data.data)
+  //   } catch (error) {
+  //     console.error('Error fetching step data:', error)
+  //     setMessage(`Error fetching step data: ${error instanceof Error ? error.message : String(error)}`)
+  //     setStepData([])
+  //   }
+  // }
 
-  const fetchSleepData = async (user: string, date: string) => {
-    try {
-      const response = await axios.get(`${API_URL}/sleep_data/${user}/${date}`)
-      setSleepData(response.data.data)
-    } catch (error) {
-      console.error('Error fetching sleep data:', error)
-      setMessage(`Error fetching sleep data: ${error instanceof Error ? error.message : String(error)}`)
-      setSleepData([])
-    }
-  }
+  // const fetchSleepData = async (user: string, date: string) => {
+  //   try {
+  //     const response = await axios.get(`${API_URL}/sleep_data/${user}/${date}`)
+  //     setSleepData(response.data.data)
+  //   } catch (error) {
+  //     console.error('Error fetching sleep data:', error)
+  //     setMessage(`Error fetching sleep data: ${error instanceof Error ? error.message : String(error)}`)
+  //     setSleepData([])
+  //   }
+  // }
 
-  const fetchCalorieData = async (user: string, date: string) => {
-    try {
-      const response = await axios.get(`${API_URL}/calorie_data/${user}/${date}`)
-      setCalorieData(response.data.data)
-    } catch (error) {
-      console.error('Error fetching calorie data:', error)
-      setMessage(`Error fetching calorie data: ${error instanceof Error ? error.message : String(error)}`)
-      setCalorieData([])
-    }
-  }
+  // const fetchCalorieData = async (user: string, date: string) => {
+  //   try {
+  //     const response = await axios.get(`${API_URL}/calorie_data/${user}/${date}`)
+  //     setCalorieData(response.data.data)
+  //   } catch (error) {
+  //     console.error('Error fetching calorie data:', error)
+  //     setMessage(`Error fetching calorie data: ${error instanceof Error ? error.message : String(error)}`)
+  //     setCalorieData([])
+  //   }
+  // }
 
 
   return (
