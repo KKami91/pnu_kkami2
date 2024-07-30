@@ -97,89 +97,89 @@ export default function Home() {
   // 시간 체크하기 위해
   const [renderStartTime, setRenderStartTime] = useState<number | null>(null);
 
-  useEffect(() => {
-    if (selectedUser) {
-      fetchAnalysisDates(selectedUser);
-    }
-  }, [selectedUser]);
+  // useEffect(() => {
+  //   if (selectedUser) {
+  //     fetchAnalysisDates(selectedUser);
+  //   }
+  // }, [selectedUser]);
 
-  useEffect(() => {
-    if (selectedUser && selectedDate) {
-      fetchData(selectedUser, selectedDate);
-    }
-  }, [selectedUser, selectedDate]);
+  // useEffect(() => {
+  //   if (selectedUser && selectedDate) {
+  //     fetchData(selectedUser, selectedDate);
+  //   }
+  // }, [selectedUser, selectedDate]);
   
-  useEffect(() => {
-    fetchData();  // 초기 로딩 시 사용자와 날짜 없이 호출
-  }, []);
+  // useEffect(() => {
+  //   fetchData();  // 초기 로딩 시 사용자와 날짜 없이 호출
+  // }, []);
   
-  useEffect(() => {
-    if (selectedUser) {
-      fetchData(selectedUser);  // 사용자 선택 시 호출
-    }
-  }, [selectedUser]);
+  // useEffect(() => {
+  //   if (selectedUser) {
+  //     fetchData(selectedUser);  // 사용자 선택 시 호출
+  //   }
+  // }, [selectedUser]);
   
-  useEffect(() => {
-    if (selectedUser && selectedDate) {
-      fetchData(selectedUser, selectedDate);  // 사용자와 날짜 모두 선택 시 호출
-    }
-  }, [selectedUser, selectedDate]);
+  // useEffect(() => {
+  //   if (selectedUser && selectedDate) {
+  //     fetchData(selectedUser, selectedDate);  // 사용자와 날짜 모두 선택 시 호출
+  //   }
+  // }, [selectedUser, selectedDate]);
 
-  useEffect(() => {
-    if (showGraphs && renderStartTime !== null) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const renderEndTime = performance.now();
-          const totalRenderTime = renderEndTime - renderStartTime;
-          console.log(`전체 렌더링 완료 시간: ${totalRenderTime} ms`);
-          setRenderStartTime(null);
-        });
-      });
-    }
-  }, [showGraphs, analysisGraphData, predictionGraphData, sleepData, stepData, calorieData, renderStartTime]);
+  // useEffect(() => {
+  //   if (showGraphs && renderStartTime !== null) {
+  //     requestAnimationFrame(() => {
+  //       requestAnimationFrame(() => {
+  //         const renderEndTime = performance.now();
+  //         const totalRenderTime = renderEndTime - renderStartTime;
+  //         console.log(`전체 렌더링 완료 시간: ${totalRenderTime} ms`);
+  //         setRenderStartTime(null);
+  //       });
+  //     });
+  //   }
+  // }, [showGraphs, analysisGraphData, predictionGraphData, sleepData, stepData, calorieData, renderStartTime]);
 
-  const fetchData = async (user?: string, date?: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      let url = '/api/mongodb';
-      if (user) {
-        url += `?user=${user}`;
-        if (date) {
-          url += `&date=${date}`;
-        }
-      }
+  // const fetchData = async (user?: string, date?: string) => {
+  //   setLoading(true);
+  //   setError(null);
+  //   try {
+  //     let url = '/api/mongodb';
+  //     if (user) {
+  //       url += `?user=${user}`;
+  //       if (date) {
+  //         url += `&date=${date}`;
+  //       }
+  //     }
       
-      console.log('Fetching data from:', url);
-      const response = await axios.get<AllData>(url);
-      console.log('Data fetched successfully', response.data);
+  //     console.log('Fetching data from:', url);
+  //     const response = await axios.get<AllData>(url);
+  //     console.log('Data fetched successfully', response.data);
       
 
-      setAnalysisDates(response.data.analysisDates);
+  //     setAnalysisDates(response.data.analysisDates);
       
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setError('Error fetching data');
-      setLoading(false);
-    }
-  };
+  //     setLoading(false);
+  //   } catch (error) {
+  //     console.error('Error fetching data:', error);
+  //     setError('Error fetching data');
+  //     setLoading(false);
+  //   }
+  // };
   
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // useEffect(() => {
+  //   fetchData();
+  // }, []);
   
-  useEffect(() => {
-    if (selectedUser) {
-      fetchData(selectedUser);
-    }
-  }, [selectedUser]);
+  // useEffect(() => {
+  //   if (selectedUser) {
+  //     fetchData(selectedUser);
+  //   }
+  // }, [selectedUser]);
   
-  useEffect(() => {
-    if (selectedUser && selectedDate) {
-      fetchData(selectedUser, selectedDate);
-    }
-  }, [selectedUser, selectedDate]);
+  // useEffect(() => {
+  //   if (selectedUser && selectedDate) {
+  //     fetchData(selectedUser, selectedDate);
+  //   }
+  // }, [selectedUser, selectedDate]);
 
   // const { globalStartDate, globalEndDate } = useMemo(() => {
   //   const allDates = [
@@ -213,32 +213,51 @@ export default function Home() {
     };
   }, [allData]);
 
-  
+
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const date = e.target.value
+    const date = e.target.value;
+    setSelectedDate(date);
 
-    
-    
-    setSelectedDate(date)
     if (date) {
-      setIsLoadingDate(true)
-      setShowGraphs(false) // 데이터 로딩 시작 시 그래프 숨김
-      const start = performance.now();
-      setRenderStartTime(start);
-      await Promise.all([
-
-        fetchAnalysisGraphData(selectedUser, date),
-        fetchPredictionGraphData(selectedUser, date),
-        fetchStepData(selectedUser, date),
-        fetchSleepData(selectedUser, date),
-        fetchCalorieData(selectedUser, date)
-      ])
-      setIsLoadingDate(false)
-      setShowGraphs(true) // 데이터 로딩 완료 시 그래프 표시
-      // const end = performance.now();
-      // console.log(`전체 그래프가 그려지는데 걸리는 시간? ${end - start} ms`);
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get<AllData>(`/api/getData?user=${selectedUser}&date=${date}`);
+        setAllData(response.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError(`Error fetching data: ${error instanceof Error ? error.message : String(error)}`);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
+  };
+
+  // const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //   const date = e.target.value
+
+    
+    
+  //   setSelectedDate(date)
+  //   if (date) {
+  //     setIsLoadingDate(true)
+  //     setShowGraphs(false) // 데이터 로딩 시작 시 그래프 숨김
+  //     const start = performance.now();
+  //     setRenderStartTime(start);
+  //     await Promise.all([
+
+  //       fetchAnalysisGraphData(selectedUser, date),
+  //       fetchPredictionGraphData(selectedUser, date),
+  //       fetchStepData(selectedUser, date),
+  //       fetchSleepData(selectedUser, date),
+  //       fetchCalorieData(selectedUser, date)
+  //     ])
+  //     setIsLoadingDate(false)
+  //     setShowGraphs(true) // 데이터 로딩 완료 시 그래프 표시
+  //     // const end = performance.now();
+  //     // console.log(`전체 그래프가 그려지는데 걸리는 시간? ${end - start} ms`);
+  //   }
+  // }
 
   const handleViewModeChange = (mode: string) => {
     //setIsLoadingGraphs(true)
@@ -258,28 +277,54 @@ export default function Home() {
   };
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const user = e.target.value
+    const user = e.target.value;
+    setSelectedUser(user);
+    setSelectedDate('');
+    setAnalysisDates([]);
+    setAllData(null);
 
-
-    setSelectedUser(user)
-    setSelectedDate('')
-    setAnalysisDates([])
     if (user) {
-      setIsLoadingUser(true)
-      // DB체크(파이썬 서버) 걸린 시간 체크
-      const start = performance.now();
-      await checkDb(user)
-      const end = performance.now();
-      console.log(`DB체크 걸린 시간(checkDb) ${end - start} ms`);
-
-      // 날짜 가져오는데 걸린 시간 체크
-      const start2 = performance.now();
-      await fetchAnalysisDates(user)
-      const end2 = performance.now();
-      console.log(`날짜 가져오는데 걸린 시간(fetchAnalysisDates) ${end2 - start2} ms`); 
-      setIsLoadingUser(false)
+      setLoading(true);
+      setError(null);
+      try {
+        // Python API 서버에 checkDB 요청
+        await axios.post(`${API_URL}/check_db`, { user_email: user });
+        
+        // MongoDB에서 날짜 목록 가져오기
+        const response = await axios.get(`/api/getAnalysisDates?user=${user}`);
+        setAnalysisDates(response.data.dates);
+      } catch (error) {
+        console.error('Error in user selection:', error);
+        setError(`Error occurred: ${error instanceof Error ? error.message : String(error)}`);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
+  };
+
+  // const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //   const user = e.target.value
+
+
+  //   setSelectedUser(user)
+  //   setSelectedDate('')
+  //   setAnalysisDates([])
+  //   if (user) {
+  //     setIsLoadingUser(true)
+  //     // DB체크(파이썬 서버) 걸린 시간 체크
+  //     const start = performance.now();
+  //     await checkDb(user)
+  //     const end = performance.now();
+  //     console.log(`DB체크 걸린 시간(checkDb) ${end - start} ms`);
+
+  //     // 날짜 가져오는데 걸린 시간 체크
+  //     const start2 = performance.now();
+  //     await fetchAnalysisDates(user)
+  //     const end2 = performance.now();
+  //     console.log(`날짜 가져오는데 걸린 시간(fetchAnalysisDates) ${end2 - start2} ms`); 
+  //     setIsLoadingUser(false)
+  //   }
+  // }
 
   const fetchAnalysisDates = async (user: string) => {
     try {
@@ -407,9 +452,9 @@ export default function Home() {
     }
   }
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error: {error}</div>;
-  if (!allData) return <div>No data available</div>;
+  // if (loading) return <div>Loading...</div>;
+  // if (error) return <div>Error: {error}</div>;
+  // if (!allData) return <div>No data available</div>;
 
   return (
     <div className="container mx-auto p-4">
