@@ -1,7 +1,7 @@
 import React from 'react';
 
 const SkeletonBox = ({ className }: { className?: string }) => (
-  <div className={`bg-gray-200 rounded animate-pulse-smooth ${className}`}></div>
+  <div className={`bg-gray-200 rounded animate-pulse ${className}`}></div>
 );
 
 export const CombinedSkeletonLoader = () => (

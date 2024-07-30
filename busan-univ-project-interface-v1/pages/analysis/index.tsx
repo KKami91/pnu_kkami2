@@ -126,6 +126,7 @@ export default function Home() {
         setShowGraphs(true)
       } catch (error) {
         setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
+        setIsLoading(false)
       }
     }
   }
@@ -159,7 +160,7 @@ export default function Home() {
 
       return () => clearTimeout(timer);
     }
-  }, [showGraphs, viewMode, columnCount]);
+  }, [showGraphs, viewMode, columnCount])
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
