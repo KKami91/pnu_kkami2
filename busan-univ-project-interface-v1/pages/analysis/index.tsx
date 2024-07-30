@@ -124,8 +124,11 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get<AllData>('/pages/api/mongodb');
+        console.log('before mongodb');
+        const response = await axios.get<AllData>('/api/mongodb');
+        console.log('after mongodb');
         setAllData(response.data);
+        console.log(response.data);
         setLoading(false);
       } catch (err) {
         setError('Failed to fetch data');
