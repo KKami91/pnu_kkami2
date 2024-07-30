@@ -11,7 +11,7 @@ export const CombinedSkeletonLoader = () => (
 );
 
 export const SeparateSkeletonLoader = ({ columns }: { columns: number }) => (
-  <div className={`grid grid-cols-${columns} gap-4`}>
+  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, 1fr)`, gap: '1rem' }}>
     {[...Array(6)].map((_, index) => (
       <div key={index} className="w-full h-[400px] bg-white p-4 rounded-lg shadow-lg">
         <SkeletonBox className="w-full h-full" />

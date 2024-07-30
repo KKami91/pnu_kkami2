@@ -67,6 +67,7 @@ export default function Home() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [columnCount, setColumnCount] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [isRenderingGraphs, setIsRenderingGraphs] = useState(false);
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -104,6 +105,7 @@ export default function Home() {
     setSelectedDate(date)
     if (date) {
       setIsLoadingGraphs(true)
+      setIsRenderingGraphs(true)
       setError(null)
       setShowGraphs(false)
       setRenderTime(null)
@@ -131,7 +133,7 @@ export default function Home() {
   }
 
   const handleViewModeChange = (mode: string) => {
-    setIsLoadingGraphs(true);
+    setIsRenderingGraphs(true);
     setViewMode(mode);
     if (mode === 'combined') {
       setShowDropdown(false);
@@ -139,21 +141,27 @@ export default function Home() {
   };
 
   const handleColumnCountChange = (count: number) => {
-    setIsLoadingGraphs(true);
+    setIsRenderingGraphs(true);
     setColumnCount(count);
     setViewMode('separate');
     setShowDropdown(false);
   };
 
   useEffect(() => {
-    if (isLoadingGraphs) {
+    if (showGraphs) {
       const timer = setTimeout(() => {
-        setIsLoadingGraphs(false);
-      }, 1500); // Adjust this value to control how long the skeleton loading is shown for view mode changes
+        setIsRenderingGraphs(false);
+        if (startTimeRef.current !== null) {
+          const endTime = performance.now();
+          const totalTime = endTime - startTimeRef.current;
+          setRenderTime(totalTime);
+          startTimeRef.current = null;
+        }
+      }, 500); // Adjust this value if needed
 
       return () => clearTimeout(timer);
     }
-  }, [isLoadingGraphs, viewMode, columnCount]);
+  }, [showGraphs, viewMode, columnCount]);
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
@@ -333,7 +341,7 @@ export default function Home() {
         </div>
       )}
       <div className="mt-8">
-        {isLoadingGraphs ? (
+        {(isLoadingGraphs || isRenderingGraphs) ? (
           <SkeletonLoader viewMode={viewMode} columns={columnCount} />
         ) : error ? (
           <div className="text-center text-red-500">{error}</div>
