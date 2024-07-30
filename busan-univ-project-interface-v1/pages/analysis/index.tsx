@@ -140,7 +140,7 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`/api/getData?user=${user}&date=${date}`);
+      const response = await axios.get(`../api/getData?user=${user}&date=${date}`);
       setAllData(response.data);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -252,7 +252,7 @@ export default function Home() {
 
   const fetchAnalysisDates = async (user: string) => {
     try {
-      const response = await axios.get(`/api/analysis_dates/${user}`);
+      const response = await axios.get(`../api/analysis_dates/${user}`);
       setAnalysisDates(response.data.dates);
     } catch (error) {
       console.error('Error fetching analysis dates:', error);
