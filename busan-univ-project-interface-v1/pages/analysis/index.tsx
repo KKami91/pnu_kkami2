@@ -96,6 +96,7 @@ export default function Home() {
       throw error;
     }
   };
+
   
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
@@ -157,21 +158,29 @@ export default function Home() {
   }
 
   const handleViewModeChange = (mode: string) => {
-    //setIsLoadingGraphs(true)
+    setIsLoadingGraphs(true);
     setViewMode(mode);
     if (mode === 'combined') {
       setShowDropdown(false);
     }
-    // setTimeout(() => {
-    //   setIsLoadingGraphs(false)
-    // }, 1000) // 스켈레톤 로딩을 1초 동안 보여줍니다.
   };
 
   const handleColumnCountChange = (count: number) => {
+    setIsLoadingGraphs(true);
     setColumnCount(count);
     setViewMode('separate');
     setShowDropdown(false);
   };
+
+  useEffect(() => {
+    if (isLoadingGraphs) {
+      const timer = setTimeout(() => {
+        setIsLoadingGraphs(false);
+      }, 1000); // Adjust this value to control how long the skeleton loading is shown
+
+      return () => clearTimeout(timer);
+    }
+  }, [isLoadingGraphs]);
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
