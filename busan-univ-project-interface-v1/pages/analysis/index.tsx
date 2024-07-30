@@ -102,13 +102,12 @@ export default function Home() {
     const date = e.target.value
     setSelectedDate(date)
     if (date) {
-      startTimeRef.current = performance.now();
       setIsLoadingGraphs(true)
       setError(null)
       setShowGraphs(false)
       setRenderTime(null)
+      startTimeRef.current = performance.now();
       try {
-        const start = performance.now();
         const [analysisData, predictionData, stepData, sleepData, calorieData] = await Promise.all([
           fetchData('analysis_results', selectedUser, date),
           fetchData('prediction_results', selectedUser, date),
@@ -116,39 +115,12 @@ export default function Home() {
           fetchData('sleep_results', selectedUser, date),
           fetchData('calorie_results', selectedUser, date)
         ]);
-        const end = performance.now();
-        console.log(`모든 데이터 가져오는데 걸리는 시간 ${end - start} ms`);
-
-        const analysis_start = performance.now();
         setAnalysisGraphData(analysisData);
-        const analysis_end = performance.now();
-        console.log(`setAnalysisGraphData 분석 그래프 나오는데 걸린 시간 ${analysis_end - analysis_start} ms`);
-
-        const prediction_start = performance.now();
         setPredictionGraphData(predictionData);
-        const prediction_end = performance.now();
-        console.log(`setPredictionGraphData 예측 그래프 나오는데 걸린 시간 ${prediction_end - prediction_start} ms`);
-
-        const step_start = performance.now();
         setStepData(stepData);
-        const step_end = performance.now();
-        console.log(`setStepData 걸음수 그래프 나오는데 걸린 시간 ${step_end - step_start} ms`);
-
-        const sleep_start = performance.now();
         setSleepData(sleepData);
-        const sleep_end = performance.now();
-        console.log(`setSleepData 수면 그래프 나오는데 걸린 시간 ${sleep_end - sleep_start} ms`);
-
-        const calorie_start = performance.now();
         setCalorieData(calorieData);
-        const calorie_end = performance.now();
-        console.log(`setCalorieData 칼로리 그래프 나오는데 걸린 시간 ${calorie_end - calorie_start} ms`);
-
-
-        
         setShowGraphs(true)
-
-
       } catch (error) {
         setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
       } finally {
@@ -176,11 +148,11 @@ export default function Home() {
     if (isLoadingGraphs) {
       const timer = setTimeout(() => {
         setIsLoadingGraphs(false);
-      }, 1000); // Adjust this value to control how long the skeleton loading is shown
+      }, 500); // Adjust this value to control how long the skeleton loading is shown for view mode changes
 
       return () => clearTimeout(timer);
     }
-  }, [isLoadingGraphs]);
+  }, [isLoadingGraphs, viewMode, columnCount]);
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
