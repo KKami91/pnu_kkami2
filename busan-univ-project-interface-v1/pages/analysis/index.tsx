@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import axios from 'axios'
 import GraphLayoutManager from '../../components/GraphLayoutManager';
+import { AllData, CalorieData, PredictionData, AnalysisData, StepData, SleepData } from '../../types/data';
 import { min, max } from 'date-fns';
-
 import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
@@ -22,42 +22,43 @@ const SkeletonLoader = () => (
   </div>
 )
 
-interface CalorieData {
-  ds : string;
-  calorie : number;
-}
+// interface CalorieData {
+//   ds : string;
+//   calorie : number;
+// }
 
-interface PredictionData {
-  ds : string;
-  y : number;
-  yhat : number;
-}
+// interface PredictionData {
+//   ds : string;
+//   y : number;
+//   yhat : number;
+// }
 
-interface AnalysisData {
-  ds : string;
-  sdnn : number;
-  rmssd : number;
-}
+// interface AnalysisData {
+//   ds : string;
+//   sdnn : number;
+//   rmssd : number;
+// }
 
-interface StepData {
-  ds : string;
-  step : number;
-}
+// interface StepData {
+//   ds : string;
+//   step : number;
+// }
 
-interface SleepData {
-  ds_start : string;
-  ds_end : string;
-  stage : string;
-}
+// interface SleepData {
+//   ds_start : string;
+//   ds_end : string;
+//   stage : string;
+// }
 
 
-interface AllData {
-  calorieData: CalorieData[];
-  predictionData: PredictionData[];
-  analysisData: AnalysisData[];
-  stepData: StepData[];
-  sleepData: SleepData[];
-}
+// interface AllData {
+//   calorieData: CalorieData[];
+//   predictionData: PredictionData[];
+//   analysisData: AnalysisData[];
+//   stepData: StepData[];
+//   sleepData: SleepData[];
+//   analysisDates: string[];
+// }
 
 
 const measureTime = async <T extends any>(fn: () => Promise<T>, fnName: string): Promise<T> => {
@@ -71,7 +72,7 @@ const measureTime = async <T extends any>(fn: () => Promise<T>, fnName: string):
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('');
   const [message, setMessage] = useState('');
-  const [analysisDates, setAnalysisDates] = useState([]);
+  const [analysisDates, setAnalysisDates] = useState<string[]>([]);
   const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [isLoadingDate, setIsLoadingDate] = useState(false);
   const [analysisGraphData, setAnalysisGraphData] = useState<AnalysisData[]>([]);
@@ -85,6 +86,7 @@ export default function Home() {
   const [isLoadingGraphs, setIsLoadingGraphs] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [columnCount, setColumnCount] = useState(1);
+  
 
   // MongoDB
   const [data, setData] = useState(null);
@@ -150,12 +152,10 @@ export default function Home() {
       
       console.log('Fetching data from:', url);
       const response = await axios.get<AllData>(url);
-      console.log('Data fetched successfully');
+      console.log('Data fetched successfully', response.data);
       
-      setAllData(response.data);
-      
-      // analysisDates가 AllData에 포함되어 있으므로 직접 설정
-      setAnalysisDates((response.data as AllData).analysisDates || []);
+
+      setAnalysisDates(response.data.analysisDates);
       
       setLoading(false);
     } catch (error) {
@@ -166,18 +166,18 @@ export default function Home() {
   };
   
   useEffect(() => {
-    fetchData();  // 초기 로딩 시 사용자와 날짜 없이 호출
+    fetchData();
   }, []);
   
   useEffect(() => {
     if (selectedUser) {
-      fetchData(selectedUser);  // 사용자 선택 시 호출
+      fetchData(selectedUser);
     }
   }, [selectedUser]);
   
   useEffect(() => {
     if (selectedUser && selectedDate) {
-      fetchData(selectedUser, selectedDate);  // 사용자와 날짜 모두 선택 시 호출
+      fetchData(selectedUser, selectedDate);
     }
   }, [selectedUser, selectedDate]);
 

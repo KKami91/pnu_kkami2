@@ -1,44 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { MongoClient, Db } from 'mongodb';
-
-// 각 컬렉션의 데이터 타입을 정의합니다.
-interface CalorieData {
-  ds : string;
-  calorie : number;
-}
-
-interface PredictionData {
-  ds : string;
-  y : number;
-  yhat : number;
-}
-
-interface AnalysisData {
-  ds : string;
-  sdnn : number;
-  rmssd : number;
-}
-
-interface StepData {
-  ds : string;
-  step : number;
-}
-
-interface SleepData {
-  ds_start : string;
-  ds_end : string;
-  stage : string;
-}
-
-
-interface AllData {
-  calorieData: CalorieData[];
-  predictionData: PredictionData[];
-  analysisData: AnalysisData[];
-  stepData: StepData[];
-  sleepData: SleepData[];
-  analysisDates?: string[];
-}
+import { AllData, CalorieData, PredictionData, AnalysisData, StepData, SleepData } from '../../types/data';
 
 
 
@@ -92,7 +54,7 @@ export default async function handler(
       analysisData,
       stepData,
       sleepData,
-      analysisDates: analysisDates || [] // 항상 배열 형태로 반환
+      analysisDates: analysisDates || null
     };
 
     res.status(200).json(allData);
