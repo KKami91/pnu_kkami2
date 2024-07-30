@@ -98,8 +98,10 @@ export default function Home() {
     const date = e.target.value
     setSelectedDate(date)
     if (date) {
+      const show_start = performance.now();
       setIsLoadingGraphs(true)
       setError(null)
+
       setShowGraphs(false)
       try {
         const start = performance.now();
@@ -139,15 +141,16 @@ export default function Home() {
         console.log(`setCalorieData 칼로리 그래프 나오는데 걸린 시간 ${calorie_end - calorie_start} ms`);
 
 
-        const show_start = performance.now();
+        
         setShowGraphs(true)
-        const show_end = performance.now();
-        console.log(`그래프 그려주는데 걸린 시간 ${show_end - show_start} ms`);
+
 
       } catch (error) {
         setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
       } finally {
         setIsLoadingGraphs(false)
+        const show_end = performance.now();
+        console.log(`그래프 그려주는데 걸린 시간 ${show_end - show_start} ms`);
       }
     }
   }
