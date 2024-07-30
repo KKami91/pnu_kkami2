@@ -65,7 +65,6 @@ export default function Home() {
   const [isLoadingGraphs, setIsLoadingGraphs] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [columnCount, setColumnCount] = useState(1);
-  const [error, setError] = useState<string | null>(null);
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
@@ -81,45 +80,22 @@ export default function Home() {
       globalEndDate: allDates.length > 0 ? max(allDates) : new Date()
     }
   }, [analysisGraphData, predictionGraphData, sleepData, stepData, calorieData])
-
-  const fetchData = async (collection: string, user: string, date: string) => {
-    try {
-      const response = await axios.get('/api/getData', {
-        params: { collection, user_email: user, date }
-      });
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching ${collection} data:`, error);
-      throw error;
-    }
-  };
   
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
     setSelectedDate(date)
     if (date) {
-      setIsLoadingGraphs(true)
-      setError(null)
-      setShowGraphs(false)
-      try {
-        const [analysisData, predictionData, stepData, sleepData, calorieData] = await Promise.all([
-          fetchData('analysis_results', selectedUser, date),
-          fetchData('prediction_results', selectedUser, date),
-          fetchData('step_results', selectedUser, date),
-          fetchData('sleep_results', selectedUser, date),
-          fetchData('calorie_results', selectedUser, date)
-        ]);
-        setAnalysisGraphData(analysisData);
-        setPredictionGraphData(predictionData);
-        setStepData(stepData);
-        setSleepData(sleepData);
-        setCalorieData(calorieData);
-        setShowGraphs(true)
-      } catch (error) {
-        setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
-      } finally {
-        setIsLoadingGraphs(false)
-      }
+      setIsLoadingDate(true)
+      setShowGraphs(false) // 데이터 로딩 시작 시 그래프 숨김
+      await Promise.all([
+        fetchAnalysisGraphData(selectedUser, date),
+        fetchPredictionGraphData(selectedUser, date),
+        fetchStepData(selectedUser, date),
+        fetchSleepData(selectedUser, date),
+        fetchCalorieData(selectedUser, date)
+      ])
+      setIsLoadingDate(false)
+      setShowGraphs(true) // 데이터 로딩 완료 시 그래프 표시
     }
   }
 
