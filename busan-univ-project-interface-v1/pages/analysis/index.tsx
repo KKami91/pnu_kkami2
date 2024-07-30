@@ -125,7 +125,7 @@ export default function Home() {
     const fetchData = async () => {
       try {
         console.log('before mongodb');
-        const response = await axios.get<AllData>('/api/mongodb');
+        const response = await axios.get<AllData>('https://pnu-kkami2.vercel.app/api/mongodb');
         console.log('after mongodb');
         setAllData(response.data);
         console.log(response.data);
