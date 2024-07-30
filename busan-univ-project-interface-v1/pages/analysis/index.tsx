@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import axios from 'axios'
 import GraphLayoutManager from '../../components/GraphLayoutManager';
 import { min, max } from 'date-fns';
@@ -67,6 +67,9 @@ export default function Home() {
   const [columnCount, setColumnCount] = useState(1);
   const [error, setError] = useState<string | null>(null);
 
+  const [renderTime, setRenderTime] = useState<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [
       ...analysisGraphData.map(item => new Date(item.ds)),
@@ -98,11 +101,11 @@ export default function Home() {
     const date = e.target.value
     setSelectedDate(date)
     if (date) {
-      const show_start = performance.now();
+      startTimeRef.current = performance.now();
       setIsLoadingGraphs(true)
       setError(null)
-
       setShowGraphs(false)
+      setRenderTime(null)
       try {
         const start = performance.now();
         const [analysisData, predictionData, stepData, sleepData, calorieData] = await Promise.all([
@@ -149,8 +152,6 @@ export default function Home() {
         setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
       } finally {
         setIsLoadingGraphs(false)
-        const show_end = performance.now();
-        console.log(`그래프 그려주는데 걸린 시간 ${show_end - show_start} ms`);
       }
     }
   }
@@ -269,6 +270,14 @@ export default function Home() {
   //   }
   // }
 
+  useEffect(() => {
+    if (showGraphs && startTimeRef.current !== null) {
+      const endTime = performance.now();
+      const totalTime = endTime - startTimeRef.current;
+      setRenderTime(totalTime);
+      startTimeRef.current = null;  // Reset start time
+    }
+  }, [showGraphs]);
 
   return (
     <div className="container mx-auto p-4">
@@ -342,20 +351,29 @@ export default function Home() {
         </div>
       )}
       <div className="mt-8">
-        {isLoadingDate ? (
-          <LoadingSpinner />
+        {isLoadingGraphs ? (
+          <SkeletonLoader />
+        ) : error ? (
+          <div className="text-center text-red-500">{error}</div>
         ) : showGraphs ? (
-          <GraphLayoutManager
-            analysisData={analysisGraphData}
-            predictionData={predictionGraphData}
-            stepData={stepData}
-            sleepData={sleepData}
-            calorieData={calorieData}
-            globalStartDate={globalStartDate}
-            globalEndDate={globalEndDate}
-            viewMode={viewMode}
-            columnCount={columnCount}
-          />
+          <>
+            <GraphLayoutManager
+              analysisData={analysisGraphData}
+              predictionData={predictionGraphData}
+              stepData={stepData}
+              sleepData={sleepData}
+              calorieData={calorieData}
+              globalStartDate={globalStartDate}
+              globalEndDate={globalEndDate}
+              viewMode={viewMode}
+              columnCount={columnCount}
+            />
+            {renderTime !== null && (
+              <div className="mt-4 text-center text-gray-600">
+                Total render time: {renderTime.toFixed(2)} ms
+              </div>
+            )}
+          </>
         ) : null}
         {showGraphs && analysisGraphData.length === 0 && predictionGraphData.length === 0 && sleepData.length === 0 && stepData.length === 0 && calorieData.length === 0 && (
           <div className="text-center text-red-500">No data available for the charts.</div>
