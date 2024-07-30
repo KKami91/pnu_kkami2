@@ -140,21 +140,8 @@ export default function Home() {
     setLoading(true);
     setError(null);
     try {
-      const [calorieResponse, predictionResponse, analysisResponse, stepResponse, sleepResponse] = await Promise.all([
-        axios.get(`/api/calorie_data/${user}/${date}`),
-        axios.get(`/api/prediction_data/${user}/${date}`),
-        axios.get(`/api/analysis_data/${user}/${date}`),
-        axios.get(`/api/step_data/${user}/${date}`),
-        axios.get(`/api/sleep_data/${user}/${date}`)
-      ]);
-
-      setAllData({
-        calorieData: calorieResponse.data.data,
-        predictionData: predictionResponse.data.data,
-        analysisData: analysisResponse.data.data,
-        stepData: stepResponse.data.data,
-        sleepData: sleepResponse.data.data
-      });
+      const response = await axios.get(`/api/getData?user=${user}&date=${date}`);
+      setAllData(response.data);
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Error fetching data');
