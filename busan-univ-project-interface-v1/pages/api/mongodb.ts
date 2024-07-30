@@ -42,30 +42,43 @@ interface AllData {
 
 
 
+console.log('start...');
 if (!process.env.MONGODB_URI) {
   throw new Error('Please add your Mongo URI to .env.local');
 }
 
+console.log('before uri');
 const uri = process.env.MONGODB_URI;
+console.log(uri);
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AllData | { error: string }>
 ) {
+  console.log(`req ${req.query}`);
+  console.log(`res ${res}`);
   const { user, date } = req.query;
+  console.log(`user ${user}`);
+  console.log(`date ${date}`);
 
   if (!user) {
     return res.status(400).json({ error: 'User is required' });
   }
-
+  console.log('before client');
   const client = new MongoClient(uri);
+  console.log('after client' , client);
 
   try {
+    console.log('in try');
     await client.connect();
     const db: Db = client.db('prophetdb');
+    console.log('db', db);
+
+
 
     // 분석 날짜 가져오기
     const analysisDates = await db.collection('analysis_results').distinct('analysis_date', { user_email: user });
+    console.log('analysisDates', analysisDates);
 
     // 특정 날짜가 제공된 경우에만 해당 날짜의 데이터를 가져옵니다.
     let calorieData: CalorieData[] = [];
