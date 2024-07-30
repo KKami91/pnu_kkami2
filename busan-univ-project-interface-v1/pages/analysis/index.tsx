@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import axios from 'axios'
 import GraphLayoutManager from '../../components/GraphLayoutManager';
+import { SkeletonLoader } from '../../components/SkeletonLoaders';
 import { min, max } from 'date-fns';
 import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 
@@ -13,13 +14,13 @@ const LoadingSpinner = () => (
   </div>
 )
 
-const SkeletonLoader = () => (
-  <div className="animate-pulse">
-    <div className="h-64 bg-gray-300 rounded"></div>
-    <div className="mt-4 h-4 bg-gray-300 rounded w-3/4"></div>
-    <div className="mt-2 h-4 bg-gray-300 rounded w-1/2"></div>
-  </div>
-)
+// const SkeletonLoader = () => (
+//   <div className="animate-pulse">
+//     <div className="h-64 bg-gray-300 rounded"></div>
+//     <div className="mt-4 h-4 bg-gray-300 rounded w-3/4"></div>
+//     <div className="mt-2 h-4 bg-gray-300 rounded w-1/2"></div>
+//   </div>
+// )
 
 interface AnalysisData {
   ds: string
@@ -148,7 +149,7 @@ export default function Home() {
     if (isLoadingGraphs) {
       const timer = setTimeout(() => {
         setIsLoadingGraphs(false);
-      }, 500); // Adjust this value to control how long the skeleton loading is shown for view mode changes
+      }, 1500); // Adjust this value to control how long the skeleton loading is shown for view mode changes
 
       return () => clearTimeout(timer);
     }
@@ -333,7 +334,7 @@ export default function Home() {
       )}
       <div className="mt-8">
         {isLoadingGraphs ? (
-          <SkeletonLoader />
+          <SkeletonLoader viewMode={viewMode} columns={columnCount} />
         ) : error ? (
           <div className="text-center text-red-500">{error}</div>
         ) : showGraphs ? (
