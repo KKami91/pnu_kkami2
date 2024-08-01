@@ -17,10 +17,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const database = client.db('heart_rate_db')
       const dataCollection = database.collection(collection as string)
 
-      const query = { 
+      const query = {
         user_email, 
-        [`${collection.toString().replace('_results', '')}_date`]: date 
+        ['date']: date,
       }
+
+      // const query = { 
+      //   user_email, 
+      //   [`${collection.toString().replace('_results', '')}_date`]: date 
+      // }
       
       const result = await dataCollection.findOne(query)
 

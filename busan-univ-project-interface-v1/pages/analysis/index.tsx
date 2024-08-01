@@ -70,6 +70,9 @@ export default function Home() {
   const [isRenderingGraphs, setIsRenderingGraphs] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [hourlyData, setHourlyData] = useState<AnalysisData[]>([]);
+  const [dailyData, setDailyData] = useState<AnalysisData[]>([]);
+
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
@@ -111,23 +114,38 @@ export default function Home() {
       setRenderTime(null)
       startTimeRef.current = performance.now();
       try {
-        const [analysisData, predictionData, stepData, sleepData, calorieData] = await Promise.all([
-          fetchData('analysis_results', selectedUser, date),
-          fetchData('prediction_results', selectedUser, date),
-          fetchData('step_results', selectedUser, date),
-          fetchData('sleep_results', selectedUser, date),
-          fetchData('calorie_results', selectedUser, date)
+        const [hourlyData, dailyData] = await Promise.all([
+          fetchData('hourly', selectedUser, date),
+          fetchData('daily', selectedUser, date),
         ]);
-        setAnalysisGraphData(analysisData);
-        setPredictionGraphData(predictionData);
-        setStepData(stepData);
-        setSleepData(sleepData);
-        setCalorieData(calorieData);
-        setShowGraphs(true)
+        console.log(hourlyData);
+        console.log(dailyData);
+        setHourlyData(hourlyData);
+        setDailyData(dailyData);
       } catch (error) {
-        setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
+        setError(`Error loading`)
         setIsLoading(false)
       }
+      // try {
+      //   const [hourlyData, dailyData] = await Promise.all([
+      //   const [analysisData, predictionData, stepData, sleepData, calorieData] = await Promise.all([
+        
+      //     fetchData('analysis_results', selectedUser, date),
+      //     fetchData('prediction_results', selectedUser, date),
+      //     fetchData('step_results', selectedUser, date),
+      //     fetchData('sleep_results', selectedUser, date),
+      //     fetchData('calorie_results', selectedUser, date)
+      //   ]);
+      //   setAnalysisGraphData(analysisData);
+      //   // setPredictionGraphData(predictionData);
+      //   setStepData(stepData);
+      //   setSleepData(sleepData);
+      //   setCalorieData(calorieData);
+      //   setShowGraphs(true)
+      // } catch (error) {
+      //   setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
+      //   setIsLoading(false)
+      // }
     }
   }
 
