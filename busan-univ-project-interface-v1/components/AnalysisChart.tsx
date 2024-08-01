@@ -111,7 +111,8 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
 
   const yAxisDomain = useMemo(() => {
     const values = formattedData.map(item => item[dataKey]).filter(value => value != null);
-    return [Math.min(...values), Math.max(...values)];
+    //return [Math.min(...values), Math.max(...values)];
+    return [0.01, Math.max(...values)];
   }, [formattedData, dataKey]);
 
   const handleBrushChange = (domain: any) => {
