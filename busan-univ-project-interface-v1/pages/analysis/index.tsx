@@ -181,17 +181,29 @@ export default function Home() {
       setIsLoadingUser(false)
     }
   }
-
-  const fetchAnalysisDates = async (user: string) => {
-    try {
-      const response = await axios.get(`${API_URL}/analysis_dates/${user}`)
-      setAnalysisDates(response.data.dates)
-    } catch (error) {
-      console.error('Error fetching analysis data:', error)
-      setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`)
-      setAnalysisDates([])
+  
+    const fetchAnalysisDates = async (user: string) => {
+      try {
+        const response = await axios.get(`${API_URL}/check_dates/${user}`)
+        setAnalysisDates(response.data.dates)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        setMessage(`Error fetching dates: ${error instanceof Error ? error.message : String(error)}`)
+        setAnalysisDates([])
+      }
     }
-  }
+
+  // 기존 코드 
+  // const fetchAnalysisDates = async (user: string) => {
+  //   try {
+  //     const response = await axios.get(`${API_URL}/analysis_dates/${user}`)
+  //     setAnalysisDates(response.data.dates)
+  //   } catch (error) {
+  //     console.error('Error fetching analysis data:', error)
+  //     setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`)
+  //     setAnalysisDates([])
+  //   }
+  // }
 
   const checkDb = async (user: string) => {
     try {
