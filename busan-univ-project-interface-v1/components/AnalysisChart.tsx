@@ -162,7 +162,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
                 tick={{ fill: '#666', fontSize: 12 }}
                 label={{ value: isCalorie ? 'Calories' : 'Steps', angle: -90, position: 'insideLeft', fill: '#666' }}
                 scale='log'
-                domain={yAxisDomain}
+                domain={[0.01, 'auto']}
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend verticalAlign='top' height={36} />
