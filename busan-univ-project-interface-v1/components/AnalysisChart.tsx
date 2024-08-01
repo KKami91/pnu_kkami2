@@ -27,7 +27,7 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
         <p className="text-sm font-bold text-black">{`Date: ${label}`}</p>
         {payload.map((entry, index) => (
           <p key={index} className="text-sm text-black">
-            {`${entry.name}: ${entry.value != null ? Number(entry.value).toFixed(2) : 'N/A'} ${entry.name === 'BPM' ? 'bpm' : entry.name === 'Steps' ? '' : 'ms'}`}
+            {`${entry.name}: ${entry.value != null ? Number(entry.value).toFixed(2) : 'N/A'} ${entry.name === 'BPM' ? 'bpm' : entry.name === 'Steps' ? '' : entry.name === 'Calories' ? 'kcal' :  'ms'}`}
           </p>
         ))}
       </div>
