@@ -111,8 +111,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
 
   const yAxisDomain = useMemo(() => {
     const values = formattedData.map(item => item[dataKey]).filter(value => value != null);
-    //return [Math.min(...values), Math.max(...values)];
-    return [0.01, Math.max(...values)];
+    return [Math.min(...values), Math.max(...values)];
   }, [formattedData, dataKey]);
 
   const handleBrushChange = (domain: any) => {
@@ -162,6 +161,7 @@ const AnalysisChart: React.FC<AnalysisChartProps> = ({
                 tick={{ fill: '#666', fontSize: 12 }}
                 label={{ value: isCalorie ? 'Calories' : 'Steps', angle: -90, position: 'insideLeft', fill: '#666' }}
                 scale='log'
+                allowDataOverflow
                 domain={[0.01, 'auto']}
               />
               <Tooltip content={<CustomTooltip />} />
