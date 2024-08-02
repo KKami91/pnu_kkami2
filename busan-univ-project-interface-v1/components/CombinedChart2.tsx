@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, addHours } from 'date-fns';
+import { format, parseISO, subHours } from 'date-fns';
 
 interface CombinedChartProps {
   hourlyData: any[];
@@ -36,7 +36,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const combinedData = useMemo(() => {
     return hourlyData.map(hourly => {
       const hourlyDate = parseISO(hourly.ds);
-      const adjustedDate = addHours(hourlyDate, 9); // KST로 조정
+      const adjustedDate = subHours(hourlyDate, 9); // UTC to KST 조정
       const matchingDaily = dailyData.find(daily => daily.ds.split('T')[0] === hourly.ds.split('T')[0]);
       
       return {
@@ -73,12 +73,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const yAxisDomains = useMemo(() => {
     const leftData = filteredData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
-    const rightData = filteredData.flatMap(d => [d.step, d.calorie, d.dailyStep, d.dailyCalorie].filter(v => v != null));
+    const rightData = filteredData.flatMap(d => [d.step, d.calorie].filter(v => v != null));
+    const dailyMaxStep = Math.max(...dailyData.map(d => d.step || 0));
+    const dailyMaxCalorie = Math.max(...dailyData.map(d => d.calorie || 0));
     return {
       left: [0, Math.max(...leftData, 1) * 1.1],
-      right: [0, Math.max(...rightData, 1) * 1.1],
+      right: [0, Math.max(...rightData, dailyMaxStep, dailyMaxCalorie, 1) * 1.1],
     };
-  }, [filteredData]);
+  }, [filteredData, dailyData]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     console.log('Brush changed:', newBrushDomain);
