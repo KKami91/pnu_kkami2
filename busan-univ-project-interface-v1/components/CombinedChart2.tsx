@@ -39,6 +39,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       return {
         ...hourly,
         timestamp: new Date(hourly.ds).getTime(),
+        bpm: hourly.bpm,
+        sdnn: Number(hourly.sdnn.toFixed(2)),
+        rmssd: Number(hourly.rmssd.toFixed(2)),
         dailyStep: matchingDaily?.step || null,
         dailyCalorie: matchingDaily?.calorie || null,
       };
@@ -67,8 +70,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     const leftData = filteredData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
     const rightData = filteredData.flatMap(d => [d.dailyStep, d.dailyCalorie].filter(v => v != null));
     return {
-      left: [Math.min(...leftData), Math.max(...leftData)],
-      right: [0, Math.max(...rightData)],
+      left: [0, Math.max(...leftData) * 1.1], // 10% 여유 추가
+      right: [0, Math.max(...rightData) * 1.1], // 10% 여유 추가
     };
   }, [filteredData]);
 
@@ -101,7 +104,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <p className="font-bold">{format(new Date(label), 'yyyy-MM-dd HH:mm')}</p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
-              {`${pld.name}: ${pld.value !== null ? pld.value.toFixed(2) : 'N/A'}`}
+              {`${pld.name}: ${pld.value !== null ? 
+                (pld.name === 'SDNN' || pld.name === 'RMSSD' ? pld.value.toFixed(2) : pld.value)
+                : 'N/A'}`}
             </p>
           ))}
         </div>
