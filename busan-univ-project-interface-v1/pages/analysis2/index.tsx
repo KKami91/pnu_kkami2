@@ -176,7 +176,7 @@ export default function Home() {
 
   const checkDb = async (user: string) => {
     try {
-      await axios.post(`${API_URL}/check_db`, { user_email: user })
+      await axios.post(`${API_URL}/check_db2`, { user_email: user })
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
     }
