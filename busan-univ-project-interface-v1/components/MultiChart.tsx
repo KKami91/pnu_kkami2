@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import { format, parseISO, subHours } from 'date-fns';
 
@@ -36,14 +36,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
       };
     }).sort((a, b) => a.timestamp - b.timestamp);
   }, [hourlyData, dailyData, activeTimeUnit]);
-
-  useEffect(() => {
-    if (combinedData.length > 0) {
-      const newDomain: [number, number] = [combinedData[0].timestamp, combinedData[combinedData.length - 1].timestamp];
-      setBrushDomain(newDomain);
-      onBrushChange(newDomain);
-    }
-  }, [combinedData, onBrushChange]);
 
   const filteredData = useMemo(() => {
     if (!brushDomain) return combinedData;
@@ -114,28 +106,23 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
   return (
     <div className='bg-white p-4 rounded-lg shadow'>
-      <div className="mb-4 flex justify-end">
-        <button
-          className={`px-4 py-2 rounded ${activeTimeUnit === 'hourly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          onClick={() => setActiveTimeUnit('hourly')}
-        >
-          Hourly
-        </button>
-        <button
-          className={`px-4 py-2 rounded ml-2 ${activeTimeUnit === 'daily' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          onClick={() => setActiveTimeUnit('daily')}
-        >
-          Daily
-        </button>
+      <div className="mb-4 flex justify-between items-center">
+        <div>
+          <button
+            onClick={() => setActiveTimeUnit('hourly')}
+            className={`px-4 py-2 rounded ${activeTimeUnit === 'hourly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            Hourly
+          </button>
+          <button
+            onClick={() => setActiveTimeUnit('daily')}
+            className={`px-4 py-2 rounded ml-2 ${activeTimeUnit === 'daily' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            Daily
+          </button>
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-4" style={{ height: '1500px' }}>
-        <div className="col-span-2">{renderChart('bpm', '#ff7300', 'BPM')}</div>
-        <div>{renderChart('sdnn', '#0088FE', 'SDNN (ms)')}</div>
-        <div>{renderChart('rmssd', '#00C49F', 'RMSSD (ms)')}</div>
-        <div>{renderChart('step', 'rgba(130, 202, 157, 0.6)', 'Steps', BarChart)}</div>
-        <div>{renderChart('calorie', 'rgba(136, 132, 216, 0.6)', 'Calories', BarChart)}</div>
-      </div>
-      <div style={{ height: '100px' }}>
+      <div style={{ height: '100px', marginBottom: '20px' }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={combinedData} syncId="healthMetrics">
             <XAxis 
@@ -154,6 +141,13 @@ const MultiChart: React.FC<MultiChartProps> = ({
             />
           </LineChart>
         </ResponsiveContainer>
+      </div>
+      <div className="grid grid-cols-2 gap-4" style={{ height: '1500px' }}>
+        <div className="col-span-2">{renderChart('bpm', '#ff7300', 'BPM')}</div>
+        <div>{renderChart('sdnn', '#0088FE', 'SDNN (ms)')}</div>
+        <div>{renderChart('rmssd', '#00C49F', 'RMSSD (ms)')}</div>
+        <div>{renderChart('step', 'rgba(130, 202, 157, 0.6)', 'Steps', BarChart)}</div>
+        <div>{renderChart('calorie', 'rgba(136, 132, 216, 0.6)', 'Calories', BarChart)}</div>
       </div>
     </div>
   );

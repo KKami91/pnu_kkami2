@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import axios from 'axios'
 import MultiChart from '../../components/MultiChart';
-import GraphLayoutManager from '../../components/GraphLayoutManager2';
+import CombinedChart from '../../components/CombinedChart2';
 import { SkeletonLoader } from '../../components/SkeletonLoaders2';
 import { min, max } from 'date-fns';
 import { LaptopMinimal, LayoutGrid } from 'lucide-react';
@@ -50,9 +50,7 @@ export default function Home() {
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
-  const [viewMode, setViewMode] = useState<'combined' | 'separate'>('combined');
-  const [columnCount, setColumnCount] = useState(1);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [viewMode, setViewMode] = useState<'combined' | 'multi'>('combined');
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allTimestamps = [...hourlyData, ...dailyData].map(item => new Date(item.ds).getTime());
@@ -137,19 +135,6 @@ export default function Home() {
     console.log('Brush domain changed:', domain);
   };
 
-  const handleViewModeChange = (mode: 'combined' | 'separate') => {
-    setViewMode(mode);
-    if (mode === 'combined') {
-      setShowDropdown(false);
-    }
-  };
-
-  const handleColumnCountChange = (count: number) => {
-    setColumnCount(count);
-    setViewMode('separate');
-    setShowDropdown(false);
-  };
-
   useEffect(() => {
     if (showGraphs && startTimeRef.current !== null) {
       const endTime = performance.now();
@@ -197,48 +182,30 @@ export default function Home() {
         </div>
       )}
       {selectedDate && (
-        <div className="mb-4 flex items-center justify-end relative">
+        <div className="mb-4 flex items-center justify-end">
           <button
-            onClick={() => handleViewModeChange('combined')}
+            onClick={() => setViewMode('combined')}
             className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
             <LaptopMinimal size={20} />
           </button>
-          <div className="relative">
-            <button
-              onClick={() => setShowDropdown(!showDropdown)}
-              className={`p-2 rounded ${viewMode === 'separate' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-            >
-              <LayoutGrid size={20} />
-            </button>
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                <div className="py-1" role="menu" aria-orientation="vertical" aria-labelledby="options-menu">
-                  {[1, 2, 3].map((count) => (
-                    <button
-                      key={count}
-                      onClick={() => handleColumnCountChange(count)}
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                      role="menuitem"
-                    >
-                      {count} Column{count !== 1 ? 's' : ''}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          <button
+            onClick={() => setViewMode('multi')}
+            className={`p-2 rounded ${viewMode === 'multi' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            <LayoutGrid size={20} />
+          </button>
         </div>
       )}
       <div className="mt-8">
         {isLoading ? (
-          <SkeletonLoader viewMode={viewMode} columns={columnCount} />
+          <SkeletonLoader viewMode={viewMode} columns={1} />
         ) : error ? (
           <div className="text-center text-red-500">{error}</div>
         ) : showGraphs ? (
           <>
             {viewMode === 'combined' ? (
-              <MultiChart
+              <CombinedChart
                 hourlyData={hourlyData}
                 dailyData={dailyData}
                 globalStartDate={globalStartDate}
@@ -246,13 +213,12 @@ export default function Home() {
                 onBrushChange={handleBrushChange}
               />
             ) : (
-              <GraphLayoutManager
+              <MultiChart
                 hourlyData={hourlyData}
                 dailyData={dailyData}
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
-                viewMode={viewMode}
-                columnCount={columnCount}
+                onBrushChange={handleBrushChange}
               />
             )}
             {renderTime !== null && (
