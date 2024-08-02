@@ -91,8 +91,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [combinedHourlyData, combinedDailyData, brushDomain, activeTimeUnit]);
 
   const yAxisDomains = useMemo(() => {
-    const leftData = filteredData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
-    const rightData = filteredData.flatMap(d => [d.step, d.calorie].filter(v => v != null));
+    const leftData = filteredData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null && v !== 0));
+    const rightData = filteredData.flatMap(d => [d.step, d.calorie].filter(v => v != null && v !== 0));
     return {
       left: [0, Math.max(...leftData, 1) * 1.1],
       right: [1, Math.max(...rightData, 1)],
@@ -104,10 +104,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       setBrushDomain(newBrushDomain);
       onBrushChange(newBrushDomain);
     } else {
-      setBrushDomain(null);
-      onBrushChange(null);
+      const data = activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData;
+      const fullDomain = [data[0].timestamp, data[data.length - 1].timestamp];
+      setBrushDomain(fullDomain);
+      onBrushChange(fullDomain);
     }
-  }, [onBrushChange]);
+  }, [onBrushChange, activeTimeUnit, combinedHourlyData, combinedDailyData]);
 
   const toggleChart = (chartName: keyof ChartVisibility) => {
     setVisibleCharts(prev => ({
@@ -190,7 +192,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             tickFormatter={(tick) => format(new Date(tick), activeTimeUnit === 'hourly' ? 'MM-dd HH:mm' : 'MM-dd')}
             padding={{ left: 30, right: 30 }}
           />
-          <YAxis yAxisId="left" domain={yAxisDomains.left} label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
+          <YAxis 
+            yAxisId="left" 
+            domain={yAxisDomains.left} 
+            label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} 
+            tickFormatter={(value) => value.toFixed(0)}
+          />
           <YAxis 
             yAxisId="right" 
             orientation="right" 
