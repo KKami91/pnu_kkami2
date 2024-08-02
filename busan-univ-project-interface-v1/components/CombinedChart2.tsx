@@ -39,11 +39,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       return {
         ...hourly,
         timestamp: new Date(hourly.ds).getTime(),
-        bpm: hourly.bpm,
-        sdnn: Number(hourly.sdnn.toFixed(2)),
-        rmssd: Number(hourly.rmssd.toFixed(2)),
-        dailyStep: matchingDaily?.step || null,
-        dailyCalorie: matchingDaily?.calorie || null,
+        bpm: hourly.bpm != null ? Number(hourly.bpm) : null,
+        sdnn: hourly.sdnn != null ? Number(Number(hourly.sdnn).toFixed(2)) : null,
+        rmssd: hourly.rmssd != null ? Number(Number(hourly.rmssd).toFixed(2)) : null,
+        dailyStep: matchingDaily?.step != null ? Number(matchingDaily.step) : null,
+        dailyCalorie: matchingDaily?.calorie != null ? Number(matchingDaily.calorie) : null,
       };
     }).sort((a, b) => a.timestamp - b.timestamp);
   }, [hourlyData, dailyData]);
@@ -70,8 +70,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     const leftData = filteredData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
     const rightData = filteredData.flatMap(d => [d.dailyStep, d.dailyCalorie].filter(v => v != null));
     return {
-      left: [0, Math.max(...leftData) * 1.1], // 10% 여유 추가
-      right: [0, Math.max(...rightData) * 1.1], // 10% 여유 추가
+      left: [0, Math.max(...leftData, 1) * 1.1], // 최소값을 1로 설정하여 0으로 나누는 것을 방지
+      right: [0, Math.max(...rightData, 1) * 1.1],
     };
   }, [filteredData]);
 
@@ -105,7 +105,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
               {`${pld.name}: ${pld.value !== null ? 
-                (pld.name === 'SDNN' || pld.name === 'RMSSD' ? pld.value.toFixed(2) : pld.value)
+                (pld.name === 'SDNN' || pld.name === 'RMSSD' ? Number(pld.value).toFixed(2) : pld.value)
                 : 'N/A'}`}
             </p>
           ))}
@@ -114,6 +114,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
     return null;
   };
+
+  console.log('Combined Data Sample:', combinedData[0]);
+  console.log('Filtered Data Sample:', filteredData[0]);
 
   return (
     <div className='bg-white p-4 rounded-lg shadow'>
