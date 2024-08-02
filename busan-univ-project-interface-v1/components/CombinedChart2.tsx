@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addHours } from 'date-fns';
 
 interface CombinedChartProps {
   hourlyData: any[];
@@ -35,13 +35,18 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const combinedData = useMemo(() => {
     return hourlyData.map(hourly => {
+      const hourlyDate = parseISO(hourly.ds);
+      const adjustedDate = addHours(hourlyDate, 9); // KST로 조정
       const matchingDaily = dailyData.find(daily => daily.ds.split('T')[0] === hourly.ds.split('T')[0]);
+      
       return {
         ...hourly,
-        timestamp: new Date(hourly.ds).getTime(),
+        timestamp: adjustedDate.getTime(),
         bpm: hourly.bpm != null ? Number(hourly.bpm) : null,
         sdnn: hourly.sdnn != null ? Number(Number(hourly.sdnn).toFixed(2)) : null,
         rmssd: hourly.rmssd != null ? Number(Number(hourly.rmssd).toFixed(2)) : null,
+        step: hourly.step != null ? Number(hourly.step) : null,
+        calorie: hourly.calorie != null ? Number(hourly.calorie) : null,
         dailyStep: matchingDaily?.step != null ? Number(matchingDaily.step) : null,
         dailyCalorie: matchingDaily?.calorie != null ? Number(matchingDaily.calorie) : null,
       };
@@ -68,9 +73,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const yAxisDomains = useMemo(() => {
     const leftData = filteredData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
-    const rightData = filteredData.flatMap(d => [d.dailyStep, d.dailyCalorie].filter(v => v != null));
+    const rightData = filteredData.flatMap(d => [d.step, d.calorie, d.dailyStep, d.dailyCalorie].filter(v => v != null));
     return {
-      left: [0, Math.max(...leftData, 1) * 1.1], // 최소값을 1로 설정하여 0으로 나누는 것을 방지
+      left: [0, Math.max(...leftData, 1) * 1.1],
       right: [0, Math.max(...rightData, 1) * 1.1],
     };
   }, [filteredData]);
@@ -148,10 +153,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {visibleCharts.calorie && (
-            <Bar yAxisId="right" dataKey="dailyCalorie" fill="#8884d8" name="Calories" />
+            <Bar yAxisId="right" dataKey="calorie" fill="#8884d8" name="Hourly Calories" />
           )}
           {visibleCharts.step && (
-            <Bar yAxisId="right" dataKey="dailyStep" fill="#82ca9d" name="Steps" />
+            <Bar yAxisId="right" dataKey="step" fill="#82ca9d" name="Hourly Steps" />
           )}
           {visibleCharts.bpm && (
             <Line yAxisId="left" type="monotone" dataKey="bpm" stroke="#ff7300" name="BPM" />
