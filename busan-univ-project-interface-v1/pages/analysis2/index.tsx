@@ -63,13 +63,10 @@ export default function Home() {
   const startTimeRef = useRef<number | null>(null);
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
-    const allDates = [
-      ...hourlyData.map(item => new Date(item.ds)),
-      ...dailyData.map(item => new Date(item.ds))
-    ];
+    const allTimestamps = [...hourlyData, ...dailyData].map(item => new Date(item.ds).getTime());
     return {
-      globalStartDate: allDates.length > 0 ? min(allDates) : new Date(),
-      globalEndDate: allDates.length > 0 ? max(allDates) : new Date()
+      globalStartDate: allTimestamps.length > 0 ? new Date(Math.min(...allTimestamps)) : new Date(),
+      globalEndDate: allTimestamps.length > 0 ? new Date(Math.max(...allTimestamps)) : new Date()
     };
   }, [hourlyData, dailyData]);
 
