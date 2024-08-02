@@ -100,13 +100,15 @@ export default function Home() {
           fetchData('hourly', selectedUser, date),
           fetchData('daily', selectedUser, date),
         ]);
-        console.log(hourlyData);
-        console.log(dailyData);
+        console.log('Hourly Data:', hourlyData);
+        console.log('Daily Data:', dailyData);
         setHourlyData(hourlyData);
         setDailyData(dailyData);
+        setShowGraphs(true);  // 여기에 추가
       } catch (error) {
-        setError(`Error loading`)
-        setIsLoading(false)
+        setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
+      } finally {
+        setIsLoading(false)  // 여기로 이동
       }
     }
   }
