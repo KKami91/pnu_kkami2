@@ -72,22 +72,24 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
+  const currentData = useMemo(() => 
+    activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData,
+  [activeTimeUnit, combinedHourlyData, combinedDailyData]);
+
   useEffect(() => {
-    const data = activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData;
-    if (data.length > 0) {
-      const newDomain: [number, number] = [data[0].timestamp, data[data.length - 1].timestamp];
+    if (currentData.length > 0) {
+      const newDomain: [number, number] = [currentData[0].timestamp, currentData[currentData.length - 1].timestamp];
       setBrushDomain(newDomain);
       onBrushChange(newDomain);
     }
-  }, [combinedHourlyData, combinedDailyData, activeTimeUnit, onBrushChange]);
+  }, [currentData, onBrushChange]);
 
   const filteredData = useMemo(() => {
-    const data = activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData;
-    if (!brushDomain) return data;
-    return data.filter(
+    if (!brushDomain) return currentData;
+    return currentData.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
-  }, [combinedHourlyData, combinedDailyData, brushDomain, activeTimeUnit]);
+  }, [currentData, brushDomain]);
 
   const yAxisDomains = useMemo(() => {
     const leftData = filteredData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null && v !== 0));
@@ -99,19 +101,22 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [filteredData]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
-    if (newBrushDomain && newBrushDomain.startIndex !== undefined && newBrushDomain.endIndex !== undefined) {
-      const data = activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData;
+    if (newBrushDomain && typeof newBrushDomain.startIndex === 'number' && typeof newBrushDomain.endIndex === 'number') {
       const newDomain: [number, number] = [
-        data[newBrushDomain.startIndex].timestamp,
-        data[newBrushDomain.endIndex].timestamp
+        currentData[newBrushDomain.startIndex].timestamp,
+        currentData[newBrushDomain.endIndex].timestamp
       ];
       setBrushDomain(newDomain);
       onBrushChange(newDomain);
+    } else if (Array.isArray(newBrushDomain) && newBrushDomain.length === 2) {
+      setBrushDomain(newBrushDomain);
+      onBrushChange(newBrushDomain);
     } else {
-      setBrushDomain(null);
-      onBrushChange(null);
+      const fullDomain: [number, number] = [currentData[0].timestamp, currentData[currentData.length - 1].timestamp];
+      setBrushDomain(fullDomain);
+      onBrushChange(fullDomain);
     }
-  }, [activeTimeUnit, combinedHourlyData, combinedDailyData, onBrushChange]);
+  }, [currentData, onBrushChange]);
 
   const toggleChart = (chartName: keyof ChartVisibility) => {
     setVisibleCharts(prev => ({
