@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subHours } from 'date-fns';
+import { format, parseISO, subHours, startOfDay, endOfDay } from 'date-fns';
 
 interface CombinedChartProps {
   hourlyData: any[];
@@ -33,7 +33,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     rmssd: true,
   });
 
-  const combinedData = useMemo(() => {
+  const [activeTimeUnit, setActiveTimeUnit] = useState<'hourly' | 'daily'>('hourly');
+
+  const combinedHourlyData = useMemo(() => {
     return hourlyData.map(hourly => {
       const hourlyDate = parseISO(hourly.ds);
       const adjustedDate = subHours(hourlyDate, 9); // UTC to KST 조정
@@ -53,35 +55,51 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }).sort((a, b) => a.timestamp - b.timestamp);
   }, [hourlyData, dailyData]);
 
+  const combinedDailyData = useMemo(() => {
+    return dailyData.map(daily => {
+      const dailyDate = parseISO(daily.ds);
+      return {
+        ...daily,
+        timestamp: dailyDate.getTime(),
+        bpm: daily.bpm != null ? Number(daily.bpm) : null,
+        sdnn: daily.sdnn != null ? Number(Number(daily.sdnn).toFixed(2)) : null,
+        rmssd: daily.rmssd != null ? Number(Number(daily.rmssd).toFixed(2)) : null,
+        step: daily.step != null ? Number(daily.step) : null,
+        calorie: daily.calorie != null ? Number(daily.calorie) : null,
+      };
+    }).sort((a, b) => a.timestamp - b.timestamp);
+  }, [dailyData]);
+
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   useEffect(() => {
-    if (combinedData.length > 0) {
+    const data = activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData;
+    if (data.length > 0) {
       setBrushDomain([
-        combinedData[0].timestamp,
-        combinedData[combinedData.length - 1].timestamp
+        data[0].timestamp,
+        data[data.length - 1].timestamp
       ]);
     }
-  }, [combinedData]);
+  }, [combinedHourlyData, combinedDailyData, activeTimeUnit]);
 
   const filteredData = useMemo(() => {
-    if (!brushDomain) return combinedData;
-    return combinedData.filter(
+    const data = activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData;
+    if (!brushDomain) return data;
+    return data.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
-  }, [combinedData, brushDomain]);
+  }, [combinedHourlyData, combinedDailyData, brushDomain, activeTimeUnit]);
 
   const yAxisDomains = useMemo(() => {
     const leftData = filteredData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
-    const hourlyRightData = filteredData.flatMap(d => [d.step, d.calorie].filter(v => v != null));
+    const rightData = filteredData.flatMap(d => [d.step, d.calorie].filter(v => v != null));
     return {
       left: [0, Math.max(...leftData, 1) * 1.1],
-      hourlyRight: [1, Math.max(...hourlyRightData, 1)],
+      right: [1, Math.max(...rightData, 1)],
     };
   }, [filteredData]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
-    //console.log('Brush changed:', newBrushDomain);
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
       onBrushChange(newBrushDomain);
@@ -99,14 +117,16 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   };
 
   const formatDateForBrush = (time: number) => {
-    return format(new Date(time), 'yyyy-MM-dd HH:mm');
+    return format(new Date(time), activeTimeUnit === 'hourly' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
-          <p className="font-bold">{format(new Date(label), 'yyyy-MM-dd HH:mm')}</p>
+          <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
+            {format(new Date(label), activeTimeUnit === 'hourly' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd')}
+          </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
               {`${pld.name}: ${pld.value !== null ? 
@@ -121,27 +141,43 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   };
 
   const colors = {
-    calorie: 'rgba(136, 132, 216, 0.6)',  // 연한 보라색
-    step: 'rgba(130, 202, 157, 0.6)',     // 연한 초록색
-    bpm: '#ff7300',                       // 주황색
-    sdnn: '#0088FE',                      // 파란색
-    rmssd: '#00C49F'                      // 청록색
+    calorie: 'rgba(136, 132, 216, 0.6)',  
+    step: 'rgba(130, 202, 157, 0.6)',     
+    bpm: '#ff7300',                       
+    sdnn: '#0088FE',                      
+    rmssd: '#00C49F'                      
   };
 
   return (
     <div className='bg-white p-4 rounded-lg shadow'>
-      <div className="mb-4 flex flex-wrap gap-4">
-        {(Object.keys(visibleCharts) as Array<keyof ChartVisibility>).map((chartName) => (
-          <label key={chartName} className="inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={visibleCharts[chartName]}
-              onChange={() => toggleChart(chartName)}
-              className="form-checkbox h-5 w-5 text-blue-600"
-            />
-            <span className="ml-2 text-gray-700">{chartName.toUpperCase()}</span>
-          </label>
-        ))}
+      <div className="mb-4 flex flex-wrap gap-4 justify-between">
+        <div>
+          {(Object.keys(visibleCharts) as Array<keyof ChartVisibility>).map((chartName) => (
+            <label key={chartName} className="inline-flex items-center cursor-pointer mr-4">
+              <input
+                type="checkbox"
+                checked={visibleCharts[chartName]}
+                onChange={() => toggleChart(chartName)}
+                className="form-checkbox h-5 w-5 text-blue-600"
+              />
+              <span className="ml-2 text-gray-700">{chartName.toUpperCase()}</span>
+            </label>
+          ))}
+        </div>
+        <div>
+          <button
+            className={`px-4 py-2 rounded ${activeTimeUnit === 'hourly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            onClick={() => setActiveTimeUnit('hourly')}
+          >
+            Hourly
+          </button>
+          <button
+            className={`px-4 py-2 rounded ml-2 ${activeTimeUnit === 'daily' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            onClick={() => setActiveTimeUnit('daily')}
+          >
+            Daily
+          </button>
+        </div>
       </div>
       <ResponsiveContainer width="100%" height={600}>
         <ComposedChart data={filteredData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -151,14 +187,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+            tickFormatter={(tick) => format(new Date(tick), activeTimeUnit === 'hourly' ? 'MM-dd HH:mm' : 'MM-dd')}
             padding={{ left: 30, right: 30 }}
           />
           <YAxis yAxisId="left" domain={yAxisDomains.left} label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
           <YAxis 
-            yAxisId="hourlyRight" 
+            yAxisId="right" 
             orientation="right" 
-            domain={yAxisDomains.hourlyRight}
+            domain={yAxisDomains.right}
             scale="log"
             tickFormatter={(value) => Math.round(value).toString()}
             label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} 
@@ -166,10 +202,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {visibleCharts.calorie && (
-            <Bar yAxisId="hourlyRight" dataKey="calorie" fill={colors.calorie} name="Hourly Calories" />
+            <Bar yAxisId="right" dataKey="calorie" fill={colors.calorie} name="Calories" />
           )}
           {visibleCharts.step && (
-            <Bar yAxisId="hourlyRight" dataKey="step" fill={colors.step} name="Hourly Steps" />
+            <Bar yAxisId="right" dataKey="step" fill={colors.step} name="Steps" />
           )}
           {visibleCharts.bpm && (
             <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" />
