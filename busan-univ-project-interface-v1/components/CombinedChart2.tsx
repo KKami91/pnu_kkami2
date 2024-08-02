@@ -73,12 +73,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const yAxisDomains = useMemo(() => {
     const leftData = filteredData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
-    const rightData = filteredData.flatMap(d => [d.step, d.calorie].filter(v => v != null));
-    const dailyMaxStep = Math.max(...dailyData.map(d => d.step || 0));
-    const dailyMaxCalorie = Math.max(...dailyData.map(d => d.calorie || 0));
+    const hourlyRightData = filteredData.flatMap(d => [d.step, d.calorie].filter(v => v != null));
+    const dailyRightData = dailyData.flatMap(d => [d.step, d.calorie].filter(v => v != null));
     return {
       left: [0, Math.max(...leftData, 1) * 1.1],
-      right: [0, Math.max(...rightData, dailyMaxStep, dailyMaxCalorie, 1) * 1.1],
+      hourlyRight: [0, Math.max(...hourlyRightData, 1) * 1.1],
+      dailyRight: [0, Math.max(...dailyRightData, 1) * 1.1],
     };
   }, [filteredData, dailyData]);
 
@@ -151,14 +151,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
           />
           <YAxis yAxisId="left" domain={yAxisDomains.left} label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
-          <YAxis yAxisId="right" orientation="right" domain={yAxisDomains.right} label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} />
+          <YAxis yAxisId="hourlyRight" orientation="right" domain={yAxisDomains.hourlyRight} label={{ value: 'Hourly Steps / Calories', angle: 90, position: 'insideRight' }} />
+          <YAxis yAxisId="dailyRight" orientation="right" domain={yAxisDomains.dailyRight} label={{ value: 'Daily Steps / Calories', angle: 90, position: 'insideRight' }} hide />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {visibleCharts.calorie && (
-            <Bar yAxisId="right" dataKey="calorie" fill="#8884d8" name="Hourly Calories" />
+            <Bar yAxisId="hourlyRight" dataKey="calorie" fill="#8884d8" name="Hourly Calories" />
           )}
           {visibleCharts.step && (
-            <Bar yAxisId="right" dataKey="step" fill="#82ca9d" name="Hourly Steps" />
+            <Bar yAxisId="hourlyRight" dataKey="step" fill="#82ca9d" name="Hourly Steps" />
           )}
           {visibleCharts.bpm && (
             <Line yAxisId="left" type="monotone" dataKey="bpm" stroke="#ff7300" name="BPM" />
