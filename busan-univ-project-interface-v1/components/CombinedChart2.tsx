@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subHours, startOfDay, endOfDay } from 'date-fns';
+import { format, parseISO, subHours } from 'date-fns';
 
 interface CombinedChartProps {
   hourlyData: any[];
@@ -75,12 +75,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   useEffect(() => {
     const data = activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData;
     if (data.length > 0) {
-      setBrushDomain([
-        data[0].timestamp,
-        data[data.length - 1].timestamp
-      ]);
+      const newDomain: [number, number] = [data[0].timestamp, data[data.length - 1].timestamp];
+      setBrushDomain(newDomain);
+      onBrushChange(newDomain);
     }
-  }, [combinedHourlyData, combinedDailyData, activeTimeUnit]);
+  }, [combinedHourlyData, combinedDailyData, activeTimeUnit, onBrushChange]);
 
   const filteredData = useMemo(() => {
     const data = activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData;
@@ -100,16 +99,19 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [filteredData]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
-    if (newBrushDomain && newBrushDomain.length === 2) {
-      setBrushDomain(newBrushDomain);
-      onBrushChange(newBrushDomain);
-    } else {
+    if (newBrushDomain && newBrushDomain.startIndex !== undefined && newBrushDomain.endIndex !== undefined) {
       const data = activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData;
-      const fullDomain: [number, number] = [data[0].timestamp, data[data.length - 1].timestamp];
-      setBrushDomain(fullDomain);
-      onBrushChange(fullDomain);
+      const newDomain: [number, number] = [
+        data[newBrushDomain.startIndex].timestamp,
+        data[newBrushDomain.endIndex].timestamp
+      ];
+      setBrushDomain(newDomain);
+      onBrushChange(newDomain);
+    } else {
+      setBrushDomain(null);
+      onBrushChange(null);
     }
-  }, [onBrushChange, activeTimeUnit, combinedHourlyData, combinedDailyData]);
+  }, [activeTimeUnit, combinedHourlyData, combinedDailyData, onBrushChange]);
 
   const toggleChart = (chartName: keyof ChartVisibility) => {
     setVisibleCharts(prev => ({
