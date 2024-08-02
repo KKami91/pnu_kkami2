@@ -33,22 +33,22 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     rmssd: true,
   });
 
-  const [brushDomain, setBrushDomain] = useState<[number, number]>([
-    globalStartDate.getTime(),
-    globalEndDate.getTime()
-  ]);
-
   const combinedData = useMemo(() => {
     return hourlyData.map(hourly => {
       const matchingDaily = dailyData.find(daily => daily.ds.split('T')[0] === hourly.ds.split('T')[0]);
       return {
         ...hourly,
-        timestamp: parseISO(hourly.ds).getTime(),
+        timestamp: new Date(hourly.ds).getTime(),
         dailyStep: matchingDaily?.step || null,
         dailyCalorie: matchingDaily?.calorie || null,
       };
     }).sort((a, b) => a.timestamp - b.timestamp);
   }, [hourlyData, dailyData]);
+
+  const [brushDomain, setBrushDomain] = useState<[number, number]>([
+    combinedData[0]?.timestamp || globalStartDate.getTime(),
+    combinedData[combinedData.length - 1]?.timestamp || globalEndDate.getTime()
+  ]);
 
   const filteredData = useMemo(() => {
     return combinedData.filter(
@@ -57,13 +57,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [combinedData, brushDomain]);
 
   const yAxisDomains = useMemo(() => {
-    const leftData = combinedData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
-    const rightData = combinedData.flatMap(d => [d.dailyStep, d.dailyCalorie].filter(v => v != null));
+    const leftData = filteredData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
+    const rightData = filteredData.flatMap(d => [d.dailyStep, d.dailyCalorie].filter(v => v != null));
     return {
       left: [Math.min(...leftData), Math.max(...leftData)],
       right: [0, Math.max(...rightData)],
     };
-  }, [combinedData]);
+  }, [filteredData]);
 
   const handleBrushChange = useCallback((domain: any) => {
     if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
@@ -72,7 +72,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       setBrushDomain([startTime, endTime]);
       onBrushChange([startTime, endTime]);
     } else {
-      setBrushDomain([globalStartDate.getTime(), globalEndDate.getTime()]);
+      const defaultStart = combinedData[0]?.timestamp || globalStartDate.getTime();
+      const defaultEnd = combinedData[combinedData.length - 1]?.timestamp || globalEndDate.getTime();
+      setBrushDomain([defaultStart, defaultEnd]);
       onBrushChange(null);
     }
   }, [combinedData, onBrushChange, globalStartDate, globalEndDate]);
@@ -129,8 +131,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             domain={['dataMin', 'dataMax']}
             tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
           />
-          <YAxis yAxisId="left" label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
-          <YAxis yAxisId="right" orientation="right" label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} />
+          <YAxis yAxisId="left" domain={yAxisDomains.left} label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
+          <YAxis yAxisId="right" orientation="right" domain={yAxisDomains.right} label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {visibleCharts.calorie && (
@@ -153,6 +155,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             height={30}
             stroke="#8884d8"
             onChange={handleBrushChange}
+            startIndex={0}
+            endIndex={filteredData.length - 1}
             tickFormatter={formatDateForBrush}
           />
         </ComposedChart>
