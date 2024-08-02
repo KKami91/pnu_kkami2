@@ -148,7 +148,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
           />
           <YAxis yAxisId="left" label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
-          <YAxis yAxisId="right" allowDataOverflow scale="log" orientation="right" label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} />
+          <YAxis yAxisId="right" orientation="right" label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {visibleCharts.calorie && (
