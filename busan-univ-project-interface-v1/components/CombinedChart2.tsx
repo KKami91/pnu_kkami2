@@ -81,7 +81,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [filteredData]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
-    console.log('Brush changed:', newBrushDomain);
+    //console.log('Brush changed:', newBrushDomain);
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
       onBrushChange(newBrushDomain);
@@ -120,11 +120,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return null;
   };
 
-  const logScale = (value: number) => Math.log10(value + 1);
-  const inverseLogScale = (value: number) => Math.pow(10, value) - 1;
-
-  console.log('Combined Data Sample:', combinedData[0]);
-  console.log('Filtered Data Sample:', filteredData[0]);
+  const colors = {
+    calorie: 'rgba(136, 132, 216, 0.6)',  // 연한 보라색
+    step: 'rgba(130, 202, 157, 0.6)',     // 연한 초록색
+    bpm: '#ff7300',                       // 주황색
+    sdnn: '#0088FE',                      // 파란색
+    rmssd: '#00C49F'                      // 청록색
+  };
 
   return (
     <div className='bg-white p-4 rounded-lg shadow'>
@@ -150,6 +152,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             scale="time"
             domain={['dataMin', 'dataMax']}
             tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+            padding={{ left: 30, right: 30 }}
           />
           <YAxis yAxisId="left" domain={yAxisDomains.left} label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
           <YAxis 
@@ -163,19 +166,19 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {visibleCharts.calorie && (
-            <Bar yAxisId="hourlyRight" dataKey="calorie" fill="#8884d8" name="Hourly Calories" />
+            <Bar yAxisId="hourlyRight" dataKey="calorie" fill={colors.calorie} name="Hourly Calories" />
           )}
           {visibleCharts.step && (
-            <Bar yAxisId="hourlyRight" dataKey="step" fill="#82ca9d" name="Hourly Steps" />
+            <Bar yAxisId="hourlyRight" dataKey="step" fill={colors.step} name="Hourly Steps" />
           )}
           {visibleCharts.bpm && (
-            <Line yAxisId="left" type="monotone" dataKey="bpm" stroke="#ff7300" name="BPM" />
+            <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" />
           )}
           {visibleCharts.sdnn && (
-            <Line yAxisId="left" type="monotone" dataKey="sdnn" stroke="#8884d8" name="SDNN" />
+            <Line yAxisId="left" type="monotone" dataKey="sdnn" stroke={colors.sdnn} name="SDNN" />
           )}
           {visibleCharts.rmssd && (
-            <Line yAxisId="left" type="monotone" dataKey="rmssd" stroke="#82ca9d" name="RMSSD" />
+            <Line yAxisId="left" type="monotone" dataKey="rmssd" stroke={colors.rmssd} name="RMSSD" />
           )}
           <Brush
             dataKey="timestamp"
