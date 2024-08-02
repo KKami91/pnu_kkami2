@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import axios from 'axios'
+import MultiChart from '../../components/MultiChart';
 import GraphLayoutManager from '../../components/GraphLayoutManager2';
 import { SkeletonLoader } from '../../components/SkeletonLoaders2';
 import { min, max } from 'date-fns';
@@ -13,12 +14,6 @@ const LoadingSpinner = () => (
     <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
   </div>
 )
-
-interface AnalysisData {
-  ds: string
-  sdnn: number | null
-  rmssd: number | null
-}
 
 interface HourlyData {
   ds: string
@@ -36,7 +31,6 @@ interface DailyData {
   sdnn: number | null
   step: number | null
   calorie: number | null
-  
 }
 
 export default function Home() {
@@ -45,15 +39,9 @@ export default function Home() {
   const [analysisDates, setAnalysisDates] = useState([]);
   const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [isLoadingDate, setIsLoadingDate] = useState(false);
-  const [analysisGraphData, setAnalysisGraphData] = useState<AnalysisData[]>([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [showGraphs, setShowGraphs] = useState(false);
-  const [viewMode, setViewMode] = useState('combined');
-  const [isLoadingGraphs, setIsLoadingGraphs] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [columnCount, setColumnCount] = useState(1);
   const [error, setError] = useState<string | null>(null);
-  const [isRenderingGraphs, setIsRenderingGraphs] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
@@ -61,6 +49,10 @@ export default function Home() {
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
+
+  const [viewMode, setViewMode] = useState<'combined' | 'separate'>('combined');
+  const [columnCount, setColumnCount] = useState(1);
+  const [showDropdown, setShowDropdown] = useState(false);
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allTimestamps = [...hourlyData, ...dailyData].map(item => new Date(item.ds).getTime());
@@ -82,7 +74,6 @@ export default function Home() {
     }
   };
 
-  
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
     setSelectedDate(date)
@@ -101,45 +92,14 @@ export default function Home() {
         console.log('Daily Data:', dailyData);
         setHourlyData(hourlyData);
         setDailyData(dailyData);
-        setShowGraphs(true);  // 여기에 추가
+        setShowGraphs(true);
       } catch (error) {
         setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
       } finally {
-        setIsLoading(false)  // 여기로 이동
+        setIsLoading(false)
       }
     }
   }
-
-  const handleViewModeChange = (mode: string) => {
-    setIsLoading(true);
-    setViewMode(mode);
-    if (mode === 'combined') {
-      setShowDropdown(false);
-    }
-  };
-
-  const handleColumnCountChange = (count: number) => {
-    setIsLoading(true);
-    setColumnCount(count);
-    setViewMode('separate');
-    setShowDropdown(false);
-  };
-
-  useEffect(() => {
-    if (showGraphs) {
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-        if (startTimeRef.current !== null) {
-          const endTime = performance.now();
-          const totalTime = endTime - startTimeRef.current;
-          setRenderTime(totalTime);
-          startTimeRef.current = null;
-        }
-      }, 500); // Adjust this value if needed
-
-      return () => clearTimeout(timer);
-    }
-  }, [showGraphs, viewMode, columnCount])
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
@@ -148,30 +108,22 @@ export default function Home() {
     setAnalysisDates([])
     if (user) {
       setIsLoadingUser(true)
-      const start = performance.now();
       await checkDb(user)
-      const end = performance.now();
-      console.log(`checkDb 걸린 시간 : ${end - start} ms`)
-
-      const start2 = performance.now();
       await fetchAnalysisDates(user)
-      const end2 = performance.now();
-      console.log(`fetchAnalysisDates date가져오는데 걸린 시간 : ${end2 - start2} ms`)
       setIsLoadingUser(false)
     }
   }
   
-    const fetchAnalysisDates = async (user: string) => {
-      try {
-        const response = await axios.get(`${API_URL}/check_dates/${user}`)
-        setAnalysisDates(response.data.dates)
-      } catch (error) {
-        console.error('Error fetching data:', error)
-        setMessage(`Error fetching dates: ${error instanceof Error ? error.message : String(error)}`)
-        setAnalysisDates([])
-      }
+  const fetchAnalysisDates = async (user: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/check_dates/${user}`)
+      setAnalysisDates(response.data.dates)
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      setMessage(`Error fetching dates: ${error instanceof Error ? error.message : String(error)}`)
+      setAnalysisDates([])
     }
-
+  }
 
   const checkDb = async (user: string) => {
     try {
@@ -181,12 +133,29 @@ export default function Home() {
     }
   }
 
+  const handleBrushChange = (domain: [number, number] | null) => {
+    console.log('Brush domain changed:', domain);
+  };
+
+  const handleViewModeChange = (mode: 'combined' | 'separate') => {
+    setViewMode(mode);
+    if (mode === 'combined') {
+      setShowDropdown(false);
+    }
+  };
+
+  const handleColumnCountChange = (count: number) => {
+    setColumnCount(count);
+    setViewMode('separate');
+    setShowDropdown(false);
+  };
+
   useEffect(() => {
     if (showGraphs && startTimeRef.current !== null) {
       const endTime = performance.now();
       const totalTime = endTime - startTimeRef.current;
       setRenderTime(totalTime);
-      startTimeRef.current = null;  // Reset start time
+      startTimeRef.current = null;
     }
   }, [showGraphs]);
 
@@ -268,14 +237,24 @@ export default function Home() {
           <div className="text-center text-red-500">{error}</div>
         ) : showGraphs ? (
           <>
-            <GraphLayoutManager
-              hourlyData={hourlyData}
-              dailyData={dailyData}
-              globalStartDate={globalStartDate}
-              globalEndDate={globalEndDate}
-              viewMode={viewMode}
-              columnCount={columnCount}
-            />
+            {viewMode === 'combined' ? (
+              <MultiChart
+                hourlyData={hourlyData}
+                dailyData={dailyData}
+                globalStartDate={globalStartDate}
+                globalEndDate={globalEndDate}
+                onBrushChange={handleBrushChange}
+              />
+            ) : (
+              <GraphLayoutManager
+                hourlyData={hourlyData}
+                dailyData={dailyData}
+                globalStartDate={globalStartDate}
+                globalEndDate={globalEndDate}
+                viewMode={viewMode}
+                columnCount={columnCount}
+              />
+            )}
             {renderTime !== null && (
               <div className="mt-4 text-center text-gray-600">
                 Total render time: {renderTime.toFixed(2)} ms
