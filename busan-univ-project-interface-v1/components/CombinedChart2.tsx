@@ -105,7 +105,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       onBrushChange(newBrushDomain);
     } else {
       const data = activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData;
-      const fullDomain = [data[0].timestamp, data[data.length - 1].timestamp];
+      const fullDomain: [number, number] = [data[0].timestamp, data[data.length - 1].timestamp];
       setBrushDomain(fullDomain);
       onBrushChange(fullDomain);
     }
