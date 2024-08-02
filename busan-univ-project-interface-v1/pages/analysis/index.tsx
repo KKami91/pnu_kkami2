@@ -49,25 +49,6 @@ interface CalorieData {
   calorie: number
 }
 
-interface HourlyData {
-  ds: string
-  bpm: number | null
-  rmssd: number | null
-  sdnn: number | null
-  step: number | null
-  calorie: number | null
-}
-
-interface DailyData {
-  ds: string
-  bpm: number | null
-  rmssd: number | null
-  sdnn: number | null
-  step: number | null
-  calorie: number | null
-  
-}
-
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('');
   const [message, setMessage] = useState('');
@@ -88,9 +69,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [isRenderingGraphs, setIsRenderingGraphs] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-  const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
-  const [dailyData, setDailyData] = useState<DailyData[]>([]);
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -132,23 +110,8 @@ export default function Home() {
       setShowGraphs(false)
       setRenderTime(null)
       startTimeRef.current = performance.now();
-      // try {
-      //   const [hourlyData, dailyData] = await Promise.all([
-      //     fetchData('hourly', selectedUser, date),
-      //     fetchData('daily', selectedUser, date),
-      //   ]);
-      //   console.log(hourlyData);
-      //   console.log(dailyData);
-      //   setHourlyData(hourlyData);
-      //   setDailyData(dailyData);
-      // } catch (error) {
-      //   setError(`Error loading`)
-      //   setIsLoading(false)
-      // }
       try {
-        // const [hourlyData, dailyData] = await Promise.all([
         const [analysisData, predictionData, stepData, sleepData, calorieData] = await Promise.all([
-        
           fetchData('analysis_results', selectedUser, date),
           fetchData('prediction_results', selectedUser, date),
           fetchData('step_results', selectedUser, date),
@@ -221,11 +184,11 @@ export default function Home() {
   
     const fetchAnalysisDates = async (user: string) => {
       try {
-        const response = await axios.get(`${API_URL}/check_dates/${user}`)
+        const response = await axios.get(`${API_URL}/analysis_dates/${user}`)
         setAnalysisDates(response.data.dates)
       } catch (error) {
-        console.error('Error fetching data:', error)
-        setMessage(`Error fetching dates: ${error instanceof Error ? error.message : String(error)}`)
+        console.error('Error fetching analysis data:', error)
+        setMessage(`Error fetching analysis dates: ${error instanceof Error ? error.message : String(error)}`)
         setAnalysisDates([])
       }
     }
