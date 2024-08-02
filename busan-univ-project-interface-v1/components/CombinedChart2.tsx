@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import { format, parseISO } from 'date-fns';
 
@@ -45,12 +45,19 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }).sort((a, b) => a.timestamp - b.timestamp);
   }, [hourlyData, dailyData]);
 
-  const [brushDomain, setBrushDomain] = useState<[number, number]>([
-    combinedData[0]?.timestamp || globalStartDate.getTime(),
-    combinedData[combinedData.length - 1]?.timestamp || globalEndDate.getTime()
-  ]);
+  const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+
+  useEffect(() => {
+    if (combinedData.length > 0) {
+      setBrushDomain([
+        combinedData[0].timestamp,
+        combinedData[combinedData.length - 1].timestamp
+      ]);
+    }
+  }, [combinedData]);
 
   const filteredData = useMemo(() => {
+    if (!brushDomain) return combinedData;
     return combinedData.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
@@ -65,19 +72,16 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     };
   }, [filteredData]);
 
-  const handleBrushChange = useCallback((domain: any) => {
-    if (domain && domain.startIndex !== undefined && domain.endIndex !== undefined) {
-      const startTime = combinedData[domain.startIndex].timestamp;
-      const endTime = combinedData[domain.endIndex].timestamp;
-      setBrushDomain([startTime, endTime]);
-      onBrushChange([startTime, endTime]);
+  const handleBrushChange = useCallback((newBrushDomain: any) => {
+    console.log('Brush changed:', newBrushDomain);
+    if (newBrushDomain && newBrushDomain.length === 2) {
+      setBrushDomain(newBrushDomain);
+      onBrushChange(newBrushDomain);
     } else {
-      const defaultStart = combinedData[0]?.timestamp || globalStartDate.getTime();
-      const defaultEnd = combinedData[combinedData.length - 1]?.timestamp || globalEndDate.getTime();
-      setBrushDomain([defaultStart, defaultEnd]);
+      setBrushDomain(null);
       onBrushChange(null);
     }
-  }, [combinedData, onBrushChange, globalStartDate, globalEndDate]);
+  }, [onBrushChange]);
 
   const toggleChart = (chartName: keyof ChartVisibility) => {
     setVisibleCharts(prev => ({
@@ -155,8 +159,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             height={30}
             stroke="#8884d8"
             onChange={handleBrushChange}
-            startIndex={0}
-            endIndex={filteredData.length - 1}
             tickFormatter={formatDateForBrush}
           />
         </ComposedChart>
