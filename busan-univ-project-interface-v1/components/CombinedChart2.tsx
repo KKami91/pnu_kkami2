@@ -18,6 +18,8 @@ type ChartVisibility = {
   rmssd: boolean;
 };
 
+type BrushDomain = [number, number] | null;
+
 const CombinedChart: React.FC<CombinedChartProps> = ({
   hourlyData,
   dailyData,
@@ -34,6 +36,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   });
 
   const [activeTimeUnit, setActiveTimeUnit] = useState<'hourly' | 'daily'>('hourly');
+
 
   const combinedHourlyData = useMemo(() => {
     return hourlyData.map(hourly => {
@@ -70,7 +73,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }).sort((a, b) => a.timestamp - b.timestamp);
   }, [dailyData]);
 
-  const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+  const [brushDomain, setBrushDomain] = useState<BrushDomain>(null);
 
   const currentData = useMemo(() => 
     activeTimeUnit === 'hourly' ? combinedHourlyData : combinedDailyData,
@@ -102,17 +105,19 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && typeof newBrushDomain.startIndex === 'number' && typeof newBrushDomain.endIndex === 'number') {
-      const newDomain: [number, number] = [
+      const newDomain: BrushDomain = [
         currentData[newBrushDomain.startIndex].timestamp,
         currentData[newBrushDomain.endIndex].timestamp
       ];
       setBrushDomain(newDomain);
       onBrushChange(newDomain);
-    } else if (Array.isArray(newBrushDomain) && newBrushDomain.length === 2) {
-      setBrushDomain(newBrushDomain);
-      onBrushChange(newBrushDomain);
+    } else if (Array.isArray(newBrushDomain) && newBrushDomain.length === 2 && 
+               typeof newBrushDomain[0] === 'number' && typeof newBrushDomain[1] === 'number') {
+      const typedNewBrushDomain: BrushDomain = [newBrushDomain[0], newBrushDomain[1]];
+      setBrushDomain(typedNewBrushDomain);
+      onBrushChange(typedNewBrushDomain);
     } else {
-      const fullDomain: [number, number] = [currentData[0].timestamp, currentData[currentData.length - 1].timestamp];
+      const fullDomain: BrushDomain = [currentData[0].timestamp, currentData[currentData.length - 1].timestamp];
       setBrushDomain(fullDomain);
       onBrushChange(fullDomain);
     }
