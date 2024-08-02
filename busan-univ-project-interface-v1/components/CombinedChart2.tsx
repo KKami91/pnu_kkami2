@@ -74,13 +74,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const yAxisDomains = useMemo(() => {
     const leftData = filteredData.flatMap(d => [d.sdnn, d.rmssd, d.bpm].filter(v => v != null));
     const hourlyRightData = filteredData.flatMap(d => [d.step, d.calorie].filter(v => v != null));
-    const dailyRightData = dailyData.flatMap(d => [d.step, d.calorie].filter(v => v != null));
     return {
       left: [0, Math.max(...leftData, 1) * 1.1],
-      hourlyRight: [0, Math.max(...hourlyRightData, 1) * 1.1],
-      dailyRight: [0, Math.max(...dailyRightData, 1) * 1.1],
+      hourlyRight: [1, Math.max(...hourlyRightData, 1)],
     };
-  }, [filteredData, dailyData]);
+  }, [filteredData]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     console.log('Brush changed:', newBrushDomain);
@@ -122,6 +120,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return null;
   };
 
+  const logScale = (value: number) => Math.log10(value + 1);
+  const inverseLogScale = (value: number) => Math.pow(10, value) - 1;
+
   console.log('Combined Data Sample:', combinedData[0]);
   console.log('Filtered Data Sample:', filteredData[0]);
 
@@ -151,8 +152,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
           />
           <YAxis yAxisId="left" domain={yAxisDomains.left} label={{ value: 'HRV (ms) / BPM', angle: -90, position: 'insideLeft' }} />
-          <YAxis yAxisId="hourlyRight" orientation="right" domain={yAxisDomains.hourlyRight} label={{ value: 'Hourly Steps / Calories', angle: 90, position: 'insideRight' }} />
-          <YAxis yAxisId="dailyRight" orientation="right" domain={yAxisDomains.dailyRight} label={{ value: 'Daily Steps / Calories', angle: 90, position: 'insideRight' }} hide />
+          <YAxis 
+            yAxisId="hourlyRight" 
+            orientation="right" 
+            domain={yAxisDomains.hourlyRight}
+            scale="log"
+            tickFormatter={(value) => Math.round(value).toString()}
+            label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} 
+          />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {visibleCharts.calorie && (
