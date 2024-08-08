@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// 페이지 접근 시 해당 페이지로
 const nextConfig = {
   reactStrictMode: true,
   async redirects() {
