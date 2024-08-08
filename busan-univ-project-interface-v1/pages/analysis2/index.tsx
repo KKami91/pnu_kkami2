@@ -106,7 +106,10 @@ export default function Home() {
     setAnalysisDates([])
     if (user) {
       setIsLoadingUser(true)
+      const start = performance.now();
       await checkDb(user)
+      const end = performance.now();
+      console.log(`checkDb 걸린 시간 : ${end - start} ms`);
       await fetchAnalysisDates(user)
       setIsLoadingUser(false)
     }
