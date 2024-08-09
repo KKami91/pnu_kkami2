@@ -30,8 +30,10 @@ const MultiChart: React.FC<MultiChartProps> = ({
         ...item,
         timestamp: adjustedDate.getTime(),
         bpm: item.bpm != null ? Number(item.bpm) : null,
+        pred_bpm: item.pred_bpm != null ? Number(item.pred_bpm) : null,
         sdnn: item.sdnn != null ? Number(Number(item.sdnn).toFixed(2)) : null,
         rmssd: item.rmssd != null ? Number(Number(item.rmssd).toFixed(2)) : null,
+        pred_rmssd: item.pred_rmssd != null ? Number(Number(item.pred_rmssd).toFixed(2)) : null,
         step: item.step != null ? Number(item.step) : null,
         calorie: item.calorie != null ? Number(item.calorie) : null,
       };
@@ -69,7 +71,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
               {`${pld.name}: ${pld.value !== null ? 
-                (pld.name === 'SDNN' || pld.name === 'RMSSD' ? Number(pld.value).toFixed(2) : pld.value)
+                (pld.name === 'SDNN' || pld.name === 'RMSSD' || pld.name === 'Predicted RMSSD' ? Number(pld.value).toFixed(2) : pld.value)
                 : 'N/A'}`}
             </p>
           ))}
@@ -111,8 +113,10 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
   const charts = [
     { key: 'bpm', color: '#ff7300', label: 'BPM', type: LineChart },
+    { key: 'pred_bpm', color: '#FF5733', label: 'Predicted BPM', type: LineChart },
     { key: 'sdnn', color: '#0088FE', label: 'SDNN (ms)', type: LineChart },
     { key: 'rmssd', color: '#00C49F', label: 'RMSSD (ms)', type: LineChart },
+    { key: 'pred_rmssd', color: '#82ca9d', label: 'Predicted RMSSD (ms)', type: LineChart },
     { key: 'step', color: 'rgba(130, 202, 157, 0.6)', label: 'Steps', type: BarChart },
     { key: 'calorie', color: 'rgba(136, 132, 216, 0.6)', label: 'Calories', type: BarChart },
   ];

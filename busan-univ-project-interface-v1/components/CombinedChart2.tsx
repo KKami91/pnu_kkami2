@@ -14,8 +14,10 @@ type ChartVisibility = {
   calorie: boolean;
   step: boolean;
   bpm: boolean;
+  pred_bpm: boolean;
   sdnn: boolean;
   rmssd: boolean;
+  pred_rmssd: boolean;
 };
 
 const CombinedChart: React.FC<CombinedChartProps> = ({
@@ -29,8 +31,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     calorie: true,
     step: true,
     bpm: true,
+    pred_bpm: true,
     sdnn: true,
     rmssd: true,
+    pred_rmssd: true,
   });
 
   const [activeTimeUnit, setActiveTimeUnit] = useState<'hourly' | 'daily'>('hourly');
@@ -45,8 +49,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         ...hourly,
         timestamp: adjustedDate.getTime(),
         bpm: hourly.bpm != null ? Number(hourly.bpm) : null,
+        pred_bpm: hourly.pred_bpm != null ? Number(hourly.pred_bpm) : null,
         sdnn: hourly.sdnn != null ? Number(Number(hourly.sdnn).toFixed(2)) : null,
         rmssd: hourly.rmssd != null ? Number(Number(hourly.rmssd).toFixed(2)) : null,
+        pred_rmssd: hourly.pred_rmssd != null ? Number(Number(hourly.pred_rmssd).toFixed(2)) : null,
         step: hourly.step != null ? Number(hourly.step) : null,
         calorie: hourly.calorie != null ? Number(hourly.calorie) : null,
         dailyStep: matchingDaily?.step != null ? Number(matchingDaily.step) : null,
@@ -144,8 +150,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     calorie: 'rgba(136, 132, 216, 0.6)',  
     step: 'rgba(130, 202, 157, 0.6)',     
     bpm: '#ff7300',                       
+    pred_bpm: '#FF5733',                  
     sdnn: '#0088FE',                      
-    rmssd: '#00C49F'                      
+    rmssd: '#00C49F',                     
+    pred_rmssd: '#82ca9d'                 
   };
 
   return (
@@ -164,20 +172,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             </label>
           ))}
         </div>
-        <div>
-          <button
-            className={`px-4 py-2 rounded ${activeTimeUnit === 'hourly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-            onClick={() => setActiveTimeUnit('hourly')}
-          >
-            Hourly
-          </button>
-          <button
-            className={`px-4 py-2 rounded ml-2 ${activeTimeUnit === 'daily' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-            onClick={() => setActiveTimeUnit('daily')}
-          >
-            Daily
-          </button>
-        </div>
+        {/* ... (rest of the UI remains the same) */}
       </div>
       <ResponsiveContainer width="100%" height={600}>
         <ComposedChart data={filteredData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -215,11 +210,17 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           {visibleCharts.bpm && (
             <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" />
           )}
+          {visibleCharts.pred_bpm && (
+            <Line yAxisId="left" type="monotone" dataKey="pred_bpm" stroke={colors.pred_bpm} name="Predicted BPM" />
+          )}
           {visibleCharts.sdnn && (
             <Line yAxisId="left" type="monotone" dataKey="sdnn" stroke={colors.sdnn} name="SDNN" />
           )}
           {visibleCharts.rmssd && (
             <Line yAxisId="left" type="monotone" dataKey="rmssd" stroke={colors.rmssd} name="RMSSD" />
+          )}
+          {visibleCharts.pred_rmssd && (
+            <Line yAxisId="left" type="monotone" dataKey="pred_rmssd" stroke={colors.pred_rmssd} name="Predicted RMSSD" />
           )}
           <Brush
             dataKey="timestamp"

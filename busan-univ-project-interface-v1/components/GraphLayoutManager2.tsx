@@ -62,6 +62,30 @@ const GraphLayoutManager: React.FC<GraphLayoutManagerProps> = ({
         showBrush={false}
       />,
       <AnalysisChart
+        key="pred_bpm"
+        data={hourlyData}
+        globalStartDate={globalStartDate}
+        globalEndDate={globalEndDate}
+        brushDomain={brushDomain}
+        title="Predicted Heart Rate (BPM)"
+        dataKey="pred_bpm"
+        syncId="healthData"
+        showBrush={false}
+        isPrediction={true}
+      />,
+      <AnalysisChart
+        key="pred_rmssd"
+        data={hourlyData}
+        globalStartDate={globalStartDate}
+        globalEndDate={globalEndDate}
+        brushDomain={brushDomain}
+        title="Predicted RMSSD"
+        dataKey="pred_rmssd"
+        syncId="healthData"
+        showBrush={false}
+        isPrediction={true}
+      />,
+      <AnalysisChart
         key="steps"
         data={dailyData}
         globalStartDate={globalStartDate}
