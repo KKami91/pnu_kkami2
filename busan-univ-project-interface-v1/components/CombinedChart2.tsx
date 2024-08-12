@@ -150,10 +150,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     calorie: 'rgba(136, 132, 216, 0.6)',  
     step: 'rgba(130, 202, 157, 0.6)',     
     bpm: '#ff7300',                       
-    pred_bpm: '#FF5733',                  
+    pred_bpm: '#F05733',                  
     sdnn: '#0088FE',                      
     rmssd: '#00C49F',                     
-    pred_rmssd: '#82ca9d'                 
+    pred_rmssd: '#02ca9d'                 
   };
 
   return (
