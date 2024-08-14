@@ -21,7 +21,7 @@ interface DataItem {
   calorie?: number;
   rmssd?: number;
   sdnn?: number;
-  pred_bpm?: number;
+  min_pred_bpm: number | null;
   pred_rmssd?: number;
 }
 
@@ -57,16 +57,19 @@ interface DataPrediction {
   pred_bpm: number | null;
 }
 
-interface PredictionResponse {
-  min_pred_bpm: DataPrediction[];
-  hour_pred_bpm: DataPrediction[];
-  day_pred_bpm: DataPrediction[];
-}
+
 
 interface FeatureResponse {
   hour_hrv: DataFeature[];
   day_hrv: DataFeature[];
 }
+
+interface DataPredictionMinute {
+  ds: string;
+  min_pred_bpm: number | null;
+}
+
+
 
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('');
@@ -81,27 +84,34 @@ export default function Home() {
   const [bpmData, setBpmData] = useState<DataItem[]>([]);
   const [stepData, setStepData] = useState<DataItem[]>([]);
   const [calorieData, setCalorieData] = useState<DataItem[]>([]);
-  const [predictMinuteData, setPredictMinuteData] = useState<DataItem[]>([]);
+
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
   const [viewMode, setViewMode] = useState<'combined' | 'multi'>('combined');
 
+  const [featureMinuteData, setFeatureMinuteData] = useState<DataFeature[]>([]);
+  const [featureHourData, setFeatureHourData] = useState<DataFeature[]>([]);
+  const [featureDayData, setFeatureDayData] = useState<DataFeature[]>([]);
+  const [predictMinuteData, setPredictMinuteData] = useState<DataPredictionMinute[]>([]);
+  const [predictHourData, setPredictHourData] = useState<DataPrediction[]>([]);
+  const [predictDayData, setPredictDayData] = useState<DataPrediction[]>([]);
+
   const { globalStartDate, globalEndDate } = useMemo(() => {
-    const allData = [...bpmData, ...stepData, ...calorieData, ...predictMinuteData];
+    const allData = [...bpmData, ...stepData, ...calorieData];
     const allDates = allData.map(item => new Date(item.ds).getTime());
     return {
       globalStartDate: allDates.length > 0 ? new Date(Math.min(...allDates)) : new Date(),
       globalEndDate: allDates.length > 0 ? new Date(Math.max(...allDates)) : new Date()
     };
-  }, [bpmData, stepData, calorieData, predictMinuteData]);
+  }, [bpmData, stepData, calorieData]);
 
-  const fetchData = async (collection: string, user: string, date: string) => {
+  const fetchData = async (collection: string, user: string) => {
     try {
-      console.log(`Fetching ${collection} data for user ${user} and date ${date}`);
+      console.log(`Fetching ${collection} data for user ${user}`);
       const response = await axios.get('/api/getData3', {
-        params: { collection, user_email: user, date }
+        params: { collection, user_email: user }
       });
       console.log(`Fetched ${collection} data:`, response.data);
       return response.data;
@@ -126,17 +136,18 @@ export default function Home() {
       setRenderTime(null)
       startTimeRef.current = performance.now();
       try {
-        const [bpm, step, calorie, predict] = await Promise.all([
-          fetchData('bpm', selectedUser, date),
-          fetchData('steps', selectedUser, date),
-          fetchData('calories', selectedUser, date),
-          fetchData('predict', selectedUser, date)
+        const [bpm, step, calorie] = await Promise.all([
+          fetchData('bpm', selectedUser),
+          fetchData('steps', selectedUser),
+          fetchData('calories', selectedUser),
+          
         ]);
 
         setBpmData(bpm);
         setStepData(step);
         setCalorieData(calorie);
-        setPredictMinuteData(predict);
+        
+        await fetchPredictionData(selectedUser);
 
         setShowGraphs(true);
       } catch (error) {
@@ -147,6 +158,46 @@ export default function Home() {
       }
     }
   }
+
+  const fetchPredictionData = async (user: string) => {
+    try {
+
+      const response_minute = await axios.get(`${API_URL}/predict_minute/${user}`);
+      const response_hour = await axios.get(`${API_URL}/predict_hour/${user}`);
+      const response_day = await axios.get(`${API_URL}/predict_day/${user}`);
+      console.log('fetchPredictionData-minute : ', response_minute);
+      console.log('fetchPredictionData-hour : ', response_hour);
+      console.log('fetchPredictionData-day : ', response_day);
+
+
+      setPredictMinuteData(response_minute.data);
+      setPredictHourData(response_hour.data);
+      setPredictDayData(response_day.data);
+
+      console.log('predict-min', response_minute.data.min_pred_bpm)
+      console.log('predict-hour', response_hour.data.hour_pred_bpm)
+      console.log('predict-day', response_day.data.day_pred_bpm)
+    } catch (error) {
+      console.error('Error.........In featchPredictionData: ', error);
+    }
+
+    const fetchFeatureData = async (user: string) => {
+      try {
+        const response_hour = await axios.get(`${API_URL}/feature_hour/${user}`);
+        const response_day = await axios.get(`${API_URL}/feature_day/${user}`);
+        console.log('fetchPredictionData-hour : ', response_hour);
+        console.log('fetchPredictionData-day : ', response_day);
+  
+
+        setFeatureHourData(response_hour.data);
+        setFeatureDayData(response_day.data);
+  
+  
+        console.log('feature-hour', response_hour.data);
+        console.log('feature-day', response_day.data);
+      } catch (error) {
+        console.error('Error.........In featchFeatureData: ', error);
+      }
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
@@ -282,4 +333,6 @@ export default function Home() {
       </div>
     </div>
   );
+}
+  }
 }

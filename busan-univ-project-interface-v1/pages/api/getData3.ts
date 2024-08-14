@@ -6,9 +6,9 @@ const client = new MongoClient(uri as string)
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
-    const { collection, user_email, date } = req.query
+    const { collection, user_email } = req.query
 
-    if (!collection || !user_email || !date) {
+    if (!collection || !user_email) {
       return res.status(400).json({ error: 'Missing required parameters' })
     }
 
@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const query = {
         user_email, 
-        ['save_date']: date,
+        // ['save_date']: date,
       }
       
       const result = await dataCollection.findOne(query)

@@ -7,7 +7,7 @@ interface DataItem {
   bpm?: number;
   step?: number;
   calorie?: number;
-  pred_bpm?: number;
+  min_pred_bpm: number | null;
 }
 
 interface MultiChartProps {
