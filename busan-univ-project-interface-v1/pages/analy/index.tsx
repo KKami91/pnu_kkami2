@@ -122,16 +122,17 @@ export default function Home() {
 
   const fetchPredictionData = async (user: string) => {
     try {
-      const response = await axios.get(`${API_URL}/predict/${user}`);
-      console.log('fetchPredictionData : ', response);
+      const response_minute = await axios.get(`${API_URL}/predict_minute/${user}`);
+      const response_hour = await axios.get(`${API_URL}/predict_hour/${user}`);
+      const response_day = await axios.get(`${API_URL}/predict_day/${user}`);
+      console.log('fetchPredictionData-minute : ', response_minute);
+      console.log('fetchPredictionData-hour : ', response_hour);
+      console.log('fetchPredictionData-day : ', response_day);
 
-      setPredictMinuteData(response.data.min_pred_bpm);
-      setPredictHourData(response.data.hour_pred_bpm);
-      setPredictDayData(response.data.day_pred_bpm);
+      setPredictMinuteData(response_minute.data);
+      setPredictHourData(response_hour.data);
+      setPredictDayData(response_day.data);
 
-      console.log('predict-min', response.data.min_pred_bpm)
-      console.log('predict-hour', response.data.hour_pred_bpm)
-      console.log('predict-day', response.data.day_pred_bpm)
     } catch (error) {
       console.error('Error.........In featchPredictionData: ', error);
     }
@@ -139,15 +140,14 @@ export default function Home() {
 
   const fetchFeatureData = async (user: string) => {
     try {
-      const response = await axios.get(`${API_URL}/feature/${user}`);
-      console.log('fetchPredictionData : ', response);
+      const response_hour = await axios.get(`${API_URL}/feature_hour/${user}`);
+      const response_day = await axios.get(`${API_URL}/feature_day/${user}`);
+      console.log('fetchPredictionData-hour : ', response_hour);
+      console.log('fetchPredictionData-day : ', response_day);
 
-      setFeatureHourData(response.data.hour_hrv);
-      setFeatureDayData(response.data.day_hrv);
+      setFeatureHourData(response_hour.data);
+      setFeatureDayData(response_day.data);
 
-
-      console.log('feature-hour', response.data.hour_hrv);
-      console.log('feature-day', response.data.day_hrv);
     } catch (error) {
       console.error('Error.........In featchFeatureData: ', error);
     }
