@@ -8,12 +8,64 @@ import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
 
+const LoadingSpinner = () => (
+  <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] ml-2">
+    <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
+  </div>
+)
+
 interface DataItem {
   ds: string;
   bpm?: number;
   step?: number;
   calorie?: number;
+  rmssd?: number;
+  sdnn?: number;
   pred_bpm?: number;
+  pred_rmssd?: number;
+}
+
+interface DataBPM {
+  ds: string;
+  bpm: number | null;
+}
+
+interface DataStep {
+  ds: string;
+  step: number | null;
+}
+
+interface DataCalorie {
+  ds: string;
+  calorie: number | null;
+}
+
+interface DataSleep {
+  ds_start: string;
+  ds_end: string;
+  stage: number | null;
+}
+
+interface DataFeature {
+  ds: string;
+  rmssd: number | null;
+  sdnn: number | null;
+}
+
+interface DataPrediction {
+  ds: string;
+  pred_bpm: number | null;
+}
+
+interface PredictionResponse {
+  min_pred_bpm: DataPrediction[];
+  hour_pred_bpm: DataPrediction[];
+  day_pred_bpm: DataPrediction[];
+}
+
+interface FeatureResponse {
+  hour_hrv: DataFeature[];
+  day_hrv: DataFeature[];
 }
 
 export default function Home() {
@@ -57,6 +109,11 @@ export default function Home() {
       console.error(`Error fetching ${collection} data:`, error);
       throw error;
     }
+  };
+
+  const handleBrushChange = (domain: [number, number] | null) => {
+    console.log("Brush domain changed:", domain);
+    // 여기에 브러시 변경에 대한 추가 로직을 구현할 수 있습니다.
   };
 
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -125,10 +182,6 @@ export default function Home() {
     }
   };
 
-  const handleBrushChange = (domain: [number, number] | null) => {
-    console.log("Brush domain changed:", domain);
-    // 여기에 브러시 변경에 대한 추가 로직을 구현할 수 있습니다.
-  };
 
   useEffect(() => {
     if (showGraphs && startTimeRef.current !== null) {
@@ -142,7 +195,52 @@ export default function Home() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Heart Rate and Sleep Analysis Dashboard</h1>
-      {/* ... (기존 UI 요소들) */}
+      <div className="mb-4 flex items-center">
+        <label className="mr-2">계정 선택:</label>
+        <select 
+          value={selectedUser} 
+          onChange={handleUserSelect}
+          className="border p-2 rounded mr-2"
+        >
+          <option value="">Select a user</option>
+          {users.map(user => (
+            <option key={user} value={user}>{user}</option>
+          ))}
+        </select>
+        {isLoadingUser && <LoadingSpinner />}
+      </div>
+      {selectedUser && saveDates.length > 0 && (
+        <div className="mb-4 flex items-center">
+          <label className="mr-2">저장된 날짜 선택:</label>
+          <select 
+            value={selectedDate} 
+            onChange={handleDateSelect}
+            className="border p-2 rounded mr-2"
+          >
+            <option value="">Select a date</option>
+            {saveDates.map(date => (
+              <option key={date} value={date}>{date}</option>
+            ))}
+          </select>
+          {isLoading && <LoadingSpinner />}
+        </div>
+      )}
+      {selectedDate && (
+        <div className="mb-4 flex items-center justify-end">
+          <button
+            onClick={() => setViewMode('combined')}
+            className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            <LaptopMinimal size={20} />
+          </button>
+          <button
+            onClick={() => setViewMode('multi')}
+            className={`p-2 rounded ${viewMode === 'multi' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            <LayoutGrid size={20} />
+          </button>
+        </div>
+      )}
       <div className="mt-8">
         {isLoading ? (
           <SkeletonLoader viewMode={viewMode} columns={1} />
