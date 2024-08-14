@@ -109,7 +109,7 @@ export default function Home() {
   const fetchData = async (collection: string, user: string, date: string) => {
     try {
       console.log(`Fetching ${collection} data for user ${user} and date ${date}`);
-      const response = await axios.get('/api/get_data3', {
+      const response = await axios.get('/api/getData3', {
         params: { collection, user_email: user, date }
       });
       console.log(`Fetched ${collection} data:`, response.data);
