@@ -13,6 +13,50 @@ interface DataItem {
   pred_rmssd?: number;
 }
 
+interface DataBPM {
+  ds: string;
+  bpm: number | null;
+}
+
+interface DataStep {
+  ds: string;
+  step: number | null;
+}
+
+interface DataCalorie {
+  ds: string;
+  calorie: number | null;
+}
+
+interface DataSleep {
+  ds_start: string;
+  ds_end: string;
+  stage: number | null;
+}
+
+interface DataFeature {
+  ds: string;
+  rmssd: number | null;
+  sdnn: number | null;
+}
+
+interface DataPrediction {
+  ds: string;
+  pred_bpm: number | null;
+}
+
+interface PredictionResponse {
+  min_pred_bpm: DataPrediction[];
+  hour_pred_bpm: DataPrediction[];
+  day_pred_bpm: DataPrediction[];
+}
+
+interface FeatureResponse {
+  hour_hrv: DataFeature[];
+  day_hrv: DataFeature[];
+}
+
+
 interface CombinedChartProps {
   data: DataItem[];
   globalStartDate: Date;

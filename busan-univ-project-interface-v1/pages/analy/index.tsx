@@ -90,7 +90,7 @@ export default function Home() {
   const [predictHourData, setPredictHourData] = useState<DataPrediction[]>([]);
   const [predictDayData, setPredictDayData] = useState<DataPrediction[]>([]);
 
-
+  const [data, setData] = useState<DataItem[]>([]);
 
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
