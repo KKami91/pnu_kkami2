@@ -1,51 +1,43 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subHours } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+
+interface DataItem {
+  ds: string;
+  bpm?: number;
+  step?: number;
+  calorie?: number;
+  rmssd?: number;
+  sdnn?: number;
+  pred_bpm?: number;
+  pred_rmssd?: number;
+}
 
 interface MultiChartProps {
-  hourlyData: any[];
-  dailyData: any[];
+  data: DataItem[];
   globalStartDate: Date;
   globalEndDate: Date;
   onBrushChange: (domain: [number, number] | null) => void;
 }
 
 const MultiChart: React.FC<MultiChartProps> = ({
-  hourlyData,
-  dailyData,
+  data,
   globalStartDate,
   globalEndDate,
   onBrushChange,
 }) => {
-  const [activeTimeUnit, setActiveTimeUnit] = useState<'hourly' | 'daily'>('hourly');
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
   const [columnCount, setColumnCount] = useState(1);
 
-  const combinedData = useMemo(() => {
-    const data = activeTimeUnit === 'hourly' ? hourlyData : dailyData;
-    return data.map(item => {
-      const itemDate = parseISO(item.ds);
-      const adjustedDate = activeTimeUnit === 'hourly' ? subHours(itemDate, 9) : itemDate;
-      return {
-        ...item,
-        timestamp: adjustedDate.getTime(),
-        bpm: item.bpm != null ? Number(item.bpm) : null,
-        pred_bpm: item.pred_bpm != null ? Number(item.pred_bpm) : null,
-        sdnn: item.sdnn != null ? Number(Number(item.sdnn).toFixed(2)) : null,
-        rmssd: item.rmssd != null ? Number(Number(item.rmssd).toFixed(2)) : null,
-        pred_rmssd: item.pred_rmssd != null ? Number(Number(item.pred_rmssd).toFixed(2)) : null,
-        step: item.step != null ? Number(item.step) : null,
-        calorie: item.calorie != null ? Number(item.calorie) : null,
-      };
-    }).sort((a, b) => a.timestamp - b.timestamp);
-  }, [hourlyData, dailyData, activeTimeUnit]);
-
   const filteredData = useMemo(() => {
-    if (!brushDomain) return combinedData;
-    return combinedData.filter(
-      item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+    if (!brushDomain) return data;
+    return data.filter(
+      item => {
+        const itemTime = new Date(item.ds).getTime();
+        return itemTime >= brushDomain[0] && itemTime <= brushDomain[1];
+      }
     );
-  }, [combinedData, brushDomain]);
+  }, [data, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -58,7 +50,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForBrush = (time: number) => {
-    return format(new Date(time), activeTimeUnit === 'hourly' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd');
+    return format(new Date(time), 'yyyy-MM-dd HH:mm');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -66,7 +58,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
-            {format(new Date(label), activeTimeUnit === 'hourly' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd')}
+            {format(new Date(label), 'yyyy-MM-dd HH:mm')}
           </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
@@ -87,11 +79,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
         <ChartType data={filteredData} syncId="healthMetrics">
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
-            dataKey="timestamp" 
-            type="number" 
-            scale="time" 
-            domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick), activeTimeUnit === 'hourly' ? 'MM-dd HH:mm' : 'MM-dd')}
+            dataKey="ds" 
+            tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
           />
           <YAxis 
             label={{ value: yAxisLabel, angle: -90, position: 'insideLeft' }} 
@@ -125,20 +114,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
     <div className='bg-white p-4 rounded-lg shadow'>
       <div className="mb-4 flex justify-between items-center">
         <div>
-          <button
-            onClick={() => setActiveTimeUnit('hourly')}
-            className={`px-4 py-2 rounded ${activeTimeUnit === 'hourly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            Hourly
-          </button>
-          <button
-            onClick={() => setActiveTimeUnit('daily')}
-            className={`px-4 py-2 rounded ml-2 ${activeTimeUnit === 'daily' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            Daily
-          </button>
-        </div>
-        <div>
           {[1, 2, 3].map(count => (
             <button
               key={count}
@@ -152,16 +127,13 @@ const MultiChart: React.FC<MultiChartProps> = ({
       </div>
       <div style={{ height: '100px', marginBottom: '20px' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={combinedData} syncId="healthMetrics">
+          <LineChart data={data} syncId="healthMetrics">
             <XAxis 
-              dataKey="timestamp" 
-              type="number" 
-              scale="time" 
-              domain={['dataMin', 'dataMax']}
-              tickFormatter={(tick) => format(new Date(tick), activeTimeUnit === 'hourly' ? 'MM-dd HH:mm' : 'MM-dd')}
+              dataKey="ds" 
+              tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
             />
             <Brush 
-              dataKey="timestamp" 
+              dataKey="ds" 
               height={30} 
               stroke="#8884d8" 
               onChange={handleBrushChange}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import axios from 'axios'
-import MultiChart from '../../components/MultiChart';
-import CombinedChart from '../../components/CombinedChart2';
-import { SkeletonLoader } from '../../components/SkeletonLoaders2';
+import MultiChart from '../../components/MultiChart3';
+import CombinedChart from '../../components/CombinedChart3';
+import { SkeletonLoader } from '../../components/SkeletonLoaders3';
 import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
@@ -17,10 +17,12 @@ const LoadingSpinner = () => (
 interface DataItem {
   ds: string;
   bpm?: number;
-  rmssd?: number;
-  sdnn?: number;
   step?: number;
   calorie?: number;
+  rmssd?: number;
+  sdnn?: number;
+  pred_bpm?: number;
+  pred_rmssd?: number;
 }
 
 export default function Home() {
@@ -48,24 +50,26 @@ export default function Home() {
     };
   }, [data]);
 
-  const fetchSaveDates = async (user: string) => {
-    try {
-      const response = await axios.get(`${API_URL}/get_save_dates/${user}`);
-      setSaveDates(response.data.save_dates);
-    } catch (error) {
-      console.error('Error fetching save dates:', error);
-      setMessage(`Error fetching save dates: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
-
   const fetchData = async (user: string, date: string) => {
     try {
-      const response = await axios.get(`${API_URL}/get_data`, {
-        params: { user_email: user, date }
+      console.log(`Fetching data for user ${user} and date ${date}`);
+      const response = await fetch('/api/getData3', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ user_email: user, date }),
       });
-      return response.data;
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const fetchedData = await response.json();
+      console.log('Fetched data:', fetchedData);
+      return fetchedData;
     } catch (error) {
-      console.error(`Error fetching data:`, error);
+      console.error('Error fetching data:', error);
       throw error;
     }
   };
@@ -81,11 +85,12 @@ export default function Home() {
       startTimeRef.current = performance.now();
       try {
         const fetchedData = await fetchData(selectedUser, date);
-        console.log('Fetched Data:', fetchedData);
+        console.log('Fetched Data in handleDateSelect:', fetchedData);
         setData(fetchedData);
         setShowGraphs(true);
       } catch (error) {
-        setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
+        console.error('Error in handleDateSelect:', error);
+        setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
         setIsLoading(false)
       }
@@ -115,6 +120,16 @@ export default function Home() {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
+
+  const fetchSaveDates = async (user: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/get_save_dates/${user}`);
+      setSaveDates(response.data.save_dates);
+    } catch (error) {
+      console.error('Error fetching save dates:', error);
+      setMessage(`Error fetching save dates: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
 
   useEffect(() => {
     if (showGraphs && startTimeRef.current !== null) {
@@ -183,16 +198,14 @@ export default function Home() {
           <>
             {viewMode === 'combined' ? (
               <CombinedChart
-                hourlyData={data}
-                dailyData={[]}
+                data={data}
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={() => {}}
               />
             ) : (
               <MultiChart
-                hourlyData={data}
-                dailyData={[]}
+                data={data}
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={() => {}}
@@ -212,3 +225,7 @@ export default function Home() {
     </div>
   );
 }
+
+
+
+
