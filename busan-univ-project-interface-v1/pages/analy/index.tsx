@@ -74,6 +74,7 @@ export default function Home() {
       setRenderTime(null)
       startTimeRef.current = performance.now();
       try {
+        console.log('date', date);
         const collections = ['bpm', 'steps', 'calories', 'sleeps'];
         const fetchedData = await Promise.all(
           collections.map(collection => fetchData(collection, selectedUser, date))
