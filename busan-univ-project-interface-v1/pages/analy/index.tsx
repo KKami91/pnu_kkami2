@@ -163,11 +163,13 @@ export default function Home() {
     try {
 
       const response_minute = await axios.get(`${API_URL}/predict_minute/${user}`);
-      const response_hour = await axios.get(`${API_URL}/predict_hour/${user}`);
-      const response_day = await axios.get(`${API_URL}/predict_day/${user}`);
       console.log('fetchPredictionData-minute : ', response_minute);
+      const response_hour = await axios.get(`${API_URL}/predict_hour/${user}`);
       console.log('fetchPredictionData-hour : ', response_hour);
+      const response_day = await axios.get(`${API_URL}/predict_day/${user}`);
       console.log('fetchPredictionData-day : ', response_day);
+      
+      
 
 
       setPredictMinuteData(response_minute.data);
