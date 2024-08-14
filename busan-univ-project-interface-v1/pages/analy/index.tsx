@@ -8,64 +8,12 @@ import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
 
-const LoadingSpinner = () => (
-  <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] ml-2">
-    <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
-  </div>
-)
-
 interface DataItem {
   ds: string;
   bpm?: number;
   step?: number;
   calorie?: number;
-  rmssd?: number;
-  sdnn?: number;
   pred_bpm?: number;
-  pred_rmssd?: number;
-}
-
-interface DataBPM {
-  ds: string;
-  bpm: number | null;
-}
-
-interface DataStep {
-  ds: string;
-  step: number | null;
-}
-
-interface DataCalorie {
-  ds: string;
-  calorie: number | null;
-}
-
-interface DataSleep {
-  ds_start: string;
-  ds_end: string;
-  stage: number | null;
-}
-
-interface DataFeature {
-  ds: string;
-  rmssd: number | null;
-  sdnn: number | null;
-}
-
-interface DataPrediction {
-  ds: string;
-  pred_bpm: number | null;
-}
-
-interface PredictionResponse {
-  min_pred_bpm: DataPrediction[];
-  hour_pred_bpm: DataPrediction[];
-  day_pred_bpm: DataPrediction[];
-}
-
-interface FeatureResponse {
-  hour_hrv: DataFeature[];
-  day_hrv: DataFeature[];
 }
 
 export default function Home() {
@@ -78,20 +26,10 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [saveDates, setSaveDates] = useState<string[]>([]);
 
-  
-  const [bpmData, setBpmData] = useState<DataBPM[]>([]);
-  const [stepData, setStepData] = useState<DataStep[]>([]);
-  const [calorieData, setCalorieData] = useState<DataCalorie[]>([]);
-  const [sleepData, setSleepData] = useState<DataSleep[]>([]);
-  const [featureMinuteData, setFeatureMinuteData] = useState<DataFeature[]>([]);
-  const [featureHourData, setFeatureHourData] = useState<DataFeature[]>([]);
-  const [featureDayData, setFeatureDayData] = useState<DataFeature[]>([]);
-  const [predictMinuteData, setPredictMinuteData] = useState<DataPrediction[]>([]);
-  const [predictHourData, setPredictHourData] = useState<DataPrediction[]>([]);
-  const [predictDayData, setPredictDayData] = useState<DataPrediction[]>([]);
-
-  const [data, setData] = useState<DataItem[]>([]);
-
+  const [bpmData, setBpmData] = useState<DataItem[]>([]);
+  const [stepData, setStepData] = useState<DataItem[]>([]);
+  const [calorieData, setCalorieData] = useState<DataItem[]>([]);
+  const [predictMinuteData, setPredictMinuteData] = useState<DataItem[]>([]);
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -99,12 +37,13 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'combined' | 'multi'>('combined');
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
-    const allTimestamps = [...predictHourData, ...predictDayData].map(item => new Date(item.ds).getTime());
+    const allData = [...bpmData, ...stepData, ...calorieData, ...predictMinuteData];
+    const allDates = allData.map(item => new Date(item.ds).getTime());
     return {
-      globalStartDate: allTimestamps.length > 0 ? new Date(Math.min(...allTimestamps)) : new Date(),
-      globalEndDate: allTimestamps.length > 0 ? new Date(Math.max(...allTimestamps)) : new Date()
+      globalStartDate: allDates.length > 0 ? new Date(Math.min(...allDates)) : new Date(),
+      globalEndDate: allDates.length > 0 ? new Date(Math.max(...allDates)) : new Date()
     };
-  }, [predictHourData, predictDayData]);
+  }, [bpmData, stepData, calorieData, predictMinuteData]);
 
   const fetchData = async (collection: string, user: string, date: string) => {
     try {
@@ -120,39 +59,6 @@ export default function Home() {
     }
   };
 
-  const fetchPredictionData = async (user: string) => {
-    try {
-      const response_minute = await axios.get(`${API_URL}/predict_minute/${user}`);
-      const response_hour = await axios.get(`${API_URL}/predict_hour/${user}`);
-      const response_day = await axios.get(`${API_URL}/predict_day/${user}`);
-      console.log('fetchPredictionData-minute : ', response_minute);
-      console.log('fetchPredictionData-hour : ', response_hour);
-      console.log('fetchPredictionData-day : ', response_day);
-
-      setPredictMinuteData(response_minute.data);
-      setPredictHourData(response_hour.data);
-      setPredictDayData(response_day.data);
-
-    } catch (error) {
-      console.error('Error.........In featchPredictionData: ', error);
-    }
-  }
-
-  const fetchFeatureData = async (user: string) => {
-    try {
-      const response_hour = await axios.get(`${API_URL}/feature_hour/${user}`);
-      const response_day = await axios.get(`${API_URL}/feature_day/${user}`);
-      console.log('fetchPredictionData-hour : ', response_hour);
-      console.log('fetchPredictionData-day : ', response_day);
-
-      setFeatureHourData(response_hour.data);
-      setFeatureDayData(response_day.data);
-
-    } catch (error) {
-      console.error('Error.........In featchFeatureData: ', error);
-    }
-  }
-
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
     setSelectedDate(date)
@@ -163,24 +69,17 @@ export default function Home() {
       setRenderTime(null)
       startTimeRef.current = performance.now();
       try {
-        const [bpmData, stepData, calorieData, sleepData] = await Promise.all([
+        const [bpm, step, calorie, predict] = await Promise.all([
           fetchData('bpm', selectedUser, date),
           fetchData('steps', selectedUser, date),
           fetchData('calories', selectedUser, date),
-          fetchData('sleeps', selectedUser, date)
+          fetchData('predict', selectedUser, date)
         ]);
-        console.log('bpmdata', bpmData);
-        console.log('stepdata', stepData);
-        console.log('caloriedata', calorieData);
-        console.log('sleepdata', sleepData);
 
-        setBpmData(bpmData);
-        setStepData(stepData);
-        setCalorieData(calorieData);
-        setSleepData(sleepData);
-
-        fetchFeatureData(selectedUser);
-        fetchPredictionData(selectedUser);
+        setBpmData(bpm);
+        setStepData(step);
+        setCalorieData(calorie);
+        setPredictMinuteData(predict);
 
         setShowGraphs(true);
       } catch (error) {
@@ -226,6 +125,11 @@ export default function Home() {
     }
   };
 
+  const handleBrushChange = (domain: [number, number] | null) => {
+    console.log("Brush domain changed:", domain);
+    // 여기에 브러시 변경에 대한 추가 로직을 구현할 수 있습니다.
+  };
+
   useEffect(() => {
     if (showGraphs && startTimeRef.current !== null) {
       const endTime = performance.now();
@@ -238,52 +142,7 @@ export default function Home() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Heart Rate and Sleep Analysis Dashboard</h1>
-      <div className="mb-4 flex items-center">
-        <label className="mr-2">계정 선택:</label>
-        <select 
-          value={selectedUser} 
-          onChange={handleUserSelect}
-          className="border p-2 rounded mr-2"
-        >
-          <option value="">Select a user</option>
-          {users.map(user => (
-            <option key={user} value={user}>{user}</option>
-          ))}
-        </select>
-        {isLoadingUser && <LoadingSpinner />}
-      </div>
-      {selectedUser && saveDates.length > 0 && (
-        <div className="mb-4 flex items-center">
-          <label className="mr-2">저장된 날짜 선택:</label>
-          <select 
-            value={selectedDate} 
-            onChange={handleDateSelect}
-            className="border p-2 rounded mr-2"
-          >
-            <option value="">Select a date</option>
-            {saveDates.map(date => (
-              <option key={date} value={date}>{date}</option>
-            ))}
-          </select>
-          {isLoading && <LoadingSpinner />}
-        </div>
-      )}
-      {selectedDate && (
-        <div className="mb-4 flex items-center justify-end">
-          <button
-            onClick={() => setViewMode('combined')}
-            className={`p-2 rounded mr-2 ${viewMode === 'combined' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            <LaptopMinimal size={20} />
-          </button>
-          <button
-            onClick={() => setViewMode('multi')}
-            className={`p-2 rounded ${viewMode === 'multi' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            <LayoutGrid size={20} />
-          </button>
-        </div>
-      )}
+      {/* ... (기존 UI 요소들) */}
       <div className="mt-8">
         {isLoading ? (
           <SkeletonLoader viewMode={viewMode} columns={1} />
@@ -293,17 +152,23 @@ export default function Home() {
           <>
             {viewMode === 'combined' ? (
               <CombinedChart
-                data={data}
+                bpmData={bpmData}
+                stepData={stepData}
+                calorieData={calorieData}
+                predictMinuteData={predictMinuteData}
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
-                onBrushChange={() => {}}
+                onBrushChange={handleBrushChange}
               />
             ) : (
               <MultiChart
-                data={data}
+                bpmData={bpmData}
+                stepData={stepData}
+                calorieData={calorieData}
+                predictMinuteData={predictMinuteData}
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
-                onBrushChange={() => {}}
+                onBrushChange={handleBrushChange}
               />
             )}
             {renderTime !== null && (
@@ -313,14 +178,10 @@ export default function Home() {
             )}
           </>
         ) : null}
-        {showGraphs && data.length === 0 && (
+        {showGraphs && bpmData.length === 0 && stepData.length === 0 && calorieData.length === 0 && predictMinuteData.length === 0 && (
           <div className="text-center text-red-500">No data available for the charts.</div>
         )}
       </div>
     </div>
   );
 }
-
-
-
-
