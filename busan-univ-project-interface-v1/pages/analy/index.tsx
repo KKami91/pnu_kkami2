@@ -180,24 +180,26 @@ export default function Home() {
     } catch (error) {
       console.error('Error.........In featchPredictionData: ', error);
     }
+  }
 
-    const fetchFeatureData = async (user: string) => {
-      try {
-        const response_hour = await axios.get(`${API_URL}/feature_hour/${user}`);
-        const response_day = await axios.get(`${API_URL}/feature_day/${user}`);
-        console.log('fetchPredictionData-hour : ', response_hour);
-        console.log('fetchPredictionData-day : ', response_day);
-  
+  const fetchFeatureData = async (user: string) => {
+    try {
+      const response_hour = await axios.get(`${API_URL}/feature_hour/${user}`);
+      const response_day = await axios.get(`${API_URL}/feature_day/${user}`);
+      console.log('fetchPredictionData-hour : ', response_hour);
+      console.log('fetchPredictionData-day : ', response_day);
 
-        setFeatureHourData(response_hour.data);
-        setFeatureDayData(response_day.data);
-  
-  
-        console.log('feature-hour', response_hour.data);
-        console.log('feature-day', response_day.data);
-      } catch (error) {
-        console.error('Error.........In featchFeatureData: ', error);
-      }
+
+      setFeatureHourData(response_hour.data);
+      setFeatureDayData(response_day.data);
+
+
+      console.log('feature-hour', response_hour.data);
+      console.log('feature-day', response_day.data);
+    } catch (error) {
+      console.error('Error.........In featchFeatureData: ', error);
+    }
+  }
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
@@ -333,6 +335,4 @@ export default function Home() {
       </div>
     </div>
   );
-}
-  }
 }
