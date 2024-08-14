@@ -19,7 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const query = {
         user_email, 
-        ['date']: date,
+        ['save_date']: date,
       }
       
       const result = await dataCollection.findOne(query)
