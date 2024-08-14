@@ -122,7 +122,7 @@ export default function Home() {
 
   const fetchPredictionData = async (user: string) => {
     try {
-      const response = await axios.get<PredictionResponse>(`${API_URL}/predict/${user}`);
+      const response = await axios.get(`${API_URL}/predict/${user}`);
       console.log('fetchPredictionData : ', response);
 
       setPredictMinuteData(response.data.min_pred_bpm);
@@ -139,7 +139,7 @@ export default function Home() {
 
   const fetchFeatureData = async (user: string) => {
     try {
-      const response = await axios.get<FeatureResponse>(`${API_URL}/feature/${user}`);
+      const response = await axios.get(`${API_URL}/feature/${user}`);
       console.log('fetchPredictionData : ', response);
 
       setFeatureHourData(response.data.hour_hrv);
