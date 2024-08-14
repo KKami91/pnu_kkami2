@@ -25,6 +25,49 @@ interface DataItem {
   pred_rmssd?: number;
 }
 
+interface DataBPM {
+  ds: string;
+  bpm: number | null;
+}
+
+interface DataStep {
+  ds: string;
+  step: number | null;
+}
+
+interface DataCalorie {
+  ds: string;
+  calorie: number | null;
+}
+
+interface DataSleep {
+  ds_start: string;
+  ds_end: string;
+  stage: number | null;
+}
+
+interface DataFeature {
+  ds: string;
+  rmssd: number | null;
+  sdnn: number | null;
+}
+
+interface DataPrediction {
+  ds: string;
+  pred_bpm: number | null;
+}
+
+interface PredictionResponse {
+  min_pred_bpm: DataPrediction[];
+  hour_pred_bpm: DataPrediction[];
+  day_pred_bpm: DataPrediction[];
+}
+
+interface FeatureResponse {
+  hour_hrv: DataFeature[];
+  day_hrv: DataFeature[];
+}
+
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('');
   const [message, setMessage] = useState('');
@@ -35,7 +78,20 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [saveDates, setSaveDates] = useState<string[]>([]);
 
-  const [data, setData] = useState<DataItem[]>([]);
+  
+  const [bpmData, setBpmData] = useState<DataBPM[]>([]);
+  const [stepData, setStepData] = useState<DataStep[]>([]);
+  const [calorieData, setCalorieData] = useState<DataCalorie[]>([]);
+  const [sleepData, setSleepData] = useState<DataSleep[]>([]);
+  const [featureMinuteData, setFeatureMinuteData] = useState<DataFeature[]>([]);
+  const [featureHourData, setFeatureHourData] = useState<DataFeature[]>([]);
+  const [featureDayData, setFeatureDayData] = useState<DataFeature[]>([]);
+  const [predictMinuteData, setPredictMinuteData] = useState<DataPrediction[]>([]);
+  const [predictHourData, setPredictHourData] = useState<DataPrediction[]>([]);
+  const [predictDayData, setPredictDayData] = useState<DataPrediction[]>([]);
+
+
+
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -43,17 +99,17 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'combined' | 'multi'>('combined');
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
-    const allTimestamps = data.map(item => new Date(item.ds).getTime());
+    const allTimestamps = [...predictHourData, ...predictDayData].map(item => new Date(item.ds).getTime());
     return {
       globalStartDate: allTimestamps.length > 0 ? new Date(Math.min(...allTimestamps)) : new Date(),
       globalEndDate: allTimestamps.length > 0 ? new Date(Math.max(...allTimestamps)) : new Date()
     };
-  }, [data]);
+  }, [predictHourData, predictDayData]);
 
   const fetchData = async (collection: string, user: string, date: string) => {
     try {
       console.log(`Fetching ${collection} data for user ${user} and date ${date}`);
-      const response = await axios.get(`${API_URL}/get_data3`, {
+      const response = await axios.get('/api/get_data3', {
         params: { collection, user_email: user, date }
       });
       console.log(`Fetched ${collection} data:`, response.data);
@@ -63,6 +119,39 @@ export default function Home() {
       throw error;
     }
   };
+
+  const fetchPredictionData = async (user: string) => {
+    try {
+      const response = await axios.get<PredictionResponse>(`${API_URL}/predict/${user}`);
+      console.log('fetchPredictionData : ', response);
+
+      setPredictMinuteData(response.data.min_pred_bpm);
+      setPredictHourData(response.data.hour_pred_bpm);
+      setPredictDayData(response.data.day_pred_bpm);
+
+      console.log('predict-min', response.data.min_pred_bpm)
+      console.log('predict-hour', response.data.hour_pred_bpm)
+      console.log('predict-day', response.data.day_pred_bpm)
+    } catch (error) {
+      console.error('Error.........In featchPredictionData: ', error);
+    }
+  }
+
+  const fetchFeatureData = async (user: string) => {
+    try {
+      const response = await axios.get<FeatureResponse>(`${API_URL}/feature/${user}`);
+      console.log('fetchPredictionData : ', response);
+
+      setFeatureHourData(response.data.hour_hrv);
+      setFeatureDayData(response.data.day_hrv);
+
+
+      console.log('feature-hour', response.data.hour_hrv);
+      console.log('feature-day', response.data.day_hrv);
+    } catch (error) {
+      console.error('Error.........In featchFeatureData: ', error);
+    }
+  }
 
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
@@ -74,17 +163,25 @@ export default function Home() {
       setRenderTime(null)
       startTimeRef.current = performance.now();
       try {
-        console.log('date', date);
-        const collections = ['bpm', 'steps', 'calories', 'sleeps'];
-        const fetchedData = await Promise.all(
-          collections.map(collection => fetchData(collection, selectedUser, date))
-        );
-        
-        // 모든 데이터를 하나의 배열로 합칩니다.
-        const combinedData = fetchedData.flat();
-        console.log('Combined fetched data:', combinedData);
-        
-        setData(combinedData);
+        const [bpmData, stepData, calorieData, sleepData] = await Promise.all([
+          fetchData('bpm', selectedUser, date),
+          fetchData('steps', selectedUser, date),
+          fetchData('calories', selectedUser, date),
+          fetchData('sleeps', selectedUser, date)
+        ]);
+        console.log('bpmdata', bpmData);
+        console.log('stepdata', stepData);
+        console.log('caloriedata', calorieData);
+        console.log('sleepdata', sleepData);
+
+        setBpmData(bpmData);
+        setStepData(stepData);
+        setCalorieData(calorieData);
+        setSleepData(sleepData);
+
+        fetchFeatureData(selectedUser);
+        fetchPredictionData(selectedUser);
+
         setShowGraphs(true);
       } catch (error) {
         console.error('Error in handleDateSelect:', error);
