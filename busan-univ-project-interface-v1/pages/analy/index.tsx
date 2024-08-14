@@ -109,11 +109,11 @@ export default function Home() {
 
   const fetchData = async (collection: string, user: string) => {
     try {
-      console.log(`Fetching ${collection} data for user ${user}`);
+      // console.log(`Fetching ${collection} data for user ${user}`);
       const response = await axios.get('/api/getData3', {
         params: { collection, user_email: user }
       });
-      console.log(`Fetched ${collection} data:`, response.data);
+      // console.log(`Fetched ${collection} data:`, response.data);
       return response.data;
     } catch (error) {
       console.error(`Error fetching ${collection} data:`, error);
