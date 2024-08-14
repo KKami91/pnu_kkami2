@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, ChangeEvent } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import axios from 'axios'
 import MultiChart from '../../components/MultiChart';
 import CombinedChart from '../../components/CombinedChart2';
@@ -31,6 +31,7 @@ export default function Home() {
   const [showGraphs, setShowGraphs] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [saveDates, setSaveDates] = useState<string[]>([]);
 
   const [data, setData] = useState<DataItem[]>([]);
 
@@ -47,6 +48,16 @@ export default function Home() {
     };
   }, [data]);
 
+  const fetchSaveDates = async (user: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/get_save_dates/${user}`);
+      setSaveDates(response.data.save_dates);
+    } catch (error) {
+      console.error('Error fetching save dates:', error);
+      setMessage(`Error fetching save dates: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
   const fetchData = async (user: string, date: string) => {
     try {
       const response = await axios.get(`${API_URL}/get_data`, {
@@ -59,7 +70,7 @@ export default function Home() {
     }
   };
 
-  const handleDateSelect = async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value
     setSelectedDate(date)
     if (date) {
@@ -85,12 +96,14 @@ export default function Home() {
     const user = e.target.value
     setSelectedUser(user)
     setSelectedDate('')
+    setSaveDates([])
     if (user) {
       setIsLoadingUser(true)
       const start = performance.now();
       await checkDb(user)
+      await fetchSaveDates(user)
       const end = performance.now();
-      console.log(`checkDb 걸린 시간 : ${end - start} ms`);
+      console.log(`checkDb and fetchSaveDates 걸린 시간 : ${end - start} ms`);
       setIsLoadingUser(false)
     }
   }
@@ -129,15 +142,19 @@ export default function Home() {
         </select>
         {isLoadingUser && <LoadingSpinner />}
       </div>
-      {selectedUser && (
+      {selectedUser && saveDates.length > 0 && (
         <div className="mb-4 flex items-center">
-          <label className="mr-2">날짜 선택:</label>
-          <input 
-            type="date" 
+          <label className="mr-2">저장된 날짜 선택:</label>
+          <select 
             value={selectedDate} 
             onChange={handleDateSelect}
             className="border p-2 rounded mr-2"
-          />
+          >
+            <option value="">Select a date</option>
+            {saveDates.map(date => (
+              <option key={date} value={date}>{date}</option>
+            ))}
+          </select>
           {isLoading && <LoadingSpinner />}
         </div>
       )}
@@ -167,18 +184,18 @@ export default function Home() {
             {viewMode === 'combined' ? (
               <CombinedChart
                 hourlyData={data}
-                dailyData={[]}  // 필요하다면 여기에 일별 데이터를 전달
+                dailyData={[]}
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
-                onBrushChange={() => {}}  // 필요하다면 실제 함수 구현
+                onBrushChange={() => {}}
               />
             ) : (
               <MultiChart
                 hourlyData={data}
-                dailyData={[]}  // 필요하다면 여기에 일별 데이터를 전달
+                dailyData={[]}
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
-                onBrushChange={() => {}}  // 필요하다면 실제 함수 구현
+                onBrushChange={() => {}}
               />
             )}
             {renderTime !== null && (
