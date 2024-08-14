@@ -163,22 +163,22 @@ export default function Home() {
     try {
 
       const response_minute = await axios.get(`${API_URL}/predict_minute/${user}`);
-      console.log('fetchPredictionData-minute : ', response_minute);
-      const response_hour = await axios.get(`${API_URL}/predict_hour/${user}`);
-      console.log('fetchPredictionData-hour : ', response_hour);
-      const response_day = await axios.get(`${API_URL}/predict_day/${user}`);
-      console.log('fetchPredictionData-day : ', response_day);
+      // console.log('fetchPredictionData-minute : ', response_minute);
+      // const response_hour = await axios.get(`${API_URL}/predict_hour/${user}`);
+      // console.log('fetchPredictionData-hour : ', response_hour);
+      // const response_day = await axios.get(`${API_URL}/predict_day/${user}`);
+      // console.log('fetchPredictionData-day : ', response_day);
       
       
 
 
       setPredictMinuteData(response_minute.data);
-      setPredictHourData(response_hour.data);
-      setPredictDayData(response_day.data);
+      // setPredictHourData(response_hour.data);
+      // setPredictDayData(response_day.data);
 
       console.log('predict-min', response_minute.data.min_pred_bpm)
-      console.log('predict-hour', response_hour.data.hour_pred_bpm)
-      console.log('predict-day', response_day.data.day_pred_bpm)
+      // console.log('predict-hour', response_hour.data.hour_pred_bpm)
+      // console.log('predict-day', response_day.data.day_pred_bpm)
     } catch (error) {
       console.error('Error.........In featchPredictionData: ', error);
     }
