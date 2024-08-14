@@ -21,11 +21,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         user_email, 
         ['date']: date,
       }
-
-      // const query = { 
-      //   user_email, 
-      //   [`${collection.toString().replace('_results', '')}_date`]: date 
-      // }
       
       const result = await dataCollection.findOne(query)
 

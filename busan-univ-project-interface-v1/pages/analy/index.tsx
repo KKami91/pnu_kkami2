@@ -50,26 +50,16 @@ export default function Home() {
     };
   }, [data]);
 
-  const fetchData = async (user: string, date: string) => {
+  const fetchData = async (collection: string, user: string, date: string) => {
     try {
-      console.log(`Fetching data for user ${user} and date ${date}`);
-      const response = await fetch('/api/getData3', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ user_email: user, date }),
+      console.log(`Fetching ${collection} data for user ${user} and date ${date}`);
+      const response = await axios.get(`${API_URL}/get_data3`, {
+        params: { collection, user_email: user, date }
       });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const fetchedData = await response.json();
-      console.log('Fetched data:', fetchedData);
-      return fetchedData;
+      console.log(`Fetched ${collection} data:`, response.data);
+      return response.data;
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error(`Error fetching ${collection} data:`, error);
       throw error;
     }
   };
@@ -84,9 +74,16 @@ export default function Home() {
       setRenderTime(null)
       startTimeRef.current = performance.now();
       try {
-        const fetchedData = await fetchData(selectedUser, date);
-        console.log('Fetched Data in handleDateSelect:', fetchedData);
-        setData(fetchedData);
+        const collections = ['bpm', 'steps', 'calories', 'sleeps'];
+        const fetchedData = await Promise.all(
+          collections.map(collection => fetchData(collection, selectedUser, date))
+        );
+        
+        // 모든 데이터를 하나의 배열로 합칩니다.
+        const combinedData = fetchedData.flat();
+        console.log('Combined fetched data:', combinedData);
+        
+        setData(combinedData);
         setShowGraphs(true);
       } catch (error) {
         console.error('Error in handleDateSelect:', error);
