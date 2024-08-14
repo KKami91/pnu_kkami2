@@ -1,9 +1,8 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, ChangeEvent } from 'react'
 import axios from 'axios'
 import MultiChart from '../../components/MultiChart';
 import CombinedChart from '../../components/CombinedChart2';
 import { SkeletonLoader } from '../../components/SkeletonLoaders2';
-import { min, max } from 'date-fns';
 import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
@@ -15,80 +14,52 @@ const LoadingSpinner = () => (
   </div>
 )
 
-interface HourlyData {
-  ds: string
-  bpm: number | null
-  rmssd: number | null
-  sdnn: number | null
-  step: number | null
-  calorie: number | null
-}
-
-interface DailyData {
-  ds: string
-  bpm: number | null
-  rmssd: number | null
-  sdnn: number | null
-  step: number | null
-  calorie: number | null
-}
-
-interface FeatureData {
-  ds: string
-  rmssd: number | null
-  sdnn: number | null
-}
-
-interface PredictData {
-  ds: string
-  predBPM: number | null
+interface DataItem {
+  ds: string;
+  bpm?: number;
+  rmssd?: number;
+  sdnn?: number;
+  step?: number;
+  calorie?: number;
 }
 
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('');
   const [message, setMessage] = useState('');
-  const [analysisDates, setAnalysisDates] = useState([]);
   const [isLoadingUser, setIsLoadingUser] = useState(false);
-  const [isLoadingDate, setIsLoadingDate] = useState(false);
   const [selectedDate, setSelectedDate] = useState('');
   const [showGraphs, setShowGraphs] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [hourlyData, setHourlyData] = useState<HourlyData[]>([]);
-  const [dailyData, setDailyData] = useState<DailyData[]>([]);
+  const [data, setData] = useState<DataItem[]>([]);
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
   const [viewMode, setViewMode] = useState<'combined' | 'multi'>('combined');
 
-
-  const [predictData, setPredictData] = useState<PredictData[]>([]);
-  const [featureData, serFeatureData] = useState<FeatureData[]>([]);
-
-
   const { globalStartDate, globalEndDate } = useMemo(() => {
-    const allTimestamps = [...hourlyData, ...dailyData].map(item => new Date(item.ds).getTime());
+    const allTimestamps = data.map(item => new Date(item.ds).getTime());
     return {
       globalStartDate: allTimestamps.length > 0 ? new Date(Math.min(...allTimestamps)) : new Date(),
       globalEndDate: allTimestamps.length > 0 ? new Date(Math.max(...allTimestamps)) : new Date()
     };
-  }, [hourlyData, dailyData]);
+  }, [data]);
 
-  const fetchData = async (collection: string, user: string, date: string) => {
+  const fetchData = async (user: string, date: string) => {
     try {
-      const response = await axios.get('/api/getData2', {
-        params: { collection, user_email: user, date }
+      const response = await axios.get(`${API_URL}/get_data`, {
+        params: { user_email: user, date }
       });
       return response.data;
     } catch (error) {
-      console.error(`Error fetching ${collection} data:`, error);
+      console.error(`Error fetching data:`, error);
       throw error;
     }
   };
 
-  const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleDateSelect = async (e: ChangeEvent<HTMLInputElement>) => {
     const date = e.target.value
     setSelectedDate(date)
     if (date) {
@@ -98,14 +69,9 @@ export default function Home() {
       setRenderTime(null)
       startTimeRef.current = performance.now();
       try {
-        const [hourlyData, dailyData] = await Promise.all([
-          fetchData('hourly', selectedUser, date),
-          fetchData('daily', selectedUser, date),
-        ]);
-        console.log('Hourly Data:', hourlyData);
-        console.log('Daily Data:', dailyData);
-        setHourlyData(hourlyData);
-        setDailyData(dailyData);
+        const fetchedData = await fetchData(selectedUser, date);
+        console.log('Fetched Data:', fetchedData);
+        setData(fetchedData);
         setShowGraphs(true);
       } catch (error) {
         setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`)
@@ -119,29 +85,16 @@ export default function Home() {
     const user = e.target.value
     setSelectedUser(user)
     setSelectedDate('')
-    setAnalysisDates([])
     if (user) {
       setIsLoadingUser(true)
       const start = performance.now();
       await checkDb(user)
       const end = performance.now();
       console.log(`checkDb 걸린 시간 : ${end - start} ms`);
-      // await fetchAnalysisDates(user)
       setIsLoadingUser(false)
     }
   }
   
-  // const fetchAnalysisDates = async (user: string) => {
-  //   try {
-  //     const response = await axios.get(`${API_URL}/check_dates/${user}`)
-  //     setAnalysisDates(response.data.dates)
-  //   } catch (error) {
-  //     console.error('Error fetching data:', error)
-  //     setMessage(`Error fetching dates: ${error instanceof Error ? error.message : String(error)}`)
-  //     setAnalysisDates([])
-  //   }
-  // }
-
   const checkDb = async (user: string) => {
     try {
       await axios.post(`${API_URL}/check_db3`, { user_email: user })
@@ -149,10 +102,6 @@ export default function Home() {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
-
-  const handleBrushChange = (domain: [number, number] | null) => {
-    console.log('Brush domain changed:', domain);
-  };
 
   useEffect(() => {
     if (showGraphs && startTimeRef.current !== null) {
@@ -182,22 +131,14 @@ export default function Home() {
       </div>
       {selectedUser && (
         <div className="mb-4 flex items-center">
-          <label className="mr-2">업데이트 시간:</label>
-          {analysisDates.length > 0 ? (
-            <select 
-              value={selectedDate} 
-              onChange={handleDateSelect}
-              className="border p-2 rounded mr-2"
-            >
-              <option value="">Select a date</option>
-              {analysisDates.map(date => (
-                <option key={date} value={date}>{date}</option>
-              ))}
-            </select>
-          ) : (
-            <p>No analysis dates available</p>
-          )}
-          {isLoadingDate && <LoadingSpinner />}
+          <label className="mr-2">날짜 선택:</label>
+          <input 
+            type="date" 
+            value={selectedDate} 
+            onChange={handleDateSelect}
+            className="border p-2 rounded mr-2"
+          />
+          {isLoading && <LoadingSpinner />}
         </div>
       )}
       {selectedDate && (
@@ -225,19 +166,19 @@ export default function Home() {
           <>
             {viewMode === 'combined' ? (
               <CombinedChart
-                hourlyData={hourlyData}
-                dailyData={dailyData}
+                hourlyData={data}
+                dailyData={[]}  // 필요하다면 여기에 일별 데이터를 전달
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
-                onBrushChange={handleBrushChange}
+                onBrushChange={() => {}}  // 필요하다면 실제 함수 구현
               />
             ) : (
               <MultiChart
-                hourlyData={hourlyData}
-                dailyData={dailyData}
+                hourlyData={data}
+                dailyData={[]}  // 필요하다면 여기에 일별 데이터를 전달
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
-                onBrushChange={handleBrushChange}
+                onBrushChange={() => {}}  // 필요하다면 실제 함수 구현
               />
             )}
             {renderTime !== null && (
@@ -247,7 +188,7 @@ export default function Home() {
             )}
           </>
         ) : null}
-        {showGraphs && hourlyData.length === 0 && dailyData.length === 0 && (
+        {showGraphs && data.length === 0 && (
           <div className="text-center text-red-500">No data available for the charts.</div>
         )}
       </div>
