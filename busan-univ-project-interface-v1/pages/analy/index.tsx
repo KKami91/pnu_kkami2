@@ -154,11 +154,15 @@ export default function Home() {
         setStepData(step);
         setCalorieData(calorie);
         
-        const predictionResponse = await fetchPredictionData(selectedUser);
-        if (!Array.isArray(predictionResponse)) {
-          throw new Error("Invalid prediction data format received from API");
+        const predictionData = await fetchPredictionData(selectedUser);
+        
+        // predictionData가 배열인지 확인
+        if (!Array.isArray(predictionData)) {
+          console.error('Unexpected prediction data format:', predictionData);
+          setPredictMinuteData([]);  // 빈 배열 설정
+        } else {
+          setPredictMinuteData(predictionData);
         }
-        setPredictMinuteData(predictionResponse);
   
         setShowGraphs(true);
       } catch (error) {
@@ -168,39 +172,68 @@ export default function Home() {
         setIsLoading(false)
       }
     }
-  }
+  };
+
 
   const fetchPredictionData = async (user: string) => {
     try {
-
-      const start = performance.now();
-      const response_minute = await axios.get(`${API_URL}/predict_minute/${user}`);
-      const end = performance.now();
-      console.log('fetchprediction await', end - start);
-
-      // console.log('fetchPredictionData-minute : ', response_minute);
-      // const response_hour = await axios.get(`${API_URL}/predict_hour/${user}`);
-      // console.log('fetchPredictionData-hour : ', response_hour);
-      // const response_day = await axios.get(`${API_URL}/predict_day/${user}`);
-      // console.log('fetchPredictionData-day : ', response_day);
+      const response = await axios.get(`${API_URL}/predict_minute/${user}`);
       
-      
-
-      const start2 = performance.now();
-      setPredictMinuteData(response_minute.data);
-      // setPredictHourData(response_hour.data);
-      // setPredictDayData(response_day.data);
-
-      const end2 = performance.now();
-      console.log('setfetchprediction await', end2 - start2);
-
-      console.log('predict-min', response_minute.data.min_pred_bpm)
-      // console.log('predict-hour', response_hour.data.hour_pred_bpm)
-      // console.log('predict-day', response_day.data.day_pred_bpm)
+      // 응답 데이터 구조 로깅
+      console.log('Prediction API response:', response.data);
+  
+      // 응답이 배열인지 확인
+      if (Array.isArray(response.data)) {
+        return response.data;
+      } else if (typeof response.data === 'object' && response.data !== null) {
+        // 객체인 경우, 내부에 배열이 있는지 확인
+        const possibleArrays = Object.values(response.data).filter(Array.isArray);
+        if (possibleArrays.length > 0) {
+          // 첫 번째 배열을 반환
+          return possibleArrays[0];
+        }
+      }
+  
+      // 적절한 데이터를 찾지 못한 경우
+      console.error('Unexpected data structure in prediction response:', response.data);
+      return [];
     } catch (error) {
-      console.error('Error.........In featchPredictionData: ', error);
+      console.error('Error in fetchPredictionData:', error);
+      throw error;
     }
-  }
+  };
+
+  // const fetchPredictionData = async (user: string) => {
+  //   try {
+
+  //     const start = performance.now();
+  //     const response_minute = await axios.get(`${API_URL}/predict_minute/${user}`);
+  //     const end = performance.now();
+  //     console.log('fetchprediction await', end - start);
+
+  //     // console.log('fetchPredictionData-minute : ', response_minute);
+  //     // const response_hour = await axios.get(`${API_URL}/predict_hour/${user}`);
+  //     // console.log('fetchPredictionData-hour : ', response_hour);
+  //     // const response_day = await axios.get(`${API_URL}/predict_day/${user}`);
+  //     // console.log('fetchPredictionData-day : ', response_day);
+      
+      
+
+  //     const start2 = performance.now();
+  //     setPredictMinuteData(response_minute.data);
+  //     // setPredictHourData(response_hour.data);
+  //     // setPredictDayData(response_day.data);
+
+  //     const end2 = performance.now();
+  //     console.log('setfetchprediction await', end2 - start2);
+
+  //     console.log('predict-min', response_minute.data.min_pred_bpm)
+  //     // console.log('predict-hour', response_hour.data.hour_pred_bpm)
+  //     // console.log('predict-day', response_day.data.day_pred_bpm)
+  //   } catch (error) {
+  //     console.error('Error.........In featchPredictionData: ', error);
+  //   }
+  // }
 
   const fetchFeatureData = async (user: string) => {
     try {
