@@ -129,7 +129,7 @@ export default function Home() {
   const fetchPredictionData = async (user: string) => {
     try {
       const startTimeHour = performance.now();
-      const response = await axios.get(`${API_URL}/predict_hour/${user}`);
+      const response = await axios.get(`${API_URL}/predict_minute/${user}`);
       console.log(`response.data hour : ${response.data}`);
       setPredictHourData(response.data);
       const endTimeHour = performance.now();
