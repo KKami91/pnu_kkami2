@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, subDays, addHours } from 'date-fns';
 
 interface MultiChartProps {
   bpmData: any[];
@@ -34,10 +34,17 @@ const MultiChart: React.FC<MultiChartProps> = ({
       }
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          const kstDate = parseISO(item.ds);
+          let kstDate = parseISO(item.ds);
+          
+          // predict bpm 데이터의 경우 9시간을 더함
+          if (key === 'min_pred_bpm') {
+            kstDate = addHours(kstDate, 9);
+          }
+          
           // KST를 UTC로 변환 (9시간 빼기)
           const utcDate = new Date(kstDate.getTime() - 9 * 60 * 60 * 1000);
           const timestamp = utcDate.getTime();
+          
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { timestamp });
           }
@@ -52,15 +59,30 @@ const MultiChart: React.FC<MultiChartProps> = ({
     processData(calorieData, 'calorie');
     processData(predictMinuteData, 'min_pred_bpm');
 
-    return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    
+    console.log('Combined data points:', result.length);
+    return result;
   }, [bpmData, stepData, calorieData, predictMinuteData]);
 
+  const dateRange = useMemo(() => {
+    if (combinedData.length === 0) return { start: new Date(), end: new Date() };
+    const timestamps = combinedData.map(item => item.timestamp);
+    return {
+      start: new Date(Math.min(...timestamps)),
+      end: new Date(Math.max(...timestamps)),
+    };
+  }, [combinedData]);
+
+  const sevenDaysAgo = useMemo(() => {
+    return subDays(dateRange.end, 7).getTime();
+  }, [dateRange]);
+
   const filteredData = useMemo(() => {
-    if (!brushDomain) return combinedData;
-    return combinedData.filter(
-      item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
-    );
-  }, [combinedData, brushDomain]);
+    const sevenDayData = combinedData.filter(item => item.timestamp >= sevenDaysAgo);
+    console.log('Filtered data points:', sevenDayData.length);
+    return sevenDayData;
+  }, [combinedData, sevenDaysAgo]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -96,7 +118,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
     return null;
   };
 
-  const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartType: typeof LineChart | typeof BarChart = LineChart) => (
+  const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartType: typeof LineChart | typeof BarChart = LineChart, additionalProps = {}) => (
     <div className="w-full h-full">
       <ResponsiveContainer width="100%" height="100%">
         <ChartType data={filteredData} syncId="healthMetrics">
@@ -117,9 +139,12 @@ const MultiChart: React.FC<MultiChartProps> = ({
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {ChartType === LineChart ? (
-            <Line type="monotone" dataKey={dataKey} stroke={color} dot={false} />
+            <Line type="monotone" dataKey={dataKey} stroke={color} dot={false} {...additionalProps} />
           ) : (
-            <Bar dataKey={dataKey} fill={color} />
+            <Bar dataKey={dataKey} fill={color} {...additionalProps} />
+          )}
+          {dataKey === 'bpm' && (
+            <Line type="monotone" dataKey="min_pred_bpm" stroke="#A0D283" dot={false} name="Predicted BPM" />
           )}
         </ChartType>
       </ResponsiveContainer>
@@ -128,7 +153,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
   const charts = [
     { key: 'bpm', color: '#ff7300', label: 'BPM', type: LineChart },
-    { key: 'min_pred_bpm', color: '#FF5733', label: 'Predicted BPM', type: LineChart },
     { key: 'step', color: 'rgba(130, 202, 157, 0.6)', label: 'Steps', type: BarChart },
     { key: 'calorie', color: 'rgba(136, 132, 216, 0.6)', label: 'Calories', type: BarChart },
   ];
@@ -150,7 +174,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
       </div>
       <div style={{ height: '100px', marginBottom: '20px' }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={combinedData} syncId="healthMetrics">
+          <LineChart data={filteredData} syncId="healthMetrics">
             <XAxis 
               dataKey="timestamp" 
               type="number" 
