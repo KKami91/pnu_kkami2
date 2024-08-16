@@ -48,7 +48,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
 
   useEffect(() => {
-    console.log('Input data:', { bpmData, stepData, calorieData, predictMinuteData });
+    console.log('Input data:', { 
+      bpmData: bpmData.length, 
+      stepData: stepData.length, 
+      calorieData: calorieData.length, 
+      predictMinuteData: predictMinuteData.length 
+    });
+    if (predictMinuteData.length > 0) {
+      console.log('Sample predict data:', predictMinuteData[0]);
+    }
   }, [bpmData, stepData, calorieData, predictMinuteData]);
 
   const combinedData = useMemo(() => {
@@ -89,7 +97,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(predictMinuteData, 'min_pred_bpm');
 
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
-    console.log('Combined data:', result);
+    console.log('Combined data sample:', result.slice(0, 5));
+    console.log('Combined data length:', result.length);
     return result;
   }, [bpmData, stepData, calorieData, predictMinuteData]);
 
@@ -129,7 +138,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       console.log('Processed hourly data:', result);
       return result;
     }
-    console.log('Processed minute data:', combinedData);
+    console.log('Processed data sample:', combinedData.slice(0, 5));
+    console.log('Processed data length:', combinedData.length);
+
     return combinedData;
   }, [combinedData, timeUnit]);
 
@@ -138,7 +149,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     const result = processedData.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
-    console.log('Filtered data:', result);
+    console.log('Filtered data length:', result.length);
     return result;
   }, [processedData, brushDomain]);
 
