@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, max, min } from 'date-fns';
+import { format, parseISO, subDays, addHours } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -47,7 +47,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       }
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          const kstDate = parseISO(item.ds);
+          let kstDate = parseISO(item.ds);
+          
+          // predict bpm 데이터의 경우 9시간을 더함
+          if (key === 'min_pred_bpm') {
+            kstDate = addHours(kstDate, 9);
+          }
+          
+          // KST를 UTC로 변환 (9시간 빼기)
           const utcDate = new Date(kstDate.getTime() - 9 * 60 * 60 * 1000);
           const timestamp = utcDate.getTime();
           
