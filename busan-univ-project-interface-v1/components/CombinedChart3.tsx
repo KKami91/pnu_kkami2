@@ -49,7 +49,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         if (item && typeof item.ds === 'string') {
           const date = parseISO(item.ds);
           // KST로 조정 (UTC+9)
-          const timestamp = date.getTime() + 9 * 60 * 60 * 1000;
+          const kstDate = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+          const timestamp = kstDate.getTime();
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { timestamp });
           }
@@ -91,10 +92,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      const date = new Date(label);
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
-            {format(new Date(label), 'yyyy-MM-dd HH:mm')}
+            {format(date, 'yyyy-MM-dd HH:mm')}
           </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
