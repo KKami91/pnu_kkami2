@@ -10,7 +10,6 @@ interface CombinedChartProps {
   globalStartDate: Date;
   globalEndDate: Date;
   onBrushChange: (domain: [number, number] | null) => void;
-  timeUnit: 'minute' | 'hour';
 }
 
 type ChartVisibility = {
@@ -20,6 +19,24 @@ type ChartVisibility = {
   pred_bpm: boolean;
 };
 
+interface DataItem {
+  ds: string;
+  bpm?: number;
+  step?: number;
+  calorie?: number;
+  min_pred_bpm?: number;
+}
+
+interface ProcessedDataItem {
+  timestamp: number;
+  bpm: number | null;
+  step: number | null;
+  calorie: number | null;
+  min_pred_bpm: number | null;
+}
+
+
+
 const CombinedChart: React.FC<CombinedChartProps> = ({
   bpmData,
   stepData,
@@ -28,7 +45,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   globalStartDate,
   globalEndDate,
   onBrushChange,
-  timeUnit,
 }) => {
   const [visibleCharts, setVisibleCharts] = useState<ChartVisibility>({
     calorie: true,
@@ -38,24 +54,27 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   });
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
-
+  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
+  
   const combinedData = useMemo(() => {
-    const dataMap = new Map();
+    const dataMap = new Map<number, ProcessedDataItem>();
+    const now = new Date();
+    const sevenDaysAgo = subDays(now, 7).getTime();
 
-    const processData = (data: any[], key: string) => {
-      if (!Array.isArray(data)) {
-        console.error(`Invalid data for ${key}: expected array, got`, data);
-        return;
-      }
+    const processData = (data: DataItem[], key: keyof DataItem) => {
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
           const date = parseISO(item.ds);
           const timestamp = date.getTime();
-          if (!dataMap.has(timestamp)) {
-            dataMap.set(timestamp, { timestamp });
+          if (timestamp >= sevenDaysAgo) {
+            if (!dataMap.has(timestamp)) {
+              dataMap.set(timestamp, { timestamp, bpm: null, step: null, calorie: null, min_pred_bpm: null });
+            }
+            const value = item[key];
+            if (typeof value === 'number') {
+              dataMap.get(timestamp)![key as keyof ProcessedDataItem] = value;
+            }
           }
-          const value = item[key];
-          dataMap.get(timestamp)[key] = value != null ? Number(value) : null;
         }
       });
     };
@@ -68,12 +87,50 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
   }, [bpmData, stepData, calorieData, predictMinuteData]);
 
+  const processedData = useMemo(() => {
+    if (timeUnit === 'hour') {
+      const hourlyData: { [key: string]: ProcessedDataItem } = {};
+      
+      combinedData.forEach(item => {
+        const hourKey = format(new Date(item.timestamp), 'yyyy-MM-dd HH:00:00');
+        if (!hourlyData[hourKey]) {
+          hourlyData[hourKey] = { 
+            timestamp: new Date(hourKey).getTime(),
+            bpm: null,
+            step: null,
+            calorie: null,
+            min_pred_bpm: null
+          };
+        }
+        
+        ['bpm', 'step', 'calorie', 'min_pred_bpm'].forEach((key) => {
+          const typedKey = key as keyof ProcessedDataItem;
+          const value = item[typedKey];
+          if (value !== null) {
+            if (typedKey === 'bpm' || typedKey === 'min_pred_bpm') {
+              hourlyData[hourKey][typedKey] = (hourlyData[hourKey][typedKey] || 0) + value;
+            } else {
+              hourlyData[hourKey][typedKey] = (hourlyData[hourKey][typedKey] || 0) + value;
+            }
+          }
+        });
+      });
+
+      return Object.values(hourlyData).map(item => ({
+        ...item,
+        bpm: item.bpm !== null ? item.bpm / combinedData.filter(d => d.timestamp >= item.timestamp && d.timestamp < item.timestamp + 3600000).length : null,
+        min_pred_bpm: item.min_pred_bpm !== null ? item.min_pred_bpm / combinedData.filter(d => d.timestamp >= item.timestamp && d.timestamp < item.timestamp + 3600000).length : null,
+      }));
+    }
+    return combinedData;
+  }, [combinedData, timeUnit]);
+
   const filteredData = useMemo(() => {
-    if (!brushDomain) return combinedData;
-    return combinedData.filter(
+    if (!brushDomain) return processedData;
+    return processedData.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
-  }, [combinedData, brushDomain]);
+  }, [processedData, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -99,7 +156,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
-              {`${pld.name}: ${pld.value !== null ? pld.value : 'N/A'}`}
+              {`${pld.name}: ${pld.value !== null ? pld.value.toFixed(2) : 'N/A'}`}
             </p>
           ))}
         </div>
@@ -138,6 +195,20 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             </label>
           ))}
         </div>
+        <div>
+          <button
+            onClick={() => setTimeUnit('minute')}
+            className={`px-4 py-2 rounded mr-2 ${timeUnit === 'minute' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            Minute
+          </button>
+          <button
+            onClick={() => setTimeUnit('hour')}
+            className={`px-4 py-2 rounded ${timeUnit === 'hour' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            Hour
+          </button>
+        </div>
       </div>
       <ResponsiveContainer width="100%" height={600}>
         <ComposedChart data={filteredData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -173,7 +244,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           {visibleCharts.bpm && (
             <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" dot={false} />
           )}
-          {visibleCharts.pred_bpm && timeUnit === 'hour' && (
+          {visibleCharts.pred_bpm && (
             <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm} name="Predicted BPM" dot={false} />
           )}
           <Brush

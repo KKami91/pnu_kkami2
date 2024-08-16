@@ -270,7 +270,6 @@ export default function Home() {
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
-                timeUnit={timeUnit}
               /> 
             ) : (
               <MultiChart
@@ -281,7 +280,6 @@ export default function Home() {
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
-                timeUnit={timeUnit}
               />
             )}
             {renderTime !== null && (
