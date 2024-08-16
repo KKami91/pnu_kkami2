@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -39,6 +39,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const combinedData = useMemo(() => {
     const dataMap = new Map();
+    const now = new Date();
+    const sevenDaysAgo = subDays(now, 7).getTime();
 
     const processData = (data: any[], key: string) => {
       if (!Array.isArray(data)) {
@@ -51,11 +53,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           // KST를 UTC로 변환 (9시간 빼기)
           const utcDate = new Date(kstDate.getTime() - 9 * 60 * 60 * 1000);
           const timestamp = utcDate.getTime();
-          if (!dataMap.has(timestamp)) {
-            dataMap.set(timestamp, { timestamp });
+          
+          // 최근 7일 데이터만 포함
+          if (timestamp >= sevenDaysAgo) {
+            if (!dataMap.has(timestamp)) {
+              dataMap.set(timestamp, { timestamp });
+            }
+            const value = item[key];
+            dataMap.get(timestamp)[key] = value != null ? Number(value) : null;
           }
-          const value = item[key];
-          dataMap.get(timestamp)[key] = value != null ? Number(value) : null;
         }
       });
     };
@@ -86,14 +92,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForBrush = (time: number) => {
-    // UTC를 KST로 변환 (9시간 더하기)
     const date = new Date(time);
     return format(date, 'yyyy-MM-dd HH:mm');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      // UTC를 KST로 변환 (9시간 더하기)
       const date = new Date(label);
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
@@ -150,7 +154,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick + 9 * 60 * 60 * 1000), 'MM-dd HH:mm')}
+            tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
             padding={{ left: 30, right: 30 }}
           />
           <YAxis 
