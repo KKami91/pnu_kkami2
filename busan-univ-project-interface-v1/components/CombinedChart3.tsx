@@ -46,6 +46,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
+  const [noPredictData, setNoPredictData] = useState(false);
 
   useEffect(() => {
     console.log('Input data:', { 
@@ -54,9 +55,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       calorieData: calorieData.length, 
       predictMinuteData: predictMinuteData.length 
     });
-    if (predictMinuteData.length > 0) {
-      console.log('Sample predict data:', predictMinuteData[0]);
-    }
+    setNoPredictData(predictMinuteData.length === 0);
   }, [bpmData, stepData, calorieData, predictMinuteData]);
 
   const combinedData = useMemo(() => {
@@ -210,10 +209,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
               <input
                 type="checkbox"
                 checked={visibleCharts[chartName]}
-                onChange={() => toggleChart(chartName)}
+                onChange={() => setVisibleCharts(prev => ({...prev, [chartName]: !prev[chartName]}))}
                 className="form-checkbox h-5 w-5 text-blue-600"
+                disabled={chartName === 'pred_bpm' && noPredictData}
               />
-              <span className="ml-2 text-gray-700">{chartName.toUpperCase()}</span>
+              <span className="ml-2 text-gray-700">
+                {chartName.toUpperCase()}
+                {chartName === 'pred_bpm' && noPredictData && " (No Data)"}
+              </span>
             </label>
           ))}
         </div>
@@ -232,6 +235,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           </button>
         </div>
       </div>
+      {noPredictData && (
+        <div className="mb-4 text-yellow-600 bg-yellow-100 p-2 rounded">
+          Note: Prediction data is not available for the selected period.
+        </div>
+      )}
       <ResponsiveContainer width="100%" height={600}>
         <ComposedChart data={filteredData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
@@ -266,18 +274,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           {visibleCharts.bpm && (
             <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" dot={false} />
           )}
-          {visibleCharts.pred_bpm && (
-            <>
-              <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm_minute} name="Predicted BPM (Minute)" dot={false} />
-              {timeUnit === 'hour' && <Line yAxisId="left" type="monotone" dataKey="hour_pred_bpm" stroke={colors.pred_bpm_hour} name="Predicted BPM (Hour)" dot={false} />}
-            </>
+          {visibleCharts.pred_bpm && !noPredictData && (
+            <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm_minute} name="Predicted BPM" dot={false} />
           )}
           <Brush
             dataKey="timestamp"
             height={30}
             stroke="#8884d8"
             onChange={handleBrushChange}
-            tickFormatter={formatDateForBrush}
+            tickFormatter={(tick) => format(new Date(tick), 'MM-dd')}
           />
         </ComposedChart>
       </ResponsiveContainer>
