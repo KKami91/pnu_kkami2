@@ -139,25 +139,27 @@ export default function Home() {
       setRenderTime(null)
       startTimeRef.current = performance.now();
       try {
-        const startTime = performance.now();
         const [bpm, step, calorie] = await Promise.all([
           fetchData('bpm', selectedUser),
           fetchData('steps', selectedUser),
           fetchData('calories', selectedUser),
-          
         ]);
-        const endTime = performance.now();
-        console.log(`bpm, step, calorie fetchdata ms : ${endTime - startTime} ms`)
-
+        
+        // 데이터 유효성 검사
+        if (!Array.isArray(bpm) || !Array.isArray(step) || !Array.isArray(calorie)) {
+          throw new Error("Invalid data format received from API");
+        }
+  
         setBpmData(bpm);
         setStepData(step);
         setCalorieData(calorie);
         
-        const startTime2 = performance.now();
-        await fetchPredictionData(selectedUser);
-        const endTime2 = performance.now();
-        console.log(`fetchpredictiondata ms : ${endTime2 - startTime2} ms`);
-        console.log('after await fetchpredictionData selectedUser');
+        const predictionResponse = await fetchPredictionData(selectedUser);
+        if (!Array.isArray(predictionResponse)) {
+          throw new Error("Invalid prediction data format received from API");
+        }
+        setPredictMinuteData(predictionResponse);
+  
         setShowGraphs(true);
       } catch (error) {
         console.error('Error in handleDateSelect:', error);

@@ -28,12 +28,19 @@ const MultiChart: React.FC<MultiChartProps> = ({
     const dataMap = new Map();
 
     const processData = (data: any[], key: string) => {
+      if (!Array.isArray(data)) {
+        console.error(`Invalid data for ${key}: expected array, got`, data);
+        return;
+      }
       data.forEach(item => {
-        const timestamp = parseISO(item.ds).getTime();
-        if (!dataMap.has(timestamp)) {
-          dataMap.set(timestamp, { timestamp });
+        if (item && typeof item.ds === 'string') {
+          const timestamp = parseISO(item.ds).getTime();
+          if (!dataMap.has(timestamp)) {
+            dataMap.set(timestamp, { timestamp });
+          }
+          const value = item[key];
+          dataMap.get(timestamp)[key] = value != null ? Number(value) : null;
         }
-        dataMap.get(timestamp)[key] = item[key] != null ? Number(item[key]) : null;
       });
     };
 
@@ -120,6 +127,10 @@ const MultiChart: React.FC<MultiChartProps> = ({
     { key: 'step', color: 'rgba(130, 202, 157, 0.6)', label: 'Steps', type: BarChart },
     { key: 'calorie', color: 'rgba(136, 132, 216, 0.6)', label: 'Calories', type: BarChart },
   ];
+
+  if (combinedData.length === 0) {
+    return <div className="text-center text-red-500">No data available for the charts.</div>;
+  }
 
   return (
     <div className='bg-white p-4 rounded-lg shadow'>
