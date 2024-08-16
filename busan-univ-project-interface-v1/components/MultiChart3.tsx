@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addHours } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 
 interface MultiChartProps {
   bpmData: any[];
@@ -10,6 +10,7 @@ interface MultiChartProps {
   globalStartDate: Date;
   globalEndDate: Date;
   onBrushChange: (domain: [number, number] | null) => void;
+  timeUnit: 'minute' | 'hour';
 }
 
 const MultiChart: React.FC<MultiChartProps> = ({
@@ -20,6 +21,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
   globalStartDate,
   globalEndDate,
   onBrushChange,
+  timeUnit,
 }) => {
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
   const [columnCount, setColumnCount] = useState(1);
@@ -34,17 +36,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
       }
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          let kstDate = parseISO(item.ds);
-          
-          // predict bpm 데이터의 경우 9시간을 더함
-          if (key === 'min_pred_bpm') {
-            kstDate = addHours(kstDate, 9);
-          }
-          
-          // KST를 UTC로 변환 (9시간 빼기)
-          const utcDate = new Date(kstDate.getTime() - 9 * 60 * 60 * 1000);
-          const timestamp = utcDate.getTime();
-          
+          const date = parseISO(item.ds);
+          const timestamp = date.getTime();
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { timestamp });
           }
@@ -57,32 +50,19 @@ const MultiChart: React.FC<MultiChartProps> = ({
     processData(bpmData, 'bpm');
     processData(stepData, 'step');
     processData(calorieData, 'calorie');
-    processData(predictMinuteData, 'min_pred_bpm');
+    if (timeUnit === 'hour') {
+      processData(predictMinuteData, 'min_pred_bpm');
+    }
 
-    const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
-    
-    console.log('Combined data points:', result.length);
-    return result;
-  }, [bpmData, stepData, calorieData, predictMinuteData]);
-
-  const dateRange = useMemo(() => {
-    if (combinedData.length === 0) return { start: new Date(), end: new Date() };
-    const timestamps = combinedData.map(item => item.timestamp);
-    return {
-      start: new Date(Math.min(...timestamps)),
-      end: new Date(Math.max(...timestamps)),
-    };
-  }, [combinedData]);
-
-  const sevenDaysAgo = useMemo(() => {
-    return subDays(dateRange.end, 7).getTime();
-  }, [dateRange]);
+    return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+  }, [bpmData, stepData, calorieData, predictMinuteData, timeUnit]);
 
   const filteredData = useMemo(() => {
-    const sevenDayData = combinedData.filter(item => item.timestamp >= sevenDaysAgo);
-    console.log('Filtered data points:', sevenDayData.length);
-    return sevenDayData;
-  }, [combinedData, sevenDaysAgo]);
+    if (!brushDomain) return combinedData;
+    return combinedData.filter(
+      item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+    );
+  }, [combinedData, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -95,8 +75,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForBrush = (time: number) => {
-    const date = new Date(time);
-    return format(date, 'yyyy-MM-dd HH:mm');
+    return format(new Date(time), timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -105,7 +84,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
-            {format(date, 'yyyy-MM-dd HH:mm')}
+            {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
@@ -128,7 +107,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
             type="number" 
             scale="time" 
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
           />
           <YAxis 
             label={{ value: yAxisLabel, angle: -90, position: 'insideLeft' }} 
@@ -143,7 +122,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
           ) : (
             <Bar dataKey={dataKey} fill={color} {...additionalProps} />
           )}
-          {dataKey === 'bpm' && (
+          {dataKey === 'bpm' && timeUnit === 'hour' && (
             <Line type="monotone" dataKey="min_pred_bpm" stroke="#A0D283" dot={false} name="Predicted BPM" />
           )}
         </ChartType>
@@ -180,7 +159,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
               type="number" 
               scale="time" 
               domain={['dataMin', 'dataMax']}
-              tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+              tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
             />
             <Brush 
               dataKey="timestamp" 

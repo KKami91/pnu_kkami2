@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addHours } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -10,6 +10,7 @@ interface CombinedChartProps {
   globalStartDate: Date;
   globalEndDate: Date;
   onBrushChange: (domain: [number, number] | null) => void;
+  timeUnit: 'minute' | 'hour';
 }
 
 type ChartVisibility = {
@@ -27,6 +28,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   globalStartDate,
   globalEndDate,
   onBrushChange,
+  timeUnit,
 }) => {
   const [visibleCharts, setVisibleCharts] = useState<ChartVisibility>({
     calorie: true,
@@ -47,17 +49,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       }
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          let kstDate = parseISO(item.ds);
-          
-          // predict bpm 데이터의 경우 9시간을 더함
-          if (key === 'min_pred_bpm') {
-            kstDate = addHours(kstDate, 9);
-          }
-          
-          // KST를 UTC로 변환 (9시간 빼기)
-          const utcDate = new Date(kstDate.getTime() - 9 * 60 * 60 * 1000);
-          const timestamp = utcDate.getTime();
-          
+          const date = parseISO(item.ds);
+          const timestamp = date.getTime();
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { timestamp });
           }
@@ -72,30 +65,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(calorieData, 'calorie');
     processData(predictMinuteData, 'min_pred_bpm');
 
-    const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
-    
-    console.log('Combined data points:', result.length);
-    return result;
+    return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
   }, [bpmData, stepData, calorieData, predictMinuteData]);
 
-  const dateRange = useMemo(() => {
-    if (combinedData.length === 0) return { start: new Date(), end: new Date() };
-    const timestamps = combinedData.map(item => item.timestamp);
-    return {
-      start: new Date(Math.min(...timestamps)),
-      end: new Date(Math.max(...timestamps)),
-    };
-  }, [combinedData]);
-
-  const sevenDaysAgo = useMemo(() => {
-    return subDays(dateRange.end, 7).getTime();
-  }, [dateRange]);
-
   const filteredData = useMemo(() => {
-    const sevenDayData = combinedData.filter(item => item.timestamp >= sevenDaysAgo);
-    console.log('Filtered data points:', sevenDayData.length);
-    return sevenDayData;
-  }, [combinedData, sevenDaysAgo]);
+    if (!brushDomain) return combinedData;
+    return combinedData.filter(
+      item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+    );
+  }, [combinedData, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -108,8 +86,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForBrush = (time: number) => {
-    const date = new Date(time);
-    return format(date, 'yyyy-MM-dd HH:mm');
+    return format(new Date(time), timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -118,7 +95,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
-            {format(date, 'yyyy-MM-dd HH:mm')}
+            {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
@@ -145,19 +122,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     pred_bpm: '#A0D283',
   };
 
-  if (filteredData.length === 0) {
-    return (
-      <div>
-        <p>No data available for the last 7 days.</p>
-        <p>Date range: {format(dateRange.start, 'yyyy-MM-dd')} to {format(dateRange.end, 'yyyy-MM-dd')}</p>
-        <p>BPM data count: {bpmData.length}</p>
-        <p>Step data count: {stepData.length}</p>
-        <p>Calorie data count: {calorieData.length}</p>
-        <p>Prediction data count: {predictMinuteData.length}</p>
-      </div>
-    );
-  }
-
   return (
     <div className='bg-white p-4 rounded-lg shadow'>
       <div className="mb-4 flex flex-wrap gap-4 justify-between">
@@ -183,7 +147,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
             padding={{ left: 30, right: 30 }}
           />
           <YAxis 
@@ -209,7 +173,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           {visibleCharts.bpm && (
             <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" dot={false} />
           )}
-          {visibleCharts.pred_bpm && (
+          {visibleCharts.pred_bpm && timeUnit === 'hour' && (
             <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm} name="Predicted BPM" dot={false} />
           )}
           <Brush

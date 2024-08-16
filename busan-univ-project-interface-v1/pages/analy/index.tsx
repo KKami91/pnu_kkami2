@@ -1,11 +1,10 @@
-// 새로 데이터 구조를 변경하여 보여줄 새 index.tsx파일
-
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import axios from 'axios'
 import MultiChart from '../../components/MultiChart3';
 import CombinedChart from '../../components/CombinedChart3';
 import { SkeletonLoader } from '../../components/SkeletonLoaders3';
 import { LaptopMinimal, LayoutGrid } from 'lucide-react';
+import { parseISO, format, startOfHour, endOfHour } from 'date-fns';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
@@ -27,52 +26,6 @@ interface DataItem {
   pred_rmssd?: number;
 }
 
-interface DataBPM {
-  ds: string;
-  bpm: number | null;
-}
-
-interface DataStep {
-  ds: string;
-  step: number | null;
-}
-
-interface DataCalorie {
-  ds: string;
-  calorie: number | null;
-}
-
-interface DataSleep {
-  ds_start: string;
-  ds_end: string;
-  stage: number | null;
-}
-
-interface DataFeature {
-  ds: string;
-  rmssd: number | null;
-  sdnn: number | null;
-}
-
-interface DataPrediction {
-  ds: string;
-  min_pred_bpm: number | null;
-}
-
-
-
-interface FeatureResponse {
-  hour_hrv: DataFeature[];
-  day_hrv: DataFeature[];
-}
-
-interface DataPredictionMinute {
-  ds: string;
-  min_pred_bpm: number | null;
-}
-
-
-
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('');
   const [message, setMessage] = useState('');
@@ -83,22 +36,16 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [saveDates, setSaveDates] = useState<string[]>([]);
 
-  const [bpmData, setBpmData] = useState<DataBPM[]>([]);
-  const [stepData, setStepData] = useState<DataStep[]>([]);
-  const [calorieData, setCalorieData] = useState<DataCalorie[]>([]);
-
+  const [bpmData, setBpmData] = useState<DataItem[]>([]);
+  const [stepData, setStepData] = useState<DataItem[]>([]);
+  const [calorieData, setCalorieData] = useState<DataItem[]>([]);
+  const [predictHourData, setPredictHourData] = useState<DataItem[]>([]);
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
   const [viewMode, setViewMode] = useState<'combined' | 'multi'>('combined');
-
-  const [featureMinuteData, setFeatureMinuteData] = useState<DataFeature[]>([]);
-  const [featureHourData, setFeatureHourData] = useState<DataFeature[]>([]);
-  const [featureDayData, setFeatureDayData] = useState<DataFeature[]>([]);
-  const [predictMinuteData, setPredictMinuteData] = useState<DataPredictionMinute[]>([]);
-  const [predictHourData, setPredictHourData] = useState<DataPrediction[]>([]);
-  const [predictDayData, setPredictDayData] = useState<DataPrediction[]>([]);
+  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [...bpmData, ...stepData, ...calorieData].map(item => new Date(item.ds).getTime());
@@ -108,15 +55,11 @@ export default function Home() {
     };
   }, [bpmData, stepData, calorieData]);
 
-  console.log(globalStartDate, globalEndDate);
-
   const fetchData = async (collection: string, user: string) => {
     try {
-      // console.log(`Fetching ${collection} data for user ${user}`);
       const response = await axios.get('/api/getData3', {
         params: { collection, user_email: user }
       });
-      // console.log(`Fetched ${collection} data:`, response.data);
       return response.data;
     } catch (error) {
       console.error(`Error fetching ${collection} data:`, error);
@@ -124,9 +67,32 @@ export default function Home() {
     }
   };
 
+  const processHourlyData = (data: DataItem[], key: 'bpm' | 'step' | 'calorie') => {
+    const hourlyData: { [hour: string]: number[] } = {};
+    
+    data.forEach(item => {
+      const date = parseISO(item.ds);
+      const hourKey = format(date, 'yyyy-MM-dd HH:00:00');
+      
+      if (!hourlyData[hourKey]) {
+        hourlyData[hourKey] = [];
+      }
+      
+      if (item[key] != null) {
+        hourlyData[hourKey].push(Number(item[key]));
+      }
+    });
+    
+    return Object.entries(hourlyData).map(([hour, values]) => ({
+      ds: hour,
+      [key]: key === 'bpm' ? 
+        values.reduce((sum, value) => sum + value, 0) / values.length :
+        values.reduce((sum, value) => sum + value, 0)
+    }));
+  };
+
   const handleBrushChange = (domain: [number, number] | null) => {
     console.log("Brush domain changed:", domain);
-    // 여기에 브러시 변경에 대한 추가 로직을 구현할 수 있습니다.
   };
 
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -144,26 +110,12 @@ export default function Home() {
           fetchData('steps', selectedUser),
           fetchData('calories', selectedUser),
         ]);
-        
-        // 데이터 유효성 검사
-        if (!Array.isArray(bpm) || !Array.isArray(step) || !Array.isArray(calorie)) {
-          throw new Error("Invalid data format received from API");
-        }
-  
+
         setBpmData(bpm);
         setStepData(step);
         setCalorieData(calorie);
         
-        const predictionData = await fetchPredictionData(selectedUser);
-        
-        // predictionData가 배열인지 확인
-        if (!Array.isArray(predictionData)) {
-          console.error('Unexpected prediction data format:', predictionData);
-          setPredictMinuteData([]);  // 빈 배열 설정
-        } else {
-          setPredictMinuteData(predictionData);
-        }
-  
+        await fetchPredictionData(selectedUser);
         setShowGraphs(true);
       } catch (error) {
         console.error('Error in handleDateSelect:', error);
@@ -172,85 +124,14 @@ export default function Home() {
         setIsLoading(false)
       }
     }
-  };
-
+  }
 
   const fetchPredictionData = async (user: string) => {
     try {
-      const response = await axios.get(`${API_URL}/predict_minute/${user}`);
-      
-      // 응답 데이터 구조 로깅
-      console.log('Prediction API response:', response.data);
-  
-      // 응답이 배열인지 확인
-      if (Array.isArray(response.data)) {
-        return response.data;
-      } else if (typeof response.data === 'object' && response.data !== null) {
-        // 객체인 경우, 내부에 배열이 있는지 확인
-        const possibleArrays = Object.values(response.data).filter(Array.isArray);
-        if (possibleArrays.length > 0) {
-          // 첫 번째 배열을 반환
-          return possibleArrays[0];
-        }
-      }
-  
-      // 적절한 데이터를 찾지 못한 경우
-      console.error('Unexpected data structure in prediction response:', response.data);
-      return [];
+      const response = await axios.get(`${API_URL}/predict_hour/${user}`);
+      setPredictHourData(response.data);
     } catch (error) {
-      console.error('Error in fetchPredictionData:', error);
-      throw error;
-    }
-  };
-
-  // const fetchPredictionData = async (user: string) => {
-  //   try {
-
-  //     const start = performance.now();
-  //     const response_minute = await axios.get(`${API_URL}/predict_minute/${user}`);
-  //     const end = performance.now();
-  //     console.log('fetchprediction await', end - start);
-
-  //     // console.log('fetchPredictionData-minute : ', response_minute);
-  //     // const response_hour = await axios.get(`${API_URL}/predict_hour/${user}`);
-  //     // console.log('fetchPredictionData-hour : ', response_hour);
-  //     // const response_day = await axios.get(`${API_URL}/predict_day/${user}`);
-  //     // console.log('fetchPredictionData-day : ', response_day);
-      
-      
-
-  //     const start2 = performance.now();
-  //     setPredictMinuteData(response_minute.data);
-  //     // setPredictHourData(response_hour.data);
-  //     // setPredictDayData(response_day.data);
-
-  //     const end2 = performance.now();
-  //     console.log('setfetchprediction await', end2 - start2);
-
-  //     console.log('predict-min', response_minute.data.min_pred_bpm)
-  //     // console.log('predict-hour', response_hour.data.hour_pred_bpm)
-  //     // console.log('predict-day', response_day.data.day_pred_bpm)
-  //   } catch (error) {
-  //     console.error('Error.........In featchPredictionData: ', error);
-  //   }
-  // }
-
-  const fetchFeatureData = async (user: string) => {
-    try {
-      const response_hour = await axios.get(`${API_URL}/feature_hour/${user}`);
-      const response_day = await axios.get(`${API_URL}/feature_day/${user}`);
-      console.log('fetchPredictionData-hour : ', response_hour);
-      console.log('fetchPredictionData-day : ', response_day);
-
-
-      setFeatureHourData(response_hour.data);
-      setFeatureDayData(response_day.data);
-
-
-      console.log('feature-hour', response_hour.data);
-      console.log('feature-day', response_day.data);
-    } catch (error) {
-      console.error('Error.........In featchFeatureData: ', error);
+      console.error('Error in fetchPredictionData: ', error);
     }
   }
 
@@ -261,11 +142,8 @@ export default function Home() {
     setSaveDates([])
     if (user) {
       setIsLoadingUser(true)
-      const start = performance.now();
       await checkDb(user)
       await fetchSaveDates(user)
-      const end = performance.now();
-      console.log(`checkDb and fetchSaveDates 걸린 시간 : ${end - start} ms`);
       setIsLoadingUser(false)
     }
   }
@@ -288,7 +166,6 @@ export default function Home() {
     }
   };
 
-
   useEffect(() => {
     if (showGraphs && startTimeRef.current !== null) {
       const endTime = performance.now();
@@ -297,6 +174,24 @@ export default function Home() {
       startTimeRef.current = null;
     }
   }, [showGraphs]);
+
+  const processedData = useMemo(() => {
+    if (timeUnit === 'hour') {
+      return {
+        bpmData: processHourlyData(bpmData, 'bpm'),
+        stepData: processHourlyData(stepData, 'step'),
+        calorieData: processHourlyData(calorieData, 'calorie'),
+        predictMinuteData: predictHourData
+      };
+    } else {
+      return {
+        bpmData,
+        stepData,
+        calorieData,
+        predictMinuteData: []  // 분 단위에서는 예측 데이터를 사용하지 않음
+      };
+    }
+  }, [bpmData, stepData, calorieData, predictHourData, timeUnit]);
 
   return (
     <div className="container mx-auto p-4">
@@ -328,7 +223,6 @@ export default function Home() {
               <option key={date} value={date}>{date}</option>
             ))}
           </select>
-          <p> 로딩 스피너 전 </p>
           {isLoading && <LoadingSpinner />}
         </div>
       )}
@@ -342,9 +236,21 @@ export default function Home() {
           </button>
           <button
             onClick={() => setViewMode('multi')}
-            className={`p-2 rounded ${viewMode === 'multi' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            className={`p-2 rounded mr-2 ${viewMode === 'multi' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
             <LayoutGrid size={20} />
+          </button>
+          <button
+            onClick={() => setTimeUnit('minute')}
+            className={`p-2 rounded mr-2 ${timeUnit === 'minute' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            Minute
+          </button>
+          <button
+            onClick={() => setTimeUnit('hour')}
+            className={`p-2 rounded ${timeUnit === 'hour' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            Hour
           </button>
         </div>
       )}
@@ -355,26 +261,27 @@ export default function Home() {
           <div className="text-center text-red-500">{error}</div>
         ) : showGraphs ? (
           <>
-          <p> 스켈레톤 로더 후 </p>
             {viewMode === 'combined' ? (
               <CombinedChart
-                bpmData={bpmData}
-                stepData={stepData}
-                calorieData={calorieData}
-                predictMinuteData={predictMinuteData}
+                bpmData={processedData.bpmData}
+                stepData={processedData.stepData}
+                calorieData={processedData.calorieData}
+                predictMinuteData={processedData.predictMinuteData}
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
+                timeUnit={timeUnit}
               /> 
             ) : (
               <MultiChart
-                bpmData={bpmData}
-                stepData={stepData}
-                calorieData={calorieData}
-                predictMinuteData={predictMinuteData}
+                bpmData={processedData.bpmData}
+                stepData={processedData.stepData}
+                calorieData={processedData.calorieData}
+                predictMinuteData={processedData.predictMinuteData}
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
+                timeUnit={timeUnit}
               />
             )}
             {renderTime !== null && (
@@ -384,7 +291,7 @@ export default function Home() {
             )}
           </>
         ) : null}
-        {showGraphs && bpmData.length === 0 && stepData.length === 0 && calorieData.length === 0 && predictMinuteData.length === 0 && (
+        {showGraphs && processedData.bpmData.length === 0 && processedData.stepData.length === 0 && processedData.calorieData.length === 0 && processedData.predictMinuteData.length === 0 && (
           <div className="text-center text-red-500">No data available for the charts.</div>
         )}
       </div>
