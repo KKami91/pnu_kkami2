@@ -47,8 +47,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       }
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          // 시간대 조정 없이 그대로 파싱
-          const timestamp = parseISO(item.ds).getTime();
+          const date = parseISO(item.ds);
+          // KST로 조정 (UTC+9)
+          const timestamp = date.getTime() + 9 * 60 * 60 * 1000;
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { timestamp });
           }
@@ -84,7 +85,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForBrush = (time: number) => {
-    return format(new Date(time), 'yyyy-MM-dd HH:mm');
+    const date = new Date(time);
+    return format(date, 'yyyy-MM-dd HH:mm');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {

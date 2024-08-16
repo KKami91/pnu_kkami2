@@ -34,7 +34,9 @@ const MultiChart: React.FC<MultiChartProps> = ({
       }
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          const timestamp = parseISO(item.ds).getTime();
+          const date = parseISO(item.ds);
+          // KST로 조정 (UTC+9)
+          const timestamp = date.getTime() + 9 * 60 * 60 * 1000;
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { timestamp });
           }
@@ -122,15 +124,11 @@ const MultiChart: React.FC<MultiChartProps> = ({
   );
 
   const charts = [
-    { key: 'bpm', color: '#ff7300', label: 'BPM', type: LineChart, hideDot: true },
-    { key: 'min_pred_bpm', color: '#FF5733', label: 'Predicted BPM', type: LineChart, hideDot: true },
+    { key: 'bpm', color: '#ff7300', label: 'BPM', type: LineChart },
+    { key: 'min_pred_bpm', color: '#FF5733', label: 'Predicted BPM', type: LineChart },
     { key: 'step', color: 'rgba(130, 202, 157, 0.6)', label: 'Steps', type: BarChart },
     { key: 'calorie', color: 'rgba(136, 132, 216, 0.6)', label: 'Calories', type: BarChart },
   ];
-
-  if (combinedData.length === 0) {
-    return <div className="text-center text-red-500">No data available for the charts.</div>;
-  }
 
   return (
     <div className='bg-white p-4 rounded-lg shadow'>
