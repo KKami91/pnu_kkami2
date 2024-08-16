@@ -37,6 +37,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
+  // 입력 데이터 로깅
+  useEffect(() => {
+    console.log('Input bpmData:', bpmData);
+    console.log('Input stepData:', stepData);
+    console.log('Input calorieData:', calorieData);
+    console.log('Input predictMinuteData:', predictMinuteData);
+  }, [bpmData, stepData, calorieData, predictMinuteData]);
+
   const combinedData = useMemo(() => {
     const dataMap = new Map();
     const now = new Date();
@@ -47,14 +55,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         console.error(`Invalid data for ${key}: expected array, got`, data);
         return;
       }
+      console.log(`Processing ${key} data:`, data);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
           const kstDate = parseISO(item.ds);
-          // KST를 UTC로 변환 (9시간 빼기)
           const utcDate = new Date(kstDate.getTime() - 9 * 60 * 60 * 1000);
           const timestamp = utcDate.getTime();
           
-          // 최근 7일 데이터만 포함
           if (timestamp >= sevenDaysAgo) {
             if (!dataMap.has(timestamp)) {
               dataMap.set(timestamp, { timestamp });
@@ -62,6 +69,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             const value = item[key];
             dataMap.get(timestamp)[key] = value != null ? Number(value) : null;
           }
+        } else {
+          console.error(`Invalid item in ${key} data:`, item);
         }
       });
     };
@@ -73,7 +82,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     
-    // 디버깅: 결과 데이터 로깅
     console.log('Combined data:', result);
     console.log('Data points:', result.length);
 
@@ -98,12 +106,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForBrush = (time: number) => {
+    // UTC를 KST로 변환 (9시간 더하기)
     const date = new Date(time);
     return format(date, 'yyyy-MM-dd HH:mm');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      // UTC를 KST로 변환 (9시간 더하기)
       const date = new Date(label);
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
@@ -135,14 +145,16 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     pred_bpm: '#A0D283',
   };
 
-  // 디버깅: 컴포넌트 렌더링 시 데이터 확인
-  useEffect(() => {
-    console.log('Filtered data:', filteredData);
-    console.log('Visible charts:', visibleCharts);
-  }, [filteredData, visibleCharts]);
-
   if (filteredData.length === 0) {
-    return <div>No data available for the last 7 days.</div>;
+    return (
+      <div>
+        <p>No data available for the last 7 days.</p>
+        <p>BPM data count: {bpmData.length}</p>
+        <p>Step data count: {stepData.length}</p>
+        <p>Calorie data count: {calorieData.length}</p>
+        <p>Prediction data count: {predictMinuteData.length}</p>
+      </div>
+    );
   }
 
   return (
@@ -170,7 +182,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+            tickFormatter={(tick) => format(new Date(tick + 9 * 60 * 60 * 1000), 'MM-dd HH:mm')}
             padding={{ left: 30, right: 30 }}
           />
           <YAxis 
