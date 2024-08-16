@@ -148,7 +148,7 @@ export default function Home() {
         setCalorieData(calorie);
         
         await fetchPredictionData(selectedUser);
-
+        console.log('after await fetchpredictionData selectedUser');
         setShowGraphs(true);
       } catch (error) {
         console.error('Error in handleDateSelect:', error);
@@ -162,7 +162,11 @@ export default function Home() {
   const fetchPredictionData = async (user: string) => {
     try {
 
+      const start = performance.now();
       const response_minute = await axios.get(`${API_URL}/predict_minute/${user}`);
+      const end = performance.now();
+      console.log('fetchprediction await', end - start);
+
       // console.log('fetchPredictionData-minute : ', response_minute);
       // const response_hour = await axios.get(`${API_URL}/predict_hour/${user}`);
       // console.log('fetchPredictionData-hour : ', response_hour);
@@ -171,10 +175,13 @@ export default function Home() {
       
       
 
-
+      const start2 = performance.now();
       setPredictMinuteData(response_minute.data);
       // setPredictHourData(response_hour.data);
       // setPredictDayData(response_day.data);
+
+      const end2 = performance.now();
+      console.log('setfetchprediction await', end2 - start2);
 
       console.log('predict-min', response_minute.data.min_pred_bpm)
       // console.log('predict-hour', response_hour.data.hour_pred_bpm)
