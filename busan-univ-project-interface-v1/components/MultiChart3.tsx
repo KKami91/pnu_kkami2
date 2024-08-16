@@ -122,8 +122,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
   );
 
   const charts = [
-    { key: 'bpm', color: '#ff7300', label: 'BPM', type: LineChart },
-    { key: 'min_pred_bpm', color: '#FF5733', label: 'Predicted BPM', type: LineChart },
+    { key: 'bpm', color: '#ff7300', label: 'BPM', type: LineChart, hideDot: true },
+    { key: 'min_pred_bpm', color: '#FF5733', label: 'Predicted BPM', type: LineChart, hideDot: true },
     { key: 'step', color: 'rgba(130, 202, 157, 0.6)', label: 'Steps', type: BarChart },
     { key: 'calorie', color: 'rgba(136, 132, 216, 0.6)', label: 'Calories', type: BarChart },
   ];
