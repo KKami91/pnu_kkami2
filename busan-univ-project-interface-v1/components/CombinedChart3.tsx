@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays } from 'date-fns';
+import { format, parseISO, subDays, max, min } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -37,40 +37,25 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
-  // 입력 데이터 로깅
-  useEffect(() => {
-    console.log('Input bpmData:', bpmData);
-    console.log('Input stepData:', stepData);
-    console.log('Input calorieData:', calorieData);
-    console.log('Input predictMinuteData:', predictMinuteData);
-  }, [bpmData, stepData, calorieData, predictMinuteData]);
-
   const combinedData = useMemo(() => {
     const dataMap = new Map();
-    const now = new Date();
-    const sevenDaysAgo = subDays(now, 7).getTime();
 
     const processData = (data: any[], key: string) => {
       if (!Array.isArray(data)) {
         console.error(`Invalid data for ${key}: expected array, got`, data);
         return;
       }
-      console.log(`Processing ${key} data:`, data);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
           const kstDate = parseISO(item.ds);
           const utcDate = new Date(kstDate.getTime() - 9 * 60 * 60 * 1000);
           const timestamp = utcDate.getTime();
           
-          if (timestamp >= sevenDaysAgo) {
-            if (!dataMap.has(timestamp)) {
-              dataMap.set(timestamp, { timestamp });
-            }
-            const value = item[key];
-            dataMap.get(timestamp)[key] = value != null ? Number(value) : null;
+          if (!dataMap.has(timestamp)) {
+            dataMap.set(timestamp, { timestamp });
           }
-        } else {
-          console.error(`Invalid item in ${key} data:`, item);
+          const value = item[key];
+          dataMap.get(timestamp)[key] = value != null ? Number(value) : null;
         }
       });
     };
@@ -82,18 +67,28 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     
-    console.log('Combined data:', result);
-    console.log('Data points:', result.length);
-
+    console.log('Combined data points:', result.length);
     return result;
   }, [bpmData, stepData, calorieData, predictMinuteData]);
 
+  const dateRange = useMemo(() => {
+    if (combinedData.length === 0) return { start: new Date(), end: new Date() };
+    const timestamps = combinedData.map(item => item.timestamp);
+    return {
+      start: new Date(Math.min(...timestamps)),
+      end: new Date(Math.max(...timestamps)),
+    };
+  }, [combinedData]);
+
+  const sevenDaysAgo = useMemo(() => {
+    return subDays(dateRange.end, 7).getTime();
+  }, [dateRange]);
+
   const filteredData = useMemo(() => {
-    if (!brushDomain) return combinedData;
-    return combinedData.filter(
-      item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
-    );
-  }, [combinedData, brushDomain]);
+    const sevenDayData = combinedData.filter(item => item.timestamp >= sevenDaysAgo);
+    console.log('Filtered data points:', sevenDayData.length);
+    return sevenDayData;
+  }, [combinedData, sevenDaysAgo]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -106,14 +101,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForBrush = (time: number) => {
-    // UTC를 KST로 변환 (9시간 더하기)
     const date = new Date(time);
     return format(date, 'yyyy-MM-dd HH:mm');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      // UTC를 KST로 변환 (9시간 더하기)
       const date = new Date(label);
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
@@ -149,6 +142,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return (
       <div>
         <p>No data available for the last 7 days.</p>
+        <p>Date range: {format(dateRange.start, 'yyyy-MM-dd')} to {format(dateRange.end, 'yyyy-MM-dd')}</p>
         <p>BPM data count: {bpmData.length}</p>
         <p>Step data count: {stepData.length}</p>
         <p>Calorie data count: {calorieData.length}</p>
@@ -182,7 +176,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick + 9 * 60 * 60 * 1000), 'MM-dd HH:mm')}
+            tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
             padding={{ left: 30, right: 30 }}
           />
           <YAxis 
