@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import { format, parseISO, subDays } from 'date-fns';
 
@@ -47,12 +47,21 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
 
+  useEffect(() => {
+    console.log('Input data:', { bpmData, stepData, calorieData, predictMinuteData });
+  }, [bpmData, stepData, calorieData, predictMinuteData]);
+
   const combinedData = useMemo(() => {
+    console.log('Combining data...');
     const dataMap = new Map<number, ProcessedDataItem>();
     const now = new Date();
     const sevenDaysAgo = subDays(now, 7).getTime();
 
     const processData = (data: any[], key: string) => {
+      if (!Array.isArray(data)) {
+        console.error(`Invalid data for ${key}: expected array, got`, data);
+        return;
+      }
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
           const date = parseISO(item.ds);
@@ -81,13 +90,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(stepData, 'step');
     processData(calorieData, 'calorie');
     processData(predictMinuteData, 'min_pred_bpm');
-    // Assuming predictHourData is available and contains 'hour_pred_bpm'
-    // processData(predictHourData, 'hour_pred_bpm');
 
-    return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    console.log('Combined data:', result);
+    return result;
   }, [bpmData, stepData, calorieData, predictMinuteData]);
 
   const processedData = useMemo(() => {
+    console.log('Processing data for time unit:', timeUnit);
     if (timeUnit === 'hour') {
       const hourlyData: { [key: string]: ProcessedDataItem } = {};
       
@@ -118,21 +128,26 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         });
       });
 
-      return Object.values(hourlyData).map(item => ({
+      const result = Object.values(hourlyData).map(item => ({
         ...item,
         bpm: item.bpm !== null ? item.bpm / combinedData.filter(d => d.timestamp >= item.timestamp && d.timestamp < item.timestamp + 3600000).length : null,
         min_pred_bpm: item.min_pred_bpm !== null ? item.min_pred_bpm / combinedData.filter(d => d.timestamp >= item.timestamp && d.timestamp < item.timestamp + 3600000).length : null,
         hour_pred_bpm: item.hour_pred_bpm
       }));
+      console.log('Processed hourly data:', result);
+      return result;
     }
+    console.log('Processed minute data:', combinedData);
     return combinedData;
   }, [combinedData, timeUnit]);
 
   const filteredData = useMemo(() => {
     if (!brushDomain) return processedData;
-    return processedData.filter(
+    const result = processedData.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
+    console.log('Filtered data:', result);
+    return result;
   }, [processedData, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
