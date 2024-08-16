@@ -136,18 +136,24 @@ export default function Home() {
       setRenderTime(null)
       startTimeRef.current = performance.now();
       try {
+        const startTime = performance.now();
         const [bpm, step, calorie] = await Promise.all([
           fetchData('bpm', selectedUser),
           fetchData('steps', selectedUser),
           fetchData('calories', selectedUser),
           
         ]);
+        const endTime = performance.now();
+        console.log(`bpm, step, calorie fetchdata ms : ${endTime - startTime} ms`)
 
         setBpmData(bpm);
         setStepData(step);
         setCalorieData(calorie);
         
+        const startTime2 = performance.now();
         await fetchPredictionData(selectedUser);
+        const endTime2 = performance.now();
+        console.log(`fetchpredictiondata ms : ${endTime2 - startTime2} ms`);
         console.log('after await fetchpredictionData selectedUser');
         setShowGraphs(true);
       } catch (error) {
