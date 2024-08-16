@@ -54,33 +54,30 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const combinedData = useMemo(() => {
     console.log('Combining data...');
     const dataMap = new Map<number, ProcessedDataItem>();
-    const now = new Date();
-    const sevenDaysAgo = subDays(now, 7).getTime();
 
     const processData = (data: any[], key: string) => {
       if (!Array.isArray(data)) {
         console.error(`Invalid data for ${key}: expected array, got`, data);
         return;
       }
+      console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
           const date = parseISO(item.ds);
           const timestamp = date.getTime();
-          if (timestamp >= sevenDaysAgo) {
-            if (!dataMap.has(timestamp)) {
-              dataMap.set(timestamp, { 
-                timestamp, 
-                bpm: null, 
-                step: null, 
-                calorie: null, 
-                min_pred_bpm: null,
-                hour_pred_bpm: null
-              });
-            }
-            const value = item[key];
-            if (typeof value === 'number') {
-              (dataMap.get(timestamp) as any)[key] = value;
-            }
+          if (!dataMap.has(timestamp)) {
+            dataMap.set(timestamp, { 
+              timestamp, 
+              bpm: null, 
+              step: null, 
+              calorie: null, 
+              min_pred_bpm: null,
+              hour_pred_bpm: null
+            });
+          }
+          const value = item[key];
+          if (typeof value === 'number') {
+            (dataMap.get(timestamp) as any)[key] = value;
           }
         }
       });
@@ -119,7 +116,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           if (value !== null) {
             if (key === 'bpm' || key === 'min_pred_bpm' || key === 'hour_pred_bpm') {
               hourlyData[hourKey][key as keyof ProcessedDataItem] = 
-                ((hourlyData[hourKey][key as keyof ProcessedDataItem] as number || 0) + value) as any;
+                ((hourlyData[hourKey][key as keyof ProcessedDataItem] as number || 0) + value) / 2;
             } else {
               hourlyData[hourKey][key as keyof ProcessedDataItem] = 
                 ((hourlyData[hourKey][key as keyof ProcessedDataItem] as number || 0) + value) as any;
@@ -128,12 +125,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         });
       });
 
-      const result = Object.values(hourlyData).map(item => ({
-        ...item,
-        bpm: item.bpm !== null ? item.bpm / combinedData.filter(d => d.timestamp >= item.timestamp && d.timestamp < item.timestamp + 3600000).length : null,
-        min_pred_bpm: item.min_pred_bpm !== null ? item.min_pred_bpm / combinedData.filter(d => d.timestamp >= item.timestamp && d.timestamp < item.timestamp + 3600000).length : null,
-        hour_pred_bpm: item.hour_pred_bpm
-      }));
+      const result = Object.values(hourlyData);
       console.log('Processed hourly data:', result);
       return result;
     }
