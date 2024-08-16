@@ -7,6 +7,7 @@ interface CombinedChartProps {
   stepData: any[];
   calorieData: any[];
   predictMinuteData: any[];
+  predictHourData: any[];
   globalStartDate: Date;
   globalEndDate: Date;
   onBrushChange: (domain: [number, number] | null) => void;
@@ -33,6 +34,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   stepData,
   calorieData,
   predictMinuteData,
+  predictHourData,
   globalStartDate,
   globalEndDate,
   onBrushChange,
@@ -94,12 +96,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(stepData, 'step');
     processData(calorieData, 'calorie');
     processData(predictMinuteData, 'min_pred_bpm');
+    processData(predictHourData, 'hour_pred_bpm');
 
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     console.log('Combined data sample:', result.slice(0, 5));
     console.log('Combined data length:', result.length);
     return result;
-  }, [bpmData, stepData, calorieData, predictMinuteData]);
+  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
 
   const processedData = useMemo(() => {
     console.log('Processing data for time unit:', timeUnit);
@@ -274,8 +277,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           {visibleCharts.bpm && (
             <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" dot={false} />
           )}
-          {visibleCharts.pred_bpm && !noPredictData && (
-            <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm_minute} name="Predicted BPM" dot={false} />
+          {visibleCharts.pred_bpm && timeUnit === 'minute' && (
+            <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm_minute} name="Predicted BPM (Minute)" dot={false} />
+          )}
+          {visibleCharts.pred_bpm && timeUnit === 'hour' && (
+            <Line yAxisId="left" type="monotone" dataKey="hour_pred_bpm" stroke={colors.pred_bpm_hour} name="Predicted BPM (Hour)" dot={false} />
           )}
           <Brush
             dataKey="timestamp"

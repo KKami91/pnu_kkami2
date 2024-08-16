@@ -39,7 +39,10 @@ export default function Home() {
   const [bpmData, setBpmData] = useState<DataItem[]>([]);
   const [stepData, setStepData] = useState<DataItem[]>([]);
   const [calorieData, setCalorieData] = useState<DataItem[]>([]);
-  const [predictHourData, setPredictHourData] = useState<DataItem[]>([]);
+  // const [predictHourData, setPredictHourData] = useState<DataItem[]>([]);
+
+  const [predictMinuteData, setPredictMinuteData] = useState<any[]>([]);
+  const [predictHourData, setPredictHourData] = useState<any[]>([]);
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -128,12 +131,16 @@ export default function Home() {
 
   const fetchPredictionData = async (user: string) => {
     try {
-      const startTimeHour = performance.now();
-      const response = await axios.get(`${API_URL}/predict_minute/${user}`);
-      console.log(`response.data hour : ${response.data}`);
-      setPredictHourData(response.data);
-      const endTimeHour = performance.now();
-      console.log(`hour fetch 걸린 시간 ${endTimeHour - startTimeHour} ms`);
+      const [minuteResponse, hourResponse] = await Promise.all([
+        axios.get(`${API_URL}/predict_minute/${user}`),
+        axios.get(`${API_URL}/predict_hour/${user}`)
+      ]);
+
+      console.log('Minute prediction data:', minuteResponse.data);
+      console.log('Hour prediction data:', hourResponse.data);
+
+      setPredictMinuteData(minuteResponse.data);
+      setPredictHourData(hourResponse.data);
     } catch (error) {
       console.error('Error in fetchPredictionData: ', error);
     }
@@ -267,20 +274,22 @@ export default function Home() {
           <>
             {viewMode === 'combined' ? (
               <CombinedChart
-                bpmData={processedData.bpmData}
-                stepData={processedData.stepData}
-                calorieData={processedData.calorieData}
-                predictMinuteData={processedData.predictMinuteData}
+                bpmData={bpmData}
+                stepData={stepData}
+                calorieData={calorieData}
+                predictMinuteData={predictMinuteData}
+                predictHourData={predictHourData}
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
               /> 
             ) : (
               <MultiChart
-                bpmData={processedData.bpmData}
-                stepData={processedData.stepData}
-                calorieData={processedData.calorieData}
-                predictMinuteData={processedData.predictMinuteData}
+                bpmData={bpmData}
+                stepData={stepData}
+                calorieData={calorieData}
+                predictMinuteData={predictMinuteData}
+                predictHourData={predictHourData}
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}

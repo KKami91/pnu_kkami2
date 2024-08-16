@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import { format, parseISO, subDays } from 'date-fns';
 
@@ -7,6 +7,7 @@ interface MultiChartProps {
   stepData: any[];
   calorieData: any[];
   predictMinuteData: any[];
+  predictHourData: any[];
   globalStartDate: Date;
   globalEndDate: Date;
   onBrushChange: (domain: [number, number] | null) => void;
@@ -26,6 +27,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
   stepData,
   calorieData,
   predictMinuteData,
+  predictHourData,
   globalStartDate,
   globalEndDate,
   onBrushChange,
@@ -34,31 +36,43 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const [columnCount, setColumnCount] = useState(1);
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
 
+  useEffect(() => {
+    console.log('Input data:', { 
+      bpmData: bpmData.length, 
+      stepData: stepData.length, 
+      calorieData: calorieData.length, 
+      predictMinuteData: predictMinuteData.length,
+      predictHourData: predictHourData.length
+    });
+  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
+
   const combinedData = useMemo(() => {
+    console.log('Combining data...');
     const dataMap = new Map<number, ProcessedDataItem>();
-    const now = new Date();
-    const sevenDaysAgo = subDays(now, 7).getTime();
 
     const processData = (data: any[], key: string) => {
+      if (!Array.isArray(data)) {
+        console.error(`Invalid data for ${key}: expected array, got`, data);
+        return;
+      }
+      console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
           const date = parseISO(item.ds);
           const timestamp = date.getTime();
-          if (timestamp >= sevenDaysAgo) {
-            if (!dataMap.has(timestamp)) {
-              dataMap.set(timestamp, { 
-                timestamp, 
-                bpm: null, 
-                step: null, 
-                calorie: null, 
-                min_pred_bpm: null,
-                hour_pred_bpm: null
-              });
-            }
-            const value = item[key];
-            if (typeof value === 'number') {
-              (dataMap.get(timestamp) as any)[key] = value;
-            }
+          if (!dataMap.has(timestamp)) {
+            dataMap.set(timestamp, { 
+              timestamp, 
+              bpm: null, 
+              step: null, 
+              calorie: null, 
+              min_pred_bpm: null,
+              hour_pred_bpm: null
+            });
+          }
+          const value = item[key];
+          if (typeof value === 'number') {
+            (dataMap.get(timestamp) as any)[key] = value;
           }
         }
       });
@@ -68,13 +82,16 @@ const MultiChart: React.FC<MultiChartProps> = ({
     processData(stepData, 'step');
     processData(calorieData, 'calorie');
     processData(predictMinuteData, 'min_pred_bpm');
-    // Assuming predictHourData is available and contains 'hour_pred_bpm'
-    // processData(predictHourData, 'hour_pred_bpm');
+    processData(predictHourData, 'hour_pred_bpm');
 
-    return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
-  }, [bpmData, stepData, calorieData, predictMinuteData]);
+    const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    console.log('Combined data sample:', result.slice(0, 5));
+    console.log('Combined data length:', result.length);
+    return result;
+  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
 
   const processedData = useMemo(() => {
+    console.log('Processing data for time unit:', timeUnit);
     if (timeUnit === 'hour') {
       const hourlyData: { [key: string]: ProcessedDataItem } = {};
       
@@ -96,7 +113,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
           if (value !== null) {
             if (key === 'bpm' || key === 'min_pred_bpm' || key === 'hour_pred_bpm') {
               hourlyData[hourKey][key as keyof ProcessedDataItem] = 
-                ((hourlyData[hourKey][key as keyof ProcessedDataItem] as number || 0) + value) as any;
+                ((hourlyData[hourKey][key as keyof ProcessedDataItem] as number || 0) + value) / 2;
             } else {
               hourlyData[hourKey][key as keyof ProcessedDataItem] = 
                 ((hourlyData[hourKey][key as keyof ProcessedDataItem] as number || 0) + value) as any;
@@ -105,21 +122,21 @@ const MultiChart: React.FC<MultiChartProps> = ({
         });
       });
 
-      return Object.values(hourlyData).map(item => ({
-        ...item,
-        bpm: item.bpm !== null ? item.bpm / combinedData.filter(d => d.timestamp >= item.timestamp && d.timestamp < item.timestamp + 3600000).length : null,
-        min_pred_bpm: item.min_pred_bpm !== null ? item.min_pred_bpm / combinedData.filter(d => d.timestamp >= item.timestamp && d.timestamp < item.timestamp + 3600000).length : null,
-        hour_pred_bpm: item.hour_pred_bpm
-      }));
+      const result = Object.values(hourlyData);
+      console.log('Processed hourly data sample:', result.slice(0, 5));
+      return result;
     }
+    console.log('Processed minute data sample:', combinedData.slice(0, 5));
     return combinedData;
   }, [combinedData, timeUnit]);
 
   const filteredData = useMemo(() => {
     if (!brushDomain) return processedData;
-    return processedData.filter(
+    const result = processedData.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
+    console.log('Filtered data length:', result.length);
+    return result;
   }, [processedData, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
@@ -182,8 +199,12 @@ const MultiChart: React.FC<MultiChartProps> = ({
           )}
           {dataKey === 'bpm' && (
             <>
-              <Line type="monotone" dataKey="min_pred_bpm" stroke="#A0D283" dot={false} name="Predicted BPM (Minute)" />
-              {timeUnit === 'hour' && <Line type="monotone" dataKey="hour_pred_bpm" stroke="#82ca9d" dot={false} name="Predicted BPM (Hour)" />}
+              {timeUnit === 'minute' && (
+                <Line type="monotone" dataKey="min_pred_bpm" stroke="#A0D283" dot={false} name="Predicted BPM (Minute)" />
+              )}
+              {timeUnit === 'hour' && (
+                <Line type="monotone" dataKey="hour_pred_bpm" stroke="#82ca9d" dot={false} name="Predicted BPM (Hour)" />
+              )}
             </>
           )}
         </ChartType>
