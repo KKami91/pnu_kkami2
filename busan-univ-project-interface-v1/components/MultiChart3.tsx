@@ -73,13 +73,13 @@ const MultiChart: React.FC<MultiChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForBrush = (time: number) => {
-    const date = new Date(time + 9 * 60 * 60 * 1000);
+    const date = new Date(time);
     return format(date, 'yyyy-MM-dd HH:mm');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const date = new Date(label + 9 * 60 * 60 * 1000);
+      const date = new Date(label);
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>

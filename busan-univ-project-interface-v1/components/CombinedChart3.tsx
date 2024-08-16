@@ -87,14 +87,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const formatDateForBrush = (time: number) => {
     // UTC를 KST로 변환 (9시간 더하기)
-    const date = new Date(time + 9 * 60 * 60 * 1000);
+    const date = new Date(time);
     return format(date, 'yyyy-MM-dd HH:mm');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       // UTC를 KST로 변환 (9시간 더하기)
-      const date = new Date(label + 9 * 60 * 60 * 1000);
+      const date = new Date(label);
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
