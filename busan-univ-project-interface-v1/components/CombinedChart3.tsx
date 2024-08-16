@@ -63,7 +63,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const combinedData = useMemo(() => {
     console.log('Combining data...');
     const dataMap = new Map<number, ProcessedDataItem>();
-  
+
     const processData = (data: any[], key: string) => {
       if (!Array.isArray(data)) {
         console.error(`Invalid data for ${key}: expected array, got`, data);
@@ -72,8 +72,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          const date = parseISO(item.ds);
-          const timestamp = date.getTime();
+          const kstDate = parseISO(item.ds);
+          const utcDate = new Date(kstDate.getTime() - 9 * 60 * 60 * 1000);
+          const timestamp = utcDate.getTime();
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { 
               timestamp, 
@@ -84,20 +85,20 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
               hour_pred_bpm: null
             });
           }
-          const value = key === 'min_pred_bpm' || key === 'hour_pred_bpm' ? item[key] : item[key.replace('_pred', '')];
+          const value = key.includes('pred') ? item[key] : item[key.replace('_pred', '')];
           if (typeof value === 'number') {
             (dataMap.get(timestamp) as any)[key] = value;
           }
         }
       });
     };
-  
+
     processData(bpmData, 'bpm');
     processData(stepData, 'step');
     processData(calorieData, 'calorie');
     processData(predictMinuteData, 'min_pred_bpm');
     processData(predictHourData, 'hour_pred_bpm');
-  
+
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     console.log('Combined data sample:', result.slice(0, 5));
     console.log('Combined data length:', result.length);
@@ -165,17 +166,18 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
   }, [onBrushChange]);
 
-  const formatDateForBrush = (time: number) => {
-    return format(new Date(time), timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
+  const formatDateForDisplay = (time: number) => {
+    const kstDate = new Date(time);
+    return format(kstDate, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const date = new Date(label);
+      const kstDate = new Date(label);
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
-            {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
+            {format(kstDate, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
@@ -251,7 +253,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+            tickFormatter={formatDateForDisplay}
             padding={{ left: 30, right: 30 }}
           />
           <YAxis 
@@ -277,10 +279,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           {visibleCharts.bpm && (
             <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" dot={false} />
           )}
-          {visibleCharts.pred_bpm && predictMinuteData.length > 0 && timeUnit === 'minute' && (
+          {visibleCharts.pred_bpm && timeUnit === 'minute' && (
             <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm_minute} name="Predicted BPM (Minute)" dot={false} />
           )}
-          {visibleCharts.pred_bpm && predictHourData.length > 0 && timeUnit === 'hour' && (
+          {visibleCharts.pred_bpm && timeUnit === 'hour' && (
             <Line yAxisId="left" type="monotone" dataKey="hour_pred_bpm" stroke={colors.pred_bpm_hour} name="Predicted BPM (Hour)" dot={false} />
           )}
           <Brush
@@ -288,7 +290,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             height={30}
             stroke="#8884d8"
             onChange={handleBrushChange}
-            tickFormatter={(tick) => format(new Date(tick), 'MM-dd')}
+            tickFormatter={formatDateForDisplay}
           />
         </ComposedChart>
       </ResponsiveContainer>

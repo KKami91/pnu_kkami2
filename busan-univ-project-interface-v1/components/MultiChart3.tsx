@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface MultiChartProps {
   bpmData: any[];
@@ -36,20 +36,10 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const [columnCount, setColumnCount] = useState(1);
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
 
-  useEffect(() => {
-    console.log('Input data:', { 
-      bpmData: bpmData.length, 
-      stepData: stepData.length, 
-      calorieData: calorieData.length, 
-      predictMinuteData: predictMinuteData.length,
-      predictHourData: predictHourData.length
-    });
-  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
-
   const combinedData = useMemo(() => {
     console.log('Combining data...');
     const dataMap = new Map<number, ProcessedDataItem>();
-  
+
     const processData = (data: any[], key: string) => {
       if (!Array.isArray(data)) {
         console.error(`Invalid data for ${key}: expected array, got`, data);
@@ -58,8 +48,9 @@ const MultiChart: React.FC<MultiChartProps> = ({
       console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          const date = parseISO(item.ds);
-          const timestamp = date.getTime();
+          const kstDate = parseISO(item.ds);
+          const utcDate = new Date(kstDate.getTime() - 9 * 60 * 60 * 1000);
+          const timestamp = utcDate.getTime();
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { 
               timestamp, 
@@ -70,20 +61,20 @@ const MultiChart: React.FC<MultiChartProps> = ({
               hour_pred_bpm: null
             });
           }
-          const value = key === 'min_pred_bpm' || key === 'hour_pred_bpm' ? item[key] : item[key.replace('_pred', '')];
+          const value = key.includes('pred') ? item[key] : item[key.replace('_pred', '')];
           if (typeof value === 'number') {
             (dataMap.get(timestamp) as any)[key] = value;
           }
         }
       });
     };
-  
+
     processData(bpmData, 'bpm');
     processData(stepData, 'step');
     processData(calorieData, 'calorie');
     processData(predictMinuteData, 'min_pred_bpm');
     processData(predictHourData, 'hour_pred_bpm');
-  
+
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     console.log('Combined data sample:', result.slice(0, 5));
     console.log('Combined data length:', result.length);
@@ -149,7 +140,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
     }
   }, [onBrushChange]);
 
-  const formatDateForBrush = (time: number) => {
+  const formatDateForDisplay = (time: number) => {
     return format(new Date(time), timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
@@ -182,7 +173,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
             type="number" 
             scale="time" 
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+            tickFormatter={formatDateForDisplay}
           />
           <YAxis 
             label={{ value: yAxisLabel, angle: -90, position: 'insideLeft' }} 
@@ -199,10 +190,10 @@ const MultiChart: React.FC<MultiChartProps> = ({
           )}
           {dataKey === 'bpm' && (
             <>
-              {timeUnit === 'minute' && predictMinuteData.length > 0 && (
+              {timeUnit === 'minute' && (
                 <Line type="monotone" dataKey="min_pred_bpm" stroke="#A0D283" dot={false} name="Predicted BPM (Minute)" />
               )}
-              {timeUnit === 'hour' && predictHourData.length > 0 && (
+              {timeUnit === 'hour' && (
                 <Line type="monotone" dataKey="hour_pred_bpm" stroke="#82ca9d" dot={false} name="Predicted BPM (Hour)" />
               )}
             </>
@@ -255,14 +246,14 @@ const MultiChart: React.FC<MultiChartProps> = ({
               type="number" 
               scale="time" 
               domain={['dataMin', 'dataMax']}
-              tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+              tickFormatter={formatDateForDisplay}
             />
             <Brush 
               dataKey="timestamp" 
               height={30} 
               stroke="#8884d8" 
               onChange={handleBrushChange}
-              tickFormatter={formatDateForBrush}
+              tickFormatter={formatDateForDisplay}
             />
           </LineChart>
         </ResponsiveContainer>
