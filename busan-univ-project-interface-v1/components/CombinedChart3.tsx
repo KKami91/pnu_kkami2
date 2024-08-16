@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import { format, parseISO, subDays } from 'date-fns';
 
@@ -71,7 +71,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(calorieData, 'calorie');
     processData(predictMinuteData, 'min_pred_bpm');
 
-    return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    
+    // 디버깅: 결과 데이터 로깅
+    console.log('Combined data:', result);
+    console.log('Data points:', result.length);
+
+    return result;
   }, [bpmData, stepData, calorieData, predictMinuteData]);
 
   const filteredData = useMemo(() => {
@@ -128,6 +134,16 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     bpm: '#ff7300',
     pred_bpm: '#A0D283',
   };
+
+  // 디버깅: 컴포넌트 렌더링 시 데이터 확인
+  useEffect(() => {
+    console.log('Filtered data:', filteredData);
+    console.log('Visible charts:', visibleCharts);
+  }, [filteredData, visibleCharts]);
+
+  if (filteredData.length === 0) {
+    return <div>No data available for the last 7 days.</div>;
+  }
 
   return (
     <div className='bg-white p-4 rounded-lg shadow'>
