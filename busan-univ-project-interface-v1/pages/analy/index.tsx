@@ -1,3 +1,5 @@
+// 새로 데이터 구조를 변경하여 보여줄 새 index.tsx파일
+
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import axios from 'axios'
 import MultiChart from '../../components/MultiChart3';
@@ -54,7 +56,7 @@ interface DataFeature {
 
 interface DataPrediction {
   ds: string;
-  pred_bpm: number | null;
+  min_pred_bpm: number | null;
 }
 
 
@@ -81,9 +83,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [saveDates, setSaveDates] = useState<string[]>([]);
 
-  const [bpmData, setBpmData] = useState<DataItem[]>([]);
-  const [stepData, setStepData] = useState<DataItem[]>([]);
-  const [calorieData, setCalorieData] = useState<DataItem[]>([]);
+  const [bpmData, setBpmData] = useState<DataBPM[]>([]);
+  const [stepData, setStepData] = useState<DataStep[]>([]);
+  const [calorieData, setCalorieData] = useState<DataCalorie[]>([]);
 
 
   const [renderTime, setRenderTime] = useState<number | null>(null);
@@ -99,13 +101,14 @@ export default function Home() {
   const [predictDayData, setPredictDayData] = useState<DataPrediction[]>([]);
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
-    const allData = [...bpmData, ...stepData, ...calorieData];
-    const allDates = allData.map(item => new Date(item.ds).getTime());
+    const allDates = [...bpmData, ...stepData, ...calorieData].map(item => new Date(item.ds).getTime());
     return {
       globalStartDate: allDates.length > 0 ? new Date(Math.min(...allDates)) : new Date(),
       globalEndDate: allDates.length > 0 ? new Date(Math.max(...allDates)) : new Date()
     };
   }, [bpmData, stepData, calorieData]);
+
+  console.log(globalStartDate, globalEndDate);
 
   const fetchData = async (collection: string, user: string) => {
     try {
@@ -290,6 +293,7 @@ export default function Home() {
               <option key={date} value={date}>{date}</option>
             ))}
           </select>
+          <p> 로딩 스피너 전 </p>
           {isLoading && <LoadingSpinner />}
         </div>
       )}
@@ -316,6 +320,7 @@ export default function Home() {
           <div className="text-center text-red-500">{error}</div>
         ) : showGraphs ? (
           <>
+          <p> 스켈레톤 로더 후 </p>
             {viewMode === 'combined' ? (
               <CombinedChart
                 bpmData={bpmData}
@@ -325,7 +330,7 @@ export default function Home() {
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
-              />
+              /> 
             ) : (
               <MultiChart
                 bpmData={bpmData}
