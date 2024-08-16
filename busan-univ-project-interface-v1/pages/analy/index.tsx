@@ -135,14 +135,20 @@ export default function Home() {
         axios.get(`${API_URL}/predict_minute/${user}`),
         axios.get(`${API_URL}/predict_hour/${user}`)
       ]);
-
+  
       console.log('Minute prediction data:', minuteResponse.data);
       console.log('Hour prediction data:', hourResponse.data);
-
-      setPredictMinuteData(minuteResponse.data);
-      setPredictHourData(hourResponse.data);
+  
+      // 객체에서 배열을 추출
+      const minutePredictions = minuteResponse.data.min_pred_bpm || [];
+      const hourPredictions = hourResponse.data.hour_pred_bpm || [];
+  
+      setPredictMinuteData(minutePredictions);
+      setPredictHourData(hourPredictions);
     } catch (error) {
       console.error('Error in fetchPredictionData: ', error);
+      setPredictMinuteData([]);
+      setPredictHourData([]);
     }
   }
 
