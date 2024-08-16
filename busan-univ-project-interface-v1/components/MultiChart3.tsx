@@ -12,20 +12,13 @@ interface MultiChartProps {
   onBrushChange: (domain: [number, number] | null) => void;
 }
 
-interface DataItem {
-  ds: string;
-  bpm?: number;
-  step?: number;
-  calorie?: number;
-  min_pred_bpm?: number;
-}
-
 interface ProcessedDataItem {
   timestamp: number;
   bpm: number | null;
   step: number | null;
   calorie: number | null;
   min_pred_bpm: number | null;
+  hour_pred_bpm: number | null;
 }
 
 const MultiChart: React.FC<MultiChartProps> = ({
@@ -46,18 +39,25 @@ const MultiChart: React.FC<MultiChartProps> = ({
     const now = new Date();
     const sevenDaysAgo = subDays(now, 7).getTime();
 
-    const processData = (data: DataItem[], key: keyof DataItem) => {
+    const processData = (data: any[], key: string) => {
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
           const date = parseISO(item.ds);
           const timestamp = date.getTime();
           if (timestamp >= sevenDaysAgo) {
             if (!dataMap.has(timestamp)) {
-              dataMap.set(timestamp, { timestamp, bpm: null, step: null, calorie: null, min_pred_bpm: null });
+              dataMap.set(timestamp, { 
+                timestamp, 
+                bpm: null, 
+                step: null, 
+                calorie: null, 
+                min_pred_bpm: null,
+                hour_pred_bpm: null
+              });
             }
             const value = item[key];
             if (typeof value === 'number') {
-              dataMap.get(timestamp)![key as keyof ProcessedDataItem] = value;
+              (dataMap.get(timestamp) as any)[key] = value;
             }
           }
         }
@@ -68,6 +68,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
     processData(stepData, 'step');
     processData(calorieData, 'calorie');
     processData(predictMinuteData, 'min_pred_bpm');
+    // Assuming predictHourData is available and contains 'hour_pred_bpm'
+    // processData(predictHourData, 'hour_pred_bpm');
 
     return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
   }, [bpmData, stepData, calorieData, predictMinuteData]);
@@ -84,18 +86,20 @@ const MultiChart: React.FC<MultiChartProps> = ({
             bpm: null,
             step: null,
             calorie: null,
-            min_pred_bpm: null
+            min_pred_bpm: null,
+            hour_pred_bpm: null
           };
         }
         
-        ['bpm', 'step', 'calorie', 'min_pred_bpm'].forEach((key) => {
-          const typedKey = key as keyof ProcessedDataItem;
-          const value = item[typedKey];
+        ['bpm', 'step', 'calorie', 'min_pred_bpm', 'hour_pred_bpm'].forEach((key) => {
+          const value = (item as any)[key];
           if (value !== null) {
-            if (typedKey === 'bpm' || typedKey === 'min_pred_bpm') {
-              hourlyData[hourKey][typedKey] = (hourlyData[hourKey][typedKey] || 0) + value;
+            if (key === 'bpm' || key === 'min_pred_bpm' || key === 'hour_pred_bpm') {
+              hourlyData[hourKey][key as keyof ProcessedDataItem] = 
+                ((hourlyData[hourKey][key as keyof ProcessedDataItem] as number || 0) + value) as any;
             } else {
-              hourlyData[hourKey][typedKey] = (hourlyData[hourKey][typedKey] || 0) + value;
+              hourlyData[hourKey][key as keyof ProcessedDataItem] = 
+                ((hourlyData[hourKey][key as keyof ProcessedDataItem] as number || 0) + value) as any;
             }
           }
         });
@@ -105,6 +109,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
         ...item,
         bpm: item.bpm !== null ? item.bpm / combinedData.filter(d => d.timestamp >= item.timestamp && d.timestamp < item.timestamp + 3600000).length : null,
         min_pred_bpm: item.min_pred_bpm !== null ? item.min_pred_bpm / combinedData.filter(d => d.timestamp >= item.timestamp && d.timestamp < item.timestamp + 3600000).length : null,
+        hour_pred_bpm: item.hour_pred_bpm
       }));
     }
     return combinedData;
@@ -176,7 +181,10 @@ const MultiChart: React.FC<MultiChartProps> = ({
             <Bar dataKey={dataKey} fill={color} {...additionalProps} />
           )}
           {dataKey === 'bpm' && (
-            <Line type="monotone" dataKey="min_pred_bpm" stroke="#A0D283" dot={false} name="Predicted BPM" />
+            <>
+              <Line type="monotone" dataKey="min_pred_bpm" stroke="#A0D283" dot={false} name="Predicted BPM (Minute)" />
+              {timeUnit === 'hour' && <Line type="monotone" dataKey="hour_pred_bpm" stroke="#82ca9d" dot={false} name="Predicted BPM (Hour)" />}
+            </>
           )}
         </ChartType>
       </ResponsiveContainer>
