@@ -128,8 +128,11 @@ export default function Home() {
 
   const fetchPredictionData = async (user: string) => {
     try {
+      const startTimeHour = performance.now();
       const response = await axios.get(`${API_URL}/predict_hour/${user}`);
       setPredictHourData(response.data);
+      const endTimeHour = performance.now();
+      console.log(`hour fetch 걸린 시간 ${endTimeHour - startTimeHour} ms`);
     } catch (error) {
       console.error('Error in fetchPredictionData: ', error);
     }
