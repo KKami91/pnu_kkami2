@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subHours } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -35,16 +35,26 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     pred_bpm: true,
   });
 
+  const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+
   const combinedData = useMemo(() => {
     const dataMap = new Map();
 
     const processData = (data: any[], key: string) => {
+      if (!Array.isArray(data)) {
+        console.error(`Invalid data for ${key}: expected array, got`, data);
+        return;
+      }
       data.forEach(item => {
-        const timestamp = parseISO(item.ds).getTime();
-        if (!dataMap.has(timestamp)) {
-          dataMap.set(timestamp, { timestamp });
+        if (item && typeof item.ds === 'string') {
+          // 시간대 조정 없이 그대로 파싱
+          const timestamp = parseISO(item.ds).getTime();
+          if (!dataMap.has(timestamp)) {
+            dataMap.set(timestamp, { timestamp });
+          }
+          const value = item[key];
+          dataMap.get(timestamp)[key] = value != null ? Number(value) : null;
         }
-        dataMap.get(timestamp)[key] = item[key] != null ? Number(item[key]) : null;
       });
     };
 
@@ -56,32 +66,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
   }, [bpmData, stepData, calorieData, predictMinuteData]);
 
-  const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
-
-  useEffect(() => {
-    if (combinedData.length > 0) {
-      setBrushDomain([
-        combinedData[0].timestamp,
-        combinedData[combinedData.length - 1].timestamp
-      ]);
-    }
-  }, [combinedData]);
-
   const filteredData = useMemo(() => {
     if (!brushDomain) return combinedData;
     return combinedData.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
   }, [combinedData, brushDomain]);
-
-  const yAxisDomains = useMemo(() => {
-    const bpmData = filteredData.flatMap(d => [d.bpm, d.min_pred_bpm].filter(v => v != null && v !== 0));
-    const otherData = filteredData.flatMap(d => [d.step, d.calorie].filter(v => v != null && v !== 0));
-    return {
-      left: [0, Math.max(...bpmData, 1) * 1.1],
-      right: [1, Math.max(...otherData, 1)],
-    };
-  }, [filteredData]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -92,13 +82,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       onBrushChange(null);
     }
   }, [onBrushChange]);
-
-  const toggleChart = (chartName: keyof ChartVisibility) => {
-    setVisibleCharts(prev => ({
-      ...prev,
-      [chartName]: !prev[chartName]
-    }));
-  };
 
   const formatDateForBrush = (time: number) => {
     return format(new Date(time), 'yyyy-MM-dd HH:mm');
@@ -120,6 +103,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       );
     }
     return null;
+  };
+
+  const toggleChart = (chartName: keyof ChartVisibility) => {
+    setVisibleCharts(prev => ({
+      ...prev,
+      [chartName]: !prev[chartName]
+    }));
   };
 
   const colors = {
@@ -159,14 +149,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           />
           <YAxis 
             yAxisId="left" 
-            domain={yAxisDomains.left} 
             label={{ value: 'BPM', angle: -90, position: 'insideLeft' }} 
             tickFormatter={(value) => value.toFixed(0)}
           />
           <YAxis 
             yAxisId="right" 
             orientation="right" 
-            domain={yAxisDomains.right}
             scale="log"
             tickFormatter={(value) => Math.round(value).toString()}
             label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} 
@@ -180,10 +168,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             <Bar yAxisId="right" dataKey="step" fill={colors.step} name="Steps" />
           )}
           {visibleCharts.bpm && (
-            <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" dot={false}/>
+            <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" dot={false} />
           )}
           {visibleCharts.pred_bpm && (
-            <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm} name="Predicted BPM" dot={false}/>
+            <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm} name="Predicted BPM" dot={false} />
           )}
           <Brush
             dataKey="timestamp"
