@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays } from 'date-fns';
+import { format, parseISO, subDays, addHours } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -54,7 +54,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         if (item && typeof item.ds === 'string') {
           let timestamp;
           try {
-            timestamp = new Date(item.ds).getTime();
+            const date = parseISO(item.ds);
+            // 예측 데이터는 이미 KST이므로 변환하지 않습니다.
+            if (key === 'min_pred_bpm' || key === 'hour_pred_bpm') {
+              timestamp = date.getTime();
+            } else {
+              // 다른 데이터는 UTC를 KST로 변환합니다.
+              timestamp = addHours(date, 9).getTime();
+            }
           } catch (error) {
             console.error(`Invalid date format for ${key}:`, item.ds);
             return;
@@ -167,19 +174,17 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForDisplay = (time: number) => {
-    //const kstDate = new Date(time + 9 * 60 * 60 * 1000);  // UTC to KST
-    const kstDate = new Date(time);  // UTC to KST
-    return format(kstDate, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
+    const date = new Date(time);
+    return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      //const kstDate = new Date(label + 9 * 60 * 60 * 1000);  // UTC to KST
-      const kstDate = new Date(label);  // UTC to KST
+      const date = new Date(label);
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
-            {format(kstDate, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
+            {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
@@ -191,6 +196,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
     return null;
   };
+
   const toggleChart = (chartName: keyof ChartVisibility) => {
     setVisibleCharts(prev => ({
       ...prev,
@@ -246,7 +252,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
               type="number"
               scale="time"
               domain={['dataMin', 'dataMax']}
-              tickFormatter={(tick) => format(new Date(tick), 'MM-dd HH:mm')}
+              tickFormatter={formatDateForDisplay}
               padding={{ left: 30, right: 30 }}
             />
             <YAxis 
@@ -283,7 +289,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
               height={30}
               stroke="#8884d8"
               onChange={handleBrushChange}
-              tickFormatter={(tick) => format(new Date(tick), 'MM-dd')}
+              tickFormatter={formatDateForDisplay}
             />
           </ComposedChart>
         </ResponsiveContainer>
