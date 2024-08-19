@@ -6,7 +6,7 @@ import { SkeletonLoader } from '../../components/SkeletonLoaders3';
 import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 import { parseISO, format, startOfHour, endOfHour } from 'date-fns';
 
-const users = ['hswchaos@gmail.com', 'subak63@gmail.com']
+const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
 
 const LoadingSpinner = () => (
