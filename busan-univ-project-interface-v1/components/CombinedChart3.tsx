@@ -60,8 +60,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           } else {
             // 다른 데이터는 KST에서 UTC로 변환
             const kstDate = parseISO(item.ds);
-            const utcDate = new Date(kstDate.getTime() - 9 * 60 * 60 * 1000);
-            timestamp = utcDate.getTime();
+            // const utcDate = new Date(kstDate.getTime() - 9 * 60 * 60 * 1000);
+            // timestamp = utcDate.getTime();
+            timestamp = kstDate.getTime();
           }
           
           if (!dataMap.has(timestamp)) {
