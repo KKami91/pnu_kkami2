@@ -107,8 +107,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       const hourlyData: { [key: string]: any } = {};
       
       filteredData.forEach(item => {
-        // const kstDate = new Date(item.timestamp + 9 * 60 * 60 * 1000); // UTC to KST
-        const kstDate = new Date(item.timestamp); // UTC to KST
+        const kstDate = new Date(item.timestamp);
         const hourKey = format(kstDate, 'yyyy-MM-dd HH:00:00');
         if (!hourlyData[hourKey]) {
           hourlyData[hourKey] = { 
@@ -134,7 +133,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         ...item,
         bpm: item.count > 0 ? item.bpm / item.count : null,
         min_pred_bpm: item.count > 0 ? item.min_pred_bpm / item.count : null,
-        hour_pred_bpm: item.hour_pred_bpm, // 시간별 예측은 평균 계산 불필요
+        hour_pred_bpm: item.hour_pred_bpm,
       }));
     }
     return filteredData;
@@ -262,11 +261,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           {visibleCharts.bpm && (
             <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" dot={false} />
           )}
-          {visibleCharts.pred_bpm && timeUnit === 'minute' && (
-            <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm_minute} name="Predicted BPM (Minute)" dot={false} />
-          )}
-          {visibleCharts.pred_bpm && timeUnit === 'hour' && (
-            <Line yAxisId="left" type="monotone" dataKey="hour_pred_bpm" stroke={colors.pred_bpm_hour} name="Predicted BPM (Hour)" dot={false} />
+          {visibleCharts.pred_bpm && (
+            <Line yAxisId="left" type="monotone" dataKey={timeUnit === 'minute' ? 'min_pred_bpm' : 'hour_pred_bpm'} 
+                  stroke={timeUnit === 'minute' ? colors.pred_bpm_minute : colors.pred_bpm_hour} 
+                  name={`Predicted BPM (${timeUnit === 'minute' ? 'Minute' : 'Hour'})`} 
+                  dot={false} />
           )}
           <Brush
             dataKey="timestamp"
