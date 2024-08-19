@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import { format, parseISO, subDays } from 'date-fns';
 
@@ -11,15 +11,6 @@ interface CombinedChartProps {
   globalStartDate: Date;
   globalEndDate: Date;
   onBrushChange: (domain: [number, number] | null) => void;
-}
-
-interface ProcessedDataItem {
-  timestamp: number;
-  bpm: number | null;
-  step: number | null;
-  calorie: number | null;
-  min_pred_bpm: number | null;
-  hour_pred_bpm: number | null;
 }
 
 type ChartVisibility = {
@@ -48,22 +39,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
-  const [noPredictData, setNoPredictData] = useState(false);
-
-  useEffect(() => {
-    console.log('Input data:', { 
-      bpmData: bpmData.length, 
-      stepData: stepData.length, 
-      calorieData: calorieData.length, 
-      predictMinuteData: predictMinuteData.length 
-    });
-    setNoPredictData(predictMinuteData.length === 0);
-  }, [bpmData, stepData, calorieData, predictMinuteData]);
 
   const combinedData = useMemo(() => {
     console.log('Combining data...');
-    const dataMap = new Map<number, ProcessedDataItem>();
-  
+    const dataMap = new Map<number, any>();
+
     const processData = (data: any[], key: string) => {
       if (!Array.isArray(data)) {
         console.error(`Invalid data for ${key}: expected array, got`, data);
@@ -85,84 +65,78 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           }
           
           if (!dataMap.has(timestamp)) {
-            dataMap.set(timestamp, { 
-              timestamp, 
-              bpm: null, 
-              step: null, 
-              calorie: null, 
-              min_pred_bpm: null,
-              hour_pred_bpm: null
-            });
+            dataMap.set(timestamp, { timestamp });
           }
           const value = key.includes('pred') ? item[key] : item[key.replace('_pred', '')];
           if (typeof value === 'number') {
-            (dataMap.get(timestamp) as any)[key] = value;
+            dataMap.get(timestamp)![key] = value;
           }
         }
       });
     };
-  
+
     processData(bpmData, 'bpm');
     processData(stepData, 'step');
     processData(calorieData, 'calorie');
     processData(predictMinuteData, 'min_pred_bpm');
     processData(predictHourData, 'hour_pred_bpm');
-  
+
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     console.log('Combined data sample:', result.slice(0, 5));
     console.log('Combined data length:', result.length);
     return result;
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
 
+  const filteredData = useMemo(() => {
+    if (timeUnit === 'minute') {
+      const oneWeekAgo = subDays(new Date(), 7).getTime();
+      return combinedData.filter(item => item.timestamp >= oneWeekAgo);
+    }
+    return combinedData;
+  }, [combinedData, timeUnit]);
+
   const processedData = useMemo(() => {
     console.log('Processing data for time unit:', timeUnit);
     if (timeUnit === 'hour') {
-      const hourlyData: { [key: string]: ProcessedDataItem } = {};
+      const hourlyData: { [key: string]: any } = {};
       
-      combinedData.forEach(item => {
+      filteredData.forEach(item => {
         const hourKey = format(new Date(item.timestamp), 'yyyy-MM-dd HH:00:00');
         if (!hourlyData[hourKey]) {
           hourlyData[hourKey] = { 
             timestamp: new Date(hourKey).getTime(),
-            bpm: null,
-            step: null,
-            calorie: null,
-            min_pred_bpm: null,
-            hour_pred_bpm: null
+            bpm: 0,
+            step: 0,
+            calorie: 0,
+            min_pred_bpm: 0,
+            hour_pred_bpm: 0,
+            count: 0
           };
         }
         
         ['bpm', 'step', 'calorie', 'min_pred_bpm', 'hour_pred_bpm'].forEach((key) => {
-          const value = (item as any)[key];
-          if (value !== null) {
-            if (key === 'bpm' || key === 'min_pred_bpm' || key === 'hour_pred_bpm') {
-              hourlyData[hourKey][key as keyof ProcessedDataItem] = 
-                ((hourlyData[hourKey][key as keyof ProcessedDataItem] as number || 0) + value) / 2;
-            } else {
-              hourlyData[hourKey][key as keyof ProcessedDataItem] = 
-                ((hourlyData[hourKey][key as keyof ProcessedDataItem] as number || 0) + value) as any;
-            }
+          if (item[key] !== null && item[key] !== undefined) {
+            hourlyData[hourKey][key] += item[key];
           }
         });
+        hourlyData[hourKey].count++;
       });
 
-      const result = Object.values(hourlyData);
-      console.log('Processed hourly data:', result);
-      return result;
+      return Object.values(hourlyData).map(item => ({
+        ...item,
+        bpm: item.count > 0 ? item.bpm / item.count : null,
+        min_pred_bpm: item.count > 0 ? item.min_pred_bpm / item.count : null,
+        hour_pred_bpm: item.count > 0 ? item.hour_pred_bpm / item.count : null,
+      }));
     }
-    console.log('Processed data sample:', combinedData.slice(0, 5));
-    console.log('Processed data length:', combinedData.length);
+    return filteredData;
+  }, [filteredData, timeUnit]);
 
-    return combinedData;
-  }, [combinedData, timeUnit]);
-
-  const filteredData = useMemo(() => {
+  const displayData = useMemo(() => {
     if (!brushDomain) return processedData;
-    const result = processedData.filter(
+    return processedData.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
-    console.log('Filtered data length:', result.length);
-    return result;
   }, [processedData, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
@@ -176,13 +150,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForDisplay = (time: number) => {
-    const kstDate = new Date(time);
+    const kstDate = new Date(time + 9 * 60 * 60 * 1000);  // UTC to KST
     return format(kstDate, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const kstDate = new Date(label);
+      const kstDate = new Date(label + 9 * 60 * 60 * 1000);  // UTC to KST
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
@@ -223,14 +197,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
               <input
                 type="checkbox"
                 checked={visibleCharts[chartName]}
-                onChange={() => setVisibleCharts(prev => ({...prev, [chartName]: !prev[chartName]}))}
+                onChange={() => toggleChart(chartName)}
                 className="form-checkbox h-5 w-5 text-blue-600"
-                disabled={chartName === 'pred_bpm' && noPredictData}
               />
-              <span className="ml-2 text-gray-700">
-                {chartName.toUpperCase()}
-                {chartName === 'pred_bpm' && noPredictData && " (No Data)"}
-              </span>
+              <span className="ml-2 text-gray-700">{chartName.toUpperCase()}</span>
             </label>
           ))}
         </div>
@@ -249,13 +219,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           </button>
         </div>
       </div>
-      {noPredictData && (
-        <div className="mb-4 text-yellow-600 bg-yellow-100 p-2 rounded">
-          Note: Prediction data is not available for the selected period.
-        </div>
-      )}
       <ResponsiveContainer width="100%" height={600}>
-        <ComposedChart data={filteredData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <ComposedChart data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="timestamp"

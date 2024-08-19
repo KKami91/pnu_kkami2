@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, subDays } from 'date-fns';
 
 interface MultiChartProps {
   bpmData: any[];
@@ -81,12 +81,20 @@ const MultiChart: React.FC<MultiChartProps> = ({
     return result;
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
 
+  const filteredData = useMemo(() => {
+    if (timeUnit === 'minute') {
+      const oneWeekAgo = subDays(new Date(), 7).getTime();
+      return combinedData.filter(item => item.timestamp >= oneWeekAgo);
+    }
+    return combinedData;
+  }, [combinedData, timeUnit]);
+
   const processedData = useMemo(() => {
     console.log('Processing data for time unit:', timeUnit);
     if (timeUnit === 'hour') {
       const hourlyData: { [key: string]: ProcessedDataItem } = {};
       
-      combinedData.forEach(item => {
+      filteredData.forEach(item => {
         const hourKey = format(new Date(item.timestamp), 'yyyy-MM-dd HH:00:00');
         if (!hourlyData[hourKey]) {
           hourlyData[hourKey] = { 
@@ -117,17 +125,15 @@ const MultiChart: React.FC<MultiChartProps> = ({
       console.log('Processed hourly data sample:', result.slice(0, 5));
       return result;
     }
-    console.log('Processed minute data sample:', combinedData.slice(0, 5));
-    return combinedData;
-  }, [combinedData, timeUnit]);
+    console.log('Processed minute data sample:', filteredData.slice(0, 5));
+    return filteredData;
+  }, [filteredData, timeUnit]);
 
-  const filteredData = useMemo(() => {
+  const displayData = useMemo(() => {
     if (!brushDomain) return processedData;
-    const result = processedData.filter(
+    return processedData.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
-    console.log('Filtered data length:', result.length);
-    return result;
   }, [processedData, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
@@ -141,16 +147,17 @@ const MultiChart: React.FC<MultiChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForDisplay = (time: number) => {
-    return format(new Date(time), timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
+    const kstDate = new Date(time + 9 * 60 * 60 * 1000);  // UTC to KST
+    return format(kstDate, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const date = new Date(label);
+      const kstDate = new Date(label + 9 * 60 * 60 * 1000);  // UTC to KST
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
-            {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
+            {format(kstDate, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
