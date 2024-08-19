@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addHours, subHours, startOfHour, endOfHour } from 'date-fns';
+import { format, parseISO, subDays, addHours, subHours, startOfHour, endOfHour, addDays } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -209,6 +209,21 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return filteredData;
   }, [processedData, timeUnit, brushDomain]);
 
+  const xAxisDomain = useMemo(() => {
+    if (displayData.length === 0) return ['dataMin', 'dataMax'];
+
+    const startTimestamp = displayData[0].timestamp;
+    const endTimestamp = displayData[displayData.length - 1].timestamp;
+
+    if (timeUnit === 'minute') {
+      // For minute data, add 1 hour to the end
+      return [startTimestamp, addHours(endTimestamp, 1).getTime()];
+    } else {
+      // For hour data, add 1 day to the end
+      return [startTimestamp, addDays(endTimestamp, 1).getTime()];
+    }
+  }, [displayData, timeUnit]);
+
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
@@ -294,7 +309,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             dataKey="timestamp"
             type="number"
             scale="time"
-            domain={['dataMin', 'dataMax']}
+            domain={xAxisDomain}
             tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
             padding={{ left: 30, right: 30 }}
           />
@@ -319,19 +334,19 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             <Bar yAxisId="right" dataKey="step" fill="rgba(130, 202, 157, 0.6)" name="Steps" barSize={timeUnit === 'minute' ? 4 : 15} />
           )}
           {visibleCharts.bpm && (
-            <Line yAxisId="left" type="linear" dataKey="bpm" stroke="#ff7300" name="BPM" dot={false} />
+            <Line yAxisId="left" type="monotone" dataKey="bpm" stroke="#ff7300" name="BPM" dot={false} />
           )}
           {visibleCharts.pred_bpm && timeUnit === 'minute' && (
-            <Line yAxisId="left" type="linear" dataKey="min_pred_bpm" stroke="#A0D283" name="Predicted BPM (Minute)" dot={false} />
+            <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke="#A0D283" name="Predicted BPM (Minute)" dot={false} />
           )}
           {visibleCharts.pred_bpm && timeUnit === 'hour' && (
-            <Line yAxisId="left" type="linear" dataKey="hour_pred_bpm" stroke="#82ca9d" name="Predicted BPM (Hour)" dot={false} />
+            <Line yAxisId="left" type="monotone" dataKey="hour_pred_bpm" stroke="#82ca9d" name="Predicted BPM (Hour)" dot={false} />
           )}
           {visibleCharts.rmssd && timeUnit === 'hour' && (
-            <Line yAxisId="left" type="linear" dataKey="hour_rmssd" stroke="#8884d8" name="RMSSD" dot={false} />
+            <Line yAxisId="left" type="monotone" dataKey="hour_rmssd" stroke="#8884d8" name="RMSSD" dot={false} />
           )}
           {visibleCharts.sdnn && timeUnit === 'hour' && (
-            <Line yAxisId="left" type="linear" dataKey="hour_sdnn" stroke="#82ca9d" name="SDNN" dot={false} />
+            <Line yAxisId="left" type="monotone" dataKey="hour_sdnn" stroke="#82ca9d" name="SDNN" dot={false} />
           )}
           <Brush
             dataKey="timestamp"
