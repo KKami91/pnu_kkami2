@@ -169,7 +169,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const date = new Date(label + 9 * 60 * 60 * 1000); // UTC to KST
+      const date = new Date(label); // UTC to KST
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
@@ -242,7 +242,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+            tickFormatter={(tick) => format(new Date(tick + 9 * 60 * 60 * 1000), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
             padding={{ left: 30, right: 30 }}
           />
           <YAxis 
