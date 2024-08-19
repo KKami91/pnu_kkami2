@@ -52,25 +52,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          let timestamp;
-          if (key.includes('pred')) {
-            // 예측 데이터는 이미 UTC라고 가정
-            const utcDate = parseISO(item.ds);
-            timestamp = utcDate.getTime();
-          } else {
-            // 다른 데이터는 KST에서 UTC로 변환
-            const kstDate = parseISO(item.ds);
-            const utcDate = new Date(kstDate.getTime() - 18 * 60 * 60 * 1000);
-            timestamp = utcDate.getTime();
-            
-          }
+          const kstDate = parseISO(item.ds);
+          const utcTimestamp = kstDate.getTime() - 9 * 60 * 60 * 1000; // KST to UTC
           
-          if (!dataMap.has(timestamp)) {
-            dataMap.set(timestamp, { timestamp });
+          if (!dataMap.has(utcTimestamp)) {
+            dataMap.set(utcTimestamp, { timestamp: utcTimestamp });
           }
-          const value = key.includes('pred') ? item[key] : item[key.replace('_pred', '')];
+          const value = item[key];
           if (typeof value === 'number') {
-            dataMap.get(timestamp)![key] = value;
+            dataMap.get(utcTimestamp)![key] = value;
           }
         }
       });
@@ -79,8 +69,23 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(bpmData, 'bpm');
     processData(stepData, 'step');
     processData(calorieData, 'calorie');
-    processData(predictMinuteData, 'min_pred_bpm');
-    processData(predictHourData, 'hour_pred_bpm');
+    
+    // 예측 데이터는 이미 UTC 기준이므로 변환하지 않음
+    predictMinuteData.forEach(item => {
+      const utcTimestamp = parseISO(item.ds).getTime();
+      if (!dataMap.has(utcTimestamp)) {
+        dataMap.set(utcTimestamp, { timestamp: utcTimestamp });
+      }
+      dataMap.get(utcTimestamp)!['min_pred_bpm'] = item.min_pred_bpm;
+    });
+
+    predictHourData.forEach(item => {
+      const utcTimestamp = parseISO(item.ds).getTime();
+      if (!dataMap.has(utcTimestamp)) {
+        dataMap.set(utcTimestamp, { timestamp: utcTimestamp });
+      }
+      dataMap.get(utcTimestamp)!['hour_pred_bpm'] = item.hour_pred_bpm;
+    });
 
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     console.log('Combined data sample:', result.slice(0, 5));
@@ -90,7 +95,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const filteredData = useMemo(() => {
     if (timeUnit === 'minute') {
-      const oneWeekAgo = subDays(new Date(), 7).getTime();
+      const oneWeekAgo = subDays(new Date(), 7).getTime() - 9 * 60 * 60 * 1000; // KST to UTC
       return combinedData.filter(item => item.timestamp >= oneWeekAgo);
     }
     return combinedData;
@@ -102,10 +107,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       const hourlyData: { [key: string]: any } = {};
       
       filteredData.forEach(item => {
-        const hourKey = format(new Date(item.timestamp), 'yyyy-MM-dd HH:00:00');
+        const kstDate = new Date(item.timestamp + 9 * 60 * 60 * 1000); // UTC to KST
+        const hourKey = format(kstDate, 'yyyy-MM-dd HH:00:00');
         if (!hourlyData[hourKey]) {
           hourlyData[hourKey] = { 
-            timestamp: new Date(hourKey).getTime(),
+            timestamp: item.timestamp,
             bpm: 0,
             step: 0,
             calorie: 0,
@@ -127,7 +133,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         ...item,
         bpm: item.count > 0 ? item.bpm / item.count : null,
         min_pred_bpm: item.count > 0 ? item.min_pred_bpm / item.count : null,
-        hour_pred_bpm: item.count > 0 ? item.hour_pred_bpm / item.count : null,
+        hour_pred_bpm: item.hour_pred_bpm, // 시간별 예측은 평균 계산 불필요
       }));
     }
     return filteredData;
@@ -173,7 +179,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
     return null;
   };
-
   const toggleChart = (chartName: keyof ChartVisibility) => {
     setVisibleCharts(prev => ({
       ...prev,
