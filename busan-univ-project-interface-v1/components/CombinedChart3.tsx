@@ -62,32 +62,29 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return {
       start: new Date(Math.min(...allDates)),
       end: new Date(Math.max(...allDates)),
+      minuteEnd: new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))),
+      hourEnd: new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime()))),
     };
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
   const [currentEndDate, setCurrentEndDate] = useState<Date>(() => {
-    const latestPredictTimestamp = timeUnit === 'minute'
-      ? Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))
-      : Math.max(...predictHourData.map(item => new Date(item.ds).getTime()));
-    return new Date(latestPredictTimestamp);
+    return timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
   });
 
   useEffect(() => {
-    const latestPredictTimestamp = timeUnit === 'minute'
-      ? Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))
-      : Math.max(...predictHourData.map(item => new Date(item.ds).getTime()));
-    setCurrentEndDate(new Date(latestPredictTimestamp));
-  }, [timeUnit, predictMinuteData, predictHourData]);
+    setCurrentEndDate(timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd);
+  }, [timeUnit, dataRange]);
 
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
     const days = dateRange === 'all' ? 30 : parseInt(dateRange);
     setCurrentEndDate(prevDate => {
       const newDate = direction === 'forward' 
-        ? min([addDays(prevDate, days), dataRange.end])
+        ? min([addDays(prevDate, days), timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd])
         : max([subDays(prevDate, days), addDays(dataRange.start, days)]);
       return newDate;
     });
   };
+
   const combinedData = useMemo(() => {
     console.log('Combining data...');
     const dataMap = new Map<number, any>();
@@ -139,13 +136,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return result;
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
-  const filteredData = useMemo(() => {
-    if (timeUnit === 'minute') {
-      const oneWeekAgo = subHours(new Date(), 24 * 7).getTime();
-      return combinedData.filter(item => item.timestamp >= oneWeekAgo);
-    }
-    return combinedData;
-  }, [combinedData, timeUnit]);
+  // const filteredData = useMemo(() => {
+  //   if (timeUnit === 'minute') {
+  //     const oneWeekAgo = subHours(new Date(), 24 * 7).getTime();
+  //     return combinedData.filter(item => item.timestamp >= oneWeekAgo);
+  //   }
+  //   return combinedData;
+  // }, [combinedData, timeUnit]);
 
   const processedData = useMemo(() => {
     console.log('Processing data for time unit:', timeUnit);
@@ -216,7 +213,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
       if (dateRange === 'all') {
         startDate = dataRange.start;
-        endDate = dataRange.end;
+        endDate = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
       } else {
         startDate = subDays(endDate, parseInt(dateRange));
       }
@@ -227,7 +224,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       // 필터링 적용
       filteredData = filteredData.filter(item => 
         item.timestamp >= startOfDay(startDate).getTime() && 
-        item.timestamp <= endOfDay(endDate).getTime()
+        item.timestamp <= endDate.getTime()
       );
     }
 
@@ -243,6 +240,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return filteredData;
   }, [processedData, timeUnit, dateRange, brushDomain, currentEndDate, dataRange]);
 
+  const xAxisDomain = useMemo(() => {
+    if (displayData.length === 0) return ['dataMin', 'dataMax'];
+    const startTimestamp = displayData[0].timestamp;
+    const endTimestamp = timeUnit === 'minute' ? dataRange.minuteEnd.getTime() : dataRange.hourEnd.getTime();
+    return [startTimestamp, endTimestamp];
+  }, [displayData, timeUnit, dataRange]);
+
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
@@ -253,10 +257,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
   }, [onBrushChange]);
 
-  const formatDateForDisplay = (time: number) => {
-    const date = new Date(time);
-    return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
-  };
+  // const formatDateForDisplay = (time: number) => {
+  //   const date = new Date(time);
+  //   return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
+  // };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -304,18 +308,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           ))}
         </div>
         <div>
-          {/* <button
-            onClick={() => setTimeUnit('minute')}
-            className={`px-4 py-2 rounded mr-2 ${timeUnit === 'minute' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            Minute
-          </button>
-          <button
-            onClick={() => setTimeUnit('hour')}
-            className={`px-4 py-2 rounded ${timeUnit === 'hour' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-          >
-            Hour
-          </button> */}
         </div>
         <div className="flex items-center">
           <button 
@@ -361,7 +353,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             dataKey="timestamp"
             type="number"
             scale="time"
-            domain={['dataMin', 'dataMax']}
+            domain={xAxisDomain}
             tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
             padding={{ left: 30, right: 30 }}
           />
