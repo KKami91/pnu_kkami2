@@ -50,7 +50,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     console.log('Combining data...');
     const dataMap = new Map<number, any>();
 
-    const processData = (data: any[], key: string) => {
+    const processData = (data: any[], key: string, adjustTime: boolean = true) => {
       if (!Array.isArray(data)) {
         console.error(`Invalid data for ${key}: expected array, got`, data);
         return;
@@ -58,7 +58,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          const timestamp = new Date(item.ds).getTime();
+          let timestamp = new Date(item.ds).getTime();
+          if (adjustTime) {
+            timestamp = subHours(new Date(timestamp), 9).getTime();
+          }
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { timestamp });
           }
@@ -70,13 +73,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       });
     };
 
-    processData(bpmData, 'bpm');
-    processData(stepData, 'step');
-    processData(calorieData, 'calorie');
-    processData(predictMinuteData, 'min_pred_bpm');
-    processData(predictHourData, 'hour_pred_bpm');
+    // MongoDB 데이터 처리 (시간 조정)
+    processData(bpmData, 'bpm', true);
+    processData(stepData, 'step', true);
+    processData(calorieData, 'calorie', true);
 
-    // HRV 데이터 처리 (시간 단위 데이터만)
+    // 예측 및 HRV 데이터 처리 (시간 조정 없음)
+    processData(predictMinuteData, 'min_pred_bpm', false);
+    processData(predictHourData, 'hour_pred_bpm', false);
+
     hrvHourData.forEach(item => {
       const timestamp = new Date(item.ds).getTime();
       if (!dataMap.has(timestamp)) {
