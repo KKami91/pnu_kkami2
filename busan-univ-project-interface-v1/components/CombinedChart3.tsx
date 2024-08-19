@@ -52,15 +52,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          const kstDate = parseISO(item.ds);
-          const utcTimestamp = kstDate.getTime() - 9 * 60 * 60 * 1000; // KST to UTC
-          
-          if (!dataMap.has(utcTimestamp)) {
-            dataMap.set(utcTimestamp, { timestamp: utcTimestamp });
+          const timestamp = parseISO(item.ds).getTime();
+          if (!dataMap.has(timestamp)) {
+            dataMap.set(timestamp, { timestamp });
           }
           const value = item[key];
           if (typeof value === 'number') {
-            dataMap.get(utcTimestamp)![key] = value;
+            dataMap.get(timestamp)![key] = value;
           }
         }
       });
@@ -69,23 +67,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(bpmData, 'bpm');
     processData(stepData, 'step');
     processData(calorieData, 'calorie');
-    
-    // 예측 데이터는 이미 UTC 기준이므로 변환하지 않음
-    predictMinuteData.forEach(item => {
-      const utcTimestamp = parseISO(item.ds).getTime();
-      if (!dataMap.has(utcTimestamp)) {
-        dataMap.set(utcTimestamp, { timestamp: utcTimestamp });
-      }
-      dataMap.get(utcTimestamp)!['min_pred_bpm'] = item.min_pred_bpm;
-    });
-
-    predictHourData.forEach(item => {
-      const utcTimestamp = parseISO(item.ds).getTime();
-      if (!dataMap.has(utcTimestamp)) {
-        dataMap.set(utcTimestamp, { timestamp: utcTimestamp });
-      }
-      dataMap.get(utcTimestamp)!['hour_pred_bpm'] = item.hour_pred_bpm;
-    });
+    processData(predictMinuteData, 'min_pred_bpm');
+    processData(predictHourData, 'hour_pred_bpm');
 
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     console.log('Combined data sample:', result.slice(0, 5));
@@ -95,7 +78,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const filteredData = useMemo(() => {
     if (timeUnit === 'minute') {
-      const oneWeekAgo = subDays(new Date(), 7).getTime() - 9 * 60 * 60 * 1000; // KST to UTC
+      const oneWeekAgo = subDays(new Date(), 7).getTime();
       return combinedData.filter(item => item.timestamp >= oneWeekAgo);
     }
     return combinedData;
@@ -107,9 +90,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       const hourlyData: { [key: string]: any } = {};
       
       filteredData.forEach(item => {
-        // const kstDate = new Date(item.timestamp + 9 * 60 * 60 * 1000); // UTC to KST
-        const kstDate = new Date(item.timestamp); // UTC to KST
-        const hourKey = format(kstDate, 'yyyy-MM-dd HH:00:00');
+        const date = new Date(item.timestamp);
+        const hourKey = format(date, 'yyyy-MM-dd HH:00:00');
         if (!hourlyData[hourKey]) {
           hourlyData[hourKey] = { 
             timestamp: item.timestamp,
@@ -158,19 +140,17 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForDisplay = (time: number) => {
-    //const kstDate = new Date(time + 9 * 60 * 60 * 1000);  // UTC to KST
-    const kstDate = new Date(time);  // UTC to KST
-    return format(kstDate, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
+    const date = new Date(time);
+    return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      //const kstDate = new Date(label + 9 * 60 * 60 * 1000);  // UTC to KST
-      const kstDate = new Date(label);  // UTC to KST
+      const date = new Date(label);
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
-            {format(kstDate, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
+            {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
@@ -182,6 +162,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
     return null;
   };
+
   const toggleChart = (chartName: keyof ChartVisibility) => {
     setVisibleCharts(prev => ({
       ...prev,
