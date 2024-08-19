@@ -58,13 +58,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          const timestamp = new Date(item.ds).getTime();
-          if (!dataMap.has(timestamp)) {
-            dataMap.set(timestamp, { timestamp });
+          const kstDate = new Date(item.ds);
+          const utcTimestamp = kstDate.getTime() - 9 * 60 * 60 * 1000; // KST to UTC
+          if (!dataMap.has(utcTimestamp)) {
+            dataMap.set(utcTimestamp, { timestamp: utcTimestamp });
           }
           const value = item[key];
           if (typeof value === 'number') {
-            dataMap.get(timestamp)![key] = value;
+            dataMap.get(utcTimestamp)![key] = value;
           }
         }
       });
@@ -164,13 +165,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForDisplay = (time: number) => {
-    const date = new Date(time);
+    const date = new Date(time + 9 * 60 * 60 * 1000); // UTC to KST
     return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const date = new Date(label);
+      const date = new Date(label + 9 * 60 * 60 * 1000); // UTC to KST
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
@@ -243,7 +244,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+            tickFormatter={(tick) => format(new Date(tick + 9 * 60 * 60 * 1000), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
             padding={{ left: 30, right: 30 }}
           />
           <YAxis 
@@ -286,7 +287,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             height={30}
             stroke="#8884d8"
             onChange={handleBrushChange}
-            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+            tickFormatter={(tick) => format(new Date(tick + 9 * 60 * 60 * 1000), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
           />
         </ComposedChart>
       </ResponsiveContainer>
