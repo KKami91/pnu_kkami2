@@ -169,16 +169,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     let filteredData = processedData;
     
     if (filteredData.length > 0) {
-      // 가장 최근 데이터의 타임스탬프 찾기
       const latestTimestamp = Math.max(...filteredData.map(item => item.timestamp));
       const latestDate = new Date(latestTimestamp);
       
       let cutoffDate;
       if (timeUnit === 'minute') {
-        // 7일 전의 날짜 계산 (시간, 분, 초는 0으로 설정)
         cutoffDate = subDays(latestDate, 7);
       } else {
-        // 30일 전의 날짜 계산 (시간, 분, 초는 0으로 설정)
         cutoffDate = subDays(latestDate, 30);
       }
       cutoffDate.setHours(0, 0, 0, 0);
@@ -186,7 +183,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       console.log('Latest date:', format(latestDate, 'yyyy-MM-dd HH:mm:ss'));
       console.log('Cutoff date:', format(cutoffDate, 'yyyy-MM-dd HH:mm:ss'));
 
-      // 필터링 적용
       filteredData = filteredData.filter(item => item.timestamp >= cutoffDate.getTime());
     }
 
@@ -199,7 +195,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     console.log('Display data length:', filteredData.length);
     console.log('Display data sample:', filteredData.slice(0, 5));
     
-    // 데이터의 시간 범위 로깅
     if (filteredData.length > 0) {
       const startDate = new Date(filteredData[0].timestamp);
       const endDate = new Date(filteredData[filteredData.length - 1].timestamp);
@@ -212,17 +207,25 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const xAxisDomain = useMemo(() => {
     if (displayData.length === 0) return ['dataMin', 'dataMax'];
 
-    const startTimestamp = displayData[0].timestamp;
-    const endTimestamp = displayData[displayData.length - 1].timestamp;
+    let startTimestamp, endTimestamp;
 
     if (timeUnit === 'minute') {
-      // For minute data, add 1 hour to the end
-      return [startTimestamp, addHours(endTimestamp, 1).getTime()];
+      // For minute data, use the range of predictMinuteData
+      const predictMinuteTimestamps = predictMinuteData.map(item => new Date(item.ds).getTime());
+      startTimestamp = Math.min(...predictMinuteTimestamps);
+      endTimestamp = Math.max(...predictMinuteTimestamps);
+
+      // Add 1 hour padding to start and end
+      return [subHours(startTimestamp, 1).getTime(), addHours(endTimestamp, 1).getTime()];
     } else {
-      // For hour data, add 1 day to the end
+      // For hour data, use the full range of displayData
+      startTimestamp = displayData[0].timestamp;
+      endTimestamp = displayData[displayData.length - 1].timestamp;
+
+      // Add 1 day padding to end
       return [startTimestamp, addDays(endTimestamp, 1).getTime()];
     }
-  }, [displayData, timeUnit]);
+  }, [displayData, timeUnit, predictMinuteData]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
