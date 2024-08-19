@@ -58,14 +58,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          let timestamp;
-          if (item.ds.endsWith('Z')) {
-            // MongoDB data (UTC)
-            timestamp = new Date(item.ds).getTime() + 9 * 60 * 60 * 1000; // Convert to KST
-          } else {
-            // Python server data (already in KST)
-            timestamp = new Date(item.ds).getTime();
-          }
+          const timestamp = new Date(item.ds).getTime();
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { timestamp });
           }
@@ -302,4 +295,4 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   );
 };
 
-export default CombinedChart;
+export default CombinedChart
