@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours } from 'date-fns';
+import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -48,21 +48,46 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   });
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
-  const [currentEndDate, setCurrentEndDate] = useState<Date>(() => {
-    const latestPredictTimestamp = Math.max(
+
+  const dataRange = useMemo(() => {
+    const allDates = [
+      ...bpmData.map(item => new Date(item.ds).getTime()),
+      ...stepData.map(item => new Date(item.ds).getTime()),
+      ...calorieData.map(item => new Date(item.ds).getTime()),
       ...predictMinuteData.map(item => new Date(item.ds).getTime()),
-      ...predictHourData.map(item => new Date(item.ds).getTime())
-    );
+      ...predictHourData.map(item => new Date(item.ds).getTime()),
+      ...hrvHourData.map(item => new Date(item.ds).getTime()),
+    ];
+
+    return {
+      start: new Date(Math.min(...allDates)),
+      end: new Date(Math.max(...allDates)),
+    };
+  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
+
+  const [currentEndDate, setCurrentEndDate] = useState<Date>(() => {
+    const latestPredictTimestamp = timeUnit === 'minute'
+      ? Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))
+      : Math.max(...predictHourData.map(item => new Date(item.ds).getTime()));
     return new Date(latestPredictTimestamp);
   });
 
+  useEffect(() => {
+    const latestPredictTimestamp = timeUnit === 'minute'
+      ? Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))
+      : Math.max(...predictHourData.map(item => new Date(item.ds).getTime()));
+    setCurrentEndDate(new Date(latestPredictTimestamp));
+  }, [timeUnit, predictMinuteData, predictHourData]);
+
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
     const days = dateRange === 'all' ? 30 : parseInt(dateRange);
-    setCurrentEndDate(prevDate => 
-      direction === 'forward' ? addDays(prevDate, days) : subDays(prevDate, days)
-    );
+    setCurrentEndDate(prevDate => {
+      const newDate = direction === 'forward' 
+        ? min([addDays(prevDate, days), dataRange.end])
+        : max([subDays(prevDate, days), addDays(dataRange.start, days)]);
+      return newDate;
+    });
   };
-
   const combinedData = useMemo(() => {
     console.log('Combining data...');
     const dataMap = new Map<number, any>();
@@ -190,16 +215,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       let endDate = currentEndDate;
 
       if (dateRange === 'all') {
-        startDate = new Date(Math.min(
-          ...filteredData.map(item => item.timestamp),
-          ...predictMinuteData.map(item => new Date(item.ds).getTime()),
-          ...predictHourData.map(item => new Date(item.ds).getTime())
-        ));
-        endDate = new Date(Math.max(
-          ...filteredData.map(item => item.timestamp),
-          ...predictMinuteData.map(item => new Date(item.ds).getTime()),
-          ...predictHourData.map(item => new Date(item.ds).getTime())
-        ));
+        startDate = dataRange.start;
+        endDate = dataRange.end;
       } else {
         startDate = subDays(endDate, parseInt(dateRange));
       }
@@ -224,7 +241,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     console.log('Display data sample:', filteredData.slice(0, 5));
     
     return filteredData;
-  }, [processedData, timeUnit, dateRange, brushDomain, predictMinuteData, predictHourData, currentEndDate]);
+  }, [processedData, timeUnit, dateRange, brushDomain, currentEndDate, dataRange]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -304,6 +321,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <button 
             onClick={() => handleDateNavigation('backward')}
             className="px-2 py-1 bg-blue-500 text-white rounded mr-2"
+            disabled={dateRange === 'all' || currentEndDate <= addDays(dataRange.start, parseInt(dateRange))}
           >
             ←
           </button>
@@ -329,6 +347,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <button 
             onClick={() => handleDateNavigation('forward')}
             className="px-2 py-1 bg-blue-500 text-white rounded ml-2"
+            disabled={dateRange === 'all' || currentEndDate >= dataRange.end}
           >
             →
           </button>
