@@ -107,7 +107,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       const hourlyData: { [key: string]: any } = {};
       
       filteredData.forEach(item => {
-        const kstDate = new Date(item.timestamp + 9 * 60 * 60 * 1000); // UTC to KST
+        // const kstDate = new Date(item.timestamp + 9 * 60 * 60 * 1000); // UTC to KST
+        const kstDate = new Date(item.timestamp); // UTC to KST
         const hourKey = format(kstDate, 'yyyy-MM-dd HH:00:00');
         if (!hourlyData[hourKey]) {
           hourlyData[hourKey] = { 
@@ -157,13 +158,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForDisplay = (time: number) => {
-    const kstDate = new Date(time + 9 * 60 * 60 * 1000);  // UTC to KST
+    //const kstDate = new Date(time + 9 * 60 * 60 * 1000);  // UTC to KST
+    const kstDate = new Date(time);  // UTC to KST
     return format(kstDate, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const kstDate = new Date(label + 9 * 60 * 60 * 1000);  // UTC to KST
+      //const kstDate = new Date(label + 9 * 60 * 60 * 1000);  // UTC to KST
+      const kstDate = new Date(label);  // UTC to KST
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
