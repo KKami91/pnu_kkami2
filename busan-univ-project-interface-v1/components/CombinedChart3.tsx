@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addHours, subHours } from 'date-fns';
+import { format, parseISO, subDays, addHours, subHours, startOfHour, endOfHour } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -108,40 +108,62 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const processedData = useMemo(() => {
     console.log('Processing data for time unit:', timeUnit);
     if (timeUnit === 'hour') {
-      const hourlyData = combinedData.reduce((acc: any[], item: any) => {
-        const hourKey = format(new Date(item.timestamp), 'yyyy-MM-dd HH:00:00');
-        const existingHour = acc.find(h => h.timestamp === new Date(hourKey).getTime());
-        
-        if (existingHour) {
-          Object.keys(item).forEach(key => {
-            if (typeof item[key] === 'number') {
-              if (key === 'bpm' || key === 'min_pred_bpm') {
-                existingHour[key] = (existingHour[key] || 0) + item[key];
-                existingHour[`${key}Count`] = (existingHour[`${key}Count`] || 0) + 1;
-              } else {
-                existingHour[key] = Math.max(existingHour[key] || 0, item[key]);
-              }
-            }
-          });
-        } else {
-          acc.push({
-            ...item,
-            timestamp: new Date(hourKey).getTime(),
-            bpmCount: item.bpm ? 1 : 0,
-            min_pred_bpmCount: item.min_pred_bpm ? 1 : 0,
-          });
-        }
-        return acc;
-      }, []);
+      const hourlyData = new Map<number, any>();
 
-      return hourlyData.map(item => ({
-        ...item,
-        bpm: item.bpmCount ? item.bpm / item.bpmCount : null,
-        min_pred_bpm: item.min_pred_bpmCount ? item.min_pred_bpm / item.min_pred_bpmCount : null,
+      const processHourlyData = (data: any[], key: string) => {
+        data.forEach(item => {
+          const hourTimestamp = startOfHour(new Date(item.timestamp)).getTime();
+          if (!hourlyData.has(hourTimestamp)) {
+            hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
+          }
+          const hourData = hourlyData.get(hourTimestamp);
+          
+          if (key === 'bpm' || key === 'min_pred_bpm') {
+            if (!hourData[key]) {
+              hourData[key] = { sum: 0, count: 0 };
+            }
+            hourData[key].sum += item[key];
+            hourData[key].count++;
+          } else {
+            hourData[key] = (hourData[key] || 0) + item[key];
+          }
+        });
+      };
+
+      processHourlyData(combinedData, 'bpm');
+      processHourlyData(combinedData, 'step');
+      processHourlyData(combinedData, 'calorie');
+      processHourlyData(combinedData, 'min_pred_bpm');
+
+      // HRV 데이터 처리 (이미 시간별 데이터)
+      hrvHourData.forEach(item => {
+        const hourTimestamp = startOfHour(new Date(item.ds)).getTime();
+        if (!hourlyData.has(hourTimestamp)) {
+          hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
+        }
+        const hourData = hourlyData.get(hourTimestamp);
+        hourData.hour_rmssd = item.hour_rmssd;
+        hourData.hour_sdnn = item.hour_sdnn;
+      });
+
+      // 시간별 예측 데이터 처리
+      predictHourData.forEach(item => {
+        const hourTimestamp = startOfHour(new Date(item.ds)).getTime();
+        if (!hourlyData.has(hourTimestamp)) {
+          hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
+        }
+        const hourData = hourlyData.get(hourTimestamp);
+        hourData.hour_pred_bpm = item.hour_pred_bpm;
+      });
+
+      return Array.from(hourlyData.values()).map(hourData => ({
+        ...hourData,
+        bpm: hourData.bpm ? hourData.bpm.sum / hourData.bpm.count : null,
+        min_pred_bpm: hourData.min_pred_bpm ? hourData.min_pred_bpm.sum / hourData.min_pred_bpm.count : null,
       }));
     }
     return combinedData;
-  }, [combinedData, timeUnit]);
+  }, [combinedData, timeUnit, hrvHourData, predictHourData]);
 
   const displayData = useMemo(() => {
     let filteredData = processedData;
