@@ -50,22 +50,23 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const dataRange = useMemo(() => {
+    const minuteEnd = new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime())));
+    const hourEnd = new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime())));
     const allDates = [
       ...bpmData.map(item => new Date(item.ds).getTime()),
       ...stepData.map(item => new Date(item.ds).getTime()),
       ...calorieData.map(item => new Date(item.ds).getTime()),
-      ...predictMinuteData.map(item => new Date(item.ds).getTime()),
-      ...predictHourData.map(item => new Date(item.ds).getTime()),
-      ...hrvHourData.map(item => new Date(item.ds).getTime()),
+      minuteEnd.getTime(),
+      hourEnd.getTime(),
     ];
 
     return {
       start: new Date(Math.min(...allDates)),
       end: new Date(Math.max(...allDates)),
-      minuteEnd: new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))),
-      hourEnd: new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime()))),
+      minuteEnd,
+      hourEnd,
     };
-  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
+  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
 
   const [dateWindow, setDateWindow] = useState<{start: Date, end: Date}>(() => {
     const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
@@ -83,12 +84,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     const days = parseInt(dateRange);
     setDateWindow(prev => {
       let newStart: Date, newEnd: Date;
+      const currentEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
       if (direction === 'forward') {
-        newEnd = min([addDays(prev.end, days), timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd]);
+        newEnd = min([addDays(prev.end, days), currentEnd]);
         newStart = subDays(newEnd, days - 1);
       } else {
         newStart = max([subDays(prev.start, days), dataRange.start]);
-        newEnd = addDays(newStart, days - 1);
+        newEnd = min([addDays(newStart, days - 1), currentEnd]);
       }
       return { start: newStart, end: newEnd };
     });
@@ -223,7 +225,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       // 필터링 적용
       filteredData = filteredData.filter(item => 
         item.timestamp >= startOfDay(dateWindow.start).getTime() && 
-        item.timestamp <= endOfDay(dateWindow.end).getTime()
+        item.timestamp <= dateWindow.end.getTime()
       );
     }
 
