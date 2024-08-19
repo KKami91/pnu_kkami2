@@ -173,15 +173,21 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       const latestTimestamp = Math.max(...filteredData.map(item => item.timestamp));
       const latestDate = new Date(latestTimestamp);
       
-      // 7일 전의 날짜 계산 (시간, 분, 초는 0으로 설정)
-      const sevenDaysAgo = subDays(latestDate, 7);
-      sevenDaysAgo.setHours(0, 0, 0, 0);
+      let cutoffDate;
+      if (timeUnit === 'minute') {
+        // 7일 전의 날짜 계산 (시간, 분, 초는 0으로 설정)
+        cutoffDate = subDays(latestDate, 7);
+      } else {
+        // 30일 전의 날짜 계산 (시간, 분, 초는 0으로 설정)
+        cutoffDate = subDays(latestDate, 30);
+      }
+      cutoffDate.setHours(0, 0, 0, 0);
       
       console.log('Latest date:', format(latestDate, 'yyyy-MM-dd HH:mm:ss'));
-      console.log('Seven days ago:', format(sevenDaysAgo, 'yyyy-MM-dd HH:mm:ss'));
+      console.log('Cutoff date:', format(cutoffDate, 'yyyy-MM-dd HH:mm:ss'));
 
-      // 7일치 데이터만 필터링
-      filteredData = filteredData.filter(item => item.timestamp >= sevenDaysAgo.getTime());
+      // 필터링 적용
+      filteredData = filteredData.filter(item => item.timestamp >= cutoffDate.getTime());
     }
 
     if (brushDomain) {
@@ -201,7 +207,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
 
     return filteredData;
-  }, [processedData, brushDomain]);
+  }, [processedData, timeUnit, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
