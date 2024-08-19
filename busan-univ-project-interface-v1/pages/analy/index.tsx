@@ -275,7 +275,7 @@ export default function Home() {
           >
             <LayoutGrid size={20} />
           </button>
-          <button
+          {/* <button
             onClick={() => setTimeUnit('minute')}
             className={`p-2 rounded mr-2 ${timeUnit === 'minute' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
@@ -286,7 +286,7 @@ export default function Home() {
             className={`p-2 rounded ${timeUnit === 'hour' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
             Hour
-          </button>
+          </button> */}
         </div>
       )}
       <div className="mt-8">
