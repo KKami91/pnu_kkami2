@@ -58,14 +58,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          const kstDate = new Date(item.ds);
-          const utcTimestamp = kstDate.getTime() - 9 * 60 * 60 * 1000; // KST to UTC
-          if (!dataMap.has(utcTimestamp)) {
-            dataMap.set(utcTimestamp, { timestamp: utcTimestamp });
+          const timestamp = new Date(item.ds).getTime();
+          if (!dataMap.has(timestamp)) {
+            dataMap.set(timestamp, { timestamp });
           }
           const value = item[key];
           if (typeof value === 'number') {
-            dataMap.get(utcTimestamp)![key] = value;
+            dataMap.get(timestamp)![key] = value;
           }
         }
       });
@@ -86,7 +85,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       dataMap.get(timestamp)!.hour_rmssd = item.hour_rmssd;
       dataMap.get(timestamp)!.hour_sdnn = item.hour_sdnn;
     });
-
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     console.log('Combined data sample:', result.slice(0, 5));
     console.log('Combined data length:', result.length);
