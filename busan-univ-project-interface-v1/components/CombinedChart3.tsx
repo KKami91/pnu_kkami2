@@ -210,22 +210,34 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     let startTimestamp, endTimestamp;
 
     if (timeUnit === 'minute') {
-      // For minute data, use the range of predictMinuteData
-      const predictMinuteTimestamps = predictMinuteData.map(item => new Date(item.ds).getTime());
-      startTimestamp = Math.min(...predictMinuteTimestamps);
-      endTimestamp = Math.max(...predictMinuteTimestamps);
+      // 모든 minute 데이터의 시작과 끝 시간을 고려
+      const allMinuteData = [
+        ...bpmData,
+        ...stepData,
+        ...calorieData,
+        ...predictMinuteData
+      ];
 
-      // Add 1 hour padding to start and end
-      return [subHours(startTimestamp, 1).getTime(), addHours(endTimestamp, 1).getTime()];
+      const allTimestamps = allMinuteData.map(item => new Date(item.ds).getTime());
+      startTimestamp = Math.min(...allTimestamps);
+      endTimestamp = Math.max(...allTimestamps);
+
+      // 시작 시간 30분 전, 종료 시간 30분 후로 여유 추가
+      return [
+        subHours(startTimestamp, 0.5).getTime(),
+        addHours(endTimestamp, 0.5).getTime()
+      ];
     } else {
-      // For hour data, use the full range of displayData
+      // hour 데이터의 경우 기존 로직 유지
       startTimestamp = displayData[0].timestamp;
       endTimestamp = displayData[displayData.length - 1].timestamp;
 
       // Add 1 day padding to end
       return [startTimestamp, addDays(endTimestamp, 1).getTime()];
     }
-  }, [displayData, timeUnit, predictMinuteData]);
+  }, [displayData, timeUnit, bpmData, stepData, calorieData, predictMinuteData]);
+
+  console.log('X-axis domain:', xAxisDomain.map(ts => format(new Date(ts), 'yyyy-MM-dd HH:mm:ss')));
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
