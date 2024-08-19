@@ -242,7 +242,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick + 9 * 60 * 60 * 1000), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
             padding={{ left: 30, right: 30 }}
           />
           <YAxis 
