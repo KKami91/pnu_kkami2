@@ -51,38 +51,21 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     const dataMap = new Map<number, any>();
 
     const processData = (data: any[], key: string) => {
-      if (!Array.isArray(data) || data.length === 0) {
-        console.warn(`No data for ${key}`);
+      if (!Array.isArray(data)) {
+        console.error(`Invalid data for ${key}: expected array, got`, data);
         return;
       }
       console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          let timestamp;
-          try {
-            const date = parseISO(item.ds);
-            // 예측 데이터는 이미 KST이므로 변환하지 않습니다.
-            if (key === 'min_pred_bpm' || key === 'hour_pred_bpm') {
-              timestamp = date.getTime();
-            } else {
-              // 다른 데이터는 UTC를 KST로 변환합니다.
-              timestamp = subHours(date, 9).getTime();
-            }
-          } catch (error) {
-            console.error(`Invalid date format for ${key}:`, item.ds);
-            return;
-          }
+          const timestamp = new Date(item.ds).getTime();
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { timestamp });
           }
           const value = item[key];
-          if (typeof value === 'number' && !isNaN(value)) {
+          if (typeof value === 'number') {
             dataMap.get(timestamp)![key] = value;
-          } else {
-            console.warn(`Invalid value for ${key}:`, value);
           }
-        } else {
-          console.warn(`Invalid item format for ${key}:`, item);
         }
       });
     };
@@ -93,6 +76,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(predictMinuteData, 'min_pred_bpm');
     processData(predictHourData, 'hour_pred_bpm');
 
+    // HRV 데이터 처리 (시간 단위 데이터만)
     hrvHourData.forEach(item => {
       const timestamp = new Date(item.ds).getTime();
       if (!dataMap.has(timestamp)) {
@@ -108,22 +92,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return result;
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
-  const dateRange = useMemo(() => {
-    if (combinedData.length === 0) return { start: new Date(), end: new Date() };
-    const timestamps = combinedData.map(item => item.timestamp);
-    return {
-      start: new Date(Math.min(...timestamps)),
-      end: new Date(Math.max(...timestamps)),
-    };
-  }, [combinedData]);
-
   const filteredData = useMemo(() => {
-    const sevenDaysAgo = subDays(dateRange.end, 7).getTime();
-    const filtered = combinedData.filter(item => item.timestamp >= sevenDaysAgo);
-    console.log('Filtered data length:', filtered.length);
-    console.log('Filtered data sample:', filtered.slice(0, 5));
-    return filtered;
-  }, [combinedData, dateRange]);
+    if (timeUnit === 'minute') {
+      const oneWeekAgo = subHours(new Date(), 24 * 7).getTime();
+      return combinedData.filter(item => item.timestamp >= oneWeekAgo);
+    }
+    return combinedData;
+  }, [combinedData, timeUnit]);
 
   const processedData = useMemo(() => {
     console.log('Processing data for time unit:', timeUnit);
@@ -141,30 +116,30 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             calorie: 0,
             min_pred_bpm: 0,
             hour_pred_bpm: 0,
+            hour_rmssd: 0,
+            hour_sdnn: 0,
             count: 0
           };
         }
         
-        ['bpm', 'step', 'calorie', 'min_pred_bpm', 'hour_pred_bpm'].forEach((key) => {
+        Object.keys(item).forEach((key) => {
           if (item[key] !== null && item[key] !== undefined && !isNaN(item[key])) {
-            hourlyData[hourKey][key] += item[key];
+            if (key === 'bpm' || key === 'min_pred_bpm') {
+              hourlyData[hourKey][key] += item[key];
+            } else {
+              hourlyData[hourKey][key] = item[key];
+            }
           }
         });
         hourlyData[hourKey].count++;
       });
 
-      const result = Object.values(hourlyData).map(item => ({
+      return Object.values(hourlyData).map(item => ({
         ...item,
         bpm: item.count > 0 ? item.bpm / item.count : null,
         min_pred_bpm: item.count > 0 ? item.min_pred_bpm / item.count : null,
-        hour_pred_bpm: item.hour_pred_bpm,
       }));
-      console.log('Processed hourly data sample:', result.slice(0, 5));
-      console.log('Processed hourly data length:', result.length);
-      return result;
     }
-    console.log('Processed minute data sample:', filteredData.slice(0, 5));
-    console.log('Processed minute data length:', filteredData.length);
     return filteredData;
   }, [filteredData, timeUnit]);
 
@@ -238,7 +213,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
               <input
                 type="checkbox"
                 checked={visibleCharts[chartName]}
-                onChange={() => toggleChart(chartName)}
+                onChange={() => setVisibleCharts(prev => ({...prev, [chartName]: !prev[chartName]}))}
                 className="form-checkbox h-5 w-5 text-blue-600"
               />
               <span className="ml-2 text-gray-700">{chartName.toUpperCase()}</span>
@@ -260,65 +235,61 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           </button>
         </div>
       </div>
-      {displayData.length > 0 ? (
-        <ResponsiveContainer width="100%" height={600}>
-          <ComposedChart data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="timestamp"
-              type="number"
-              scale="time"
-              domain={['dataMin', 'dataMax']}
-              tickFormatter={formatDateForDisplay}
-              padding={{ left: 30, right: 30 }}
-            />
-            <YAxis 
-              yAxisId="left" 
-              label={{ value: 'BPM', angle: -90, position: 'insideLeft' }} 
-              tickFormatter={(value) => value.toFixed(0)}
-            />
-            <YAxis 
-              yAxisId="right" 
-              orientation="right" 
-              scale="log"
-              tickFormatter={(value) => Math.round(value).toString()}
-              label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} 
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            {visibleCharts.calorie && (
-              <Bar yAxisId="right" dataKey="calorie" fill={colors.calorie} name="Calories" />
-            )}
-            {visibleCharts.step && (
-              <Bar yAxisId="right" dataKey="step" fill={colors.step} name="Steps" />
-            )}
-            {visibleCharts.bpm && (
-              <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" dot={false} />
-            )}
-            {visibleCharts.pred_bpm && timeUnit === 'minute' && (
-              <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm_minute} name="Predicted BPM (Minute)" dot={false} />
-            )}
-            {visibleCharts.pred_bpm && timeUnit === 'hour' && (
-              <Line yAxisId="left" type="monotone" dataKey="hour_pred_bpm" stroke={colors.pred_bpm_hour} name="Predicted BPM (Hour)" dot={false} />
-            )}
-            {visibleCharts.rmssd && (
-              <Line yAxisId="left" type="monotone" dataKey="hour_rmssd" stroke={colors.rmssd} name="RMSSD" dot={false} />
-            )}
-            {visibleCharts.sdnn && (
-              <Line yAxisId="left" type="monotone" dataKey="hour_sdnn" stroke={colors.sdnn} name="SDNN" dot={false} />
-            )}
-            <Brush
-              dataKey="timestamp"
-              height={30}
-              stroke="#8884d8"
-              onChange={handleBrushChange}
-              tickFormatter={formatDateForDisplay}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      ) : (
-        <div className="text-center py-10">No data available for the selected time range.</div>
-      )}
+      <ResponsiveContainer width="100%" height={600}>
+        <ComposedChart data={processedData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="timestamp"
+            type="number"
+            scale="time"
+            domain={['dataMin', 'dataMax']}
+            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+            padding={{ left: 30, right: 30 }}
+          />
+          <YAxis 
+            yAxisId="left" 
+            label={{ value: 'BPM / HRV', angle: -90, position: 'insideLeft' }} 
+            tickFormatter={(value) => value.toFixed(0)}
+          />
+          <YAxis 
+            yAxisId="right" 
+            orientation="right" 
+            scale="log"
+            tickFormatter={(value) => Math.round(value).toString()}
+            label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} 
+          />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend />
+          {visibleCharts.calorie && (
+            <Bar yAxisId="right" dataKey="calorie" fill={colors.calorie} name="Calories" />
+          )}
+          {visibleCharts.step && (
+            <Bar yAxisId="right" dataKey="step" fill={colors.step} name="Steps" />
+          )}
+          {visibleCharts.bpm && (
+            <Line yAxisId="left" type="monotone" dataKey="bpm" stroke={colors.bpm} name="BPM" dot={false} />
+          )}
+          {visibleCharts.pred_bpm && timeUnit === 'minute' && (
+            <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke={colors.pred_bpm_minute} name="Predicted BPM (Minute)" dot={false} />
+          )}
+          {visibleCharts.pred_bpm && timeUnit === 'hour' && (
+            <Line yAxisId="left" type="monotone" dataKey="hour_pred_bpm" stroke={colors.pred_bpm_hour} name="Predicted BPM (Hour)" dot={false} />
+          )}
+          {visibleCharts.rmssd && timeUnit === 'hour' && (
+            <Line yAxisId="left" type="monotone" dataKey="hour_rmssd" stroke={colors.rmssd} name="RMSSD" dot={false} />
+          )}
+          {visibleCharts.sdnn && timeUnit === 'hour' && (
+            <Line yAxisId="left" type="monotone" dataKey="hour_sdnn" stroke={colors.sdnn} name="SDNN" dot={false} />
+          )}
+          <Brush
+            dataKey="timestamp"
+            height={30}
+            stroke="#8884d8"
+            onChange={handleBrushChange}
+            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
     </div>
   );
 };
