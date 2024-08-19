@@ -99,7 +99,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const filteredData = useMemo(() => {
     if (timeUnit === 'minute') {
-      const oneWeekAgo = subHours(new Date(), 24 * 7).getTime();
+      const oneWeekAgo = subHours(new Date(), 0).getTime();
       return combinedData.filter(item => item.timestamp >= oneWeekAgo);
     }
     return combinedData;
