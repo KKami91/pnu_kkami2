@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addHours } from 'date-fns';
+import { format, parseISO, subDays, addHours, subHours } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -60,7 +60,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
               timestamp = date.getTime();
             } else {
               // 다른 데이터는 UTC를 KST로 변환합니다.
-              timestamp = addHours(date, 9).getTime();
+              timestamp = subHours(date, 9).getTime();
             }
           } catch (error) {
             console.error(`Invalid date format for ${key}:`, item.ds);
