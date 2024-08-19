@@ -99,7 +99,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const filteredData = useMemo(() => {
     if (timeUnit === 'minute') {
-      const oneWeekAgo = subHours(new Date(), 0).getTime();
+      const oneWeekAgo = subHours(new Date(), 24 * 7).getTime();
       return combinedData.filter(item => item.timestamp >= oneWeekAgo);
     }
     return combinedData;
@@ -145,17 +145,26 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const displayData = useMemo(() => {
     let filteredData = processedData;
-    if (timeUnit === 'minute') {
-      const oneWeekAgo = subDays(new Date(), 7).getTime();
-      filteredData = processedData.filter(item => item.timestamp >= oneWeekAgo);
-    }
+    // if (timeUnit === 'minute') {
+    //   const oneWeekAgo = subDays(new Date(), 7).getTime();
+    //   filteredData = processedData.filter(item => item.timestamp >= oneWeekAgo);
+    // }
     if (brushDomain) {
       filteredData = filteredData.filter(
         item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
       );
     }
+  
     console.log('Display data length:', filteredData.length);
     console.log('Display data sample:', filteredData.slice(0, 5));
+    
+    // 데이터의 시간 범위 로깅
+    if (filteredData.length > 0) {
+      const startDate = new Date(filteredData[0].timestamp);
+      const endDate = new Date(filteredData[filteredData.length - 1].timestamp);
+      console.log('Data range:', format(startDate, 'yyyy-MM-dd HH:mm'), 'to', format(endDate, 'yyyy-MM-dd HH:mm'));
+    }
+  
     return filteredData;
   }, [processedData, timeUnit, brushDomain]);
 
