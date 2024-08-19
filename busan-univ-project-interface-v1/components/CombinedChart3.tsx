@@ -52,15 +52,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          const kstDate = parseISO(item.ds);
-          const utcTimestamp = kstDate.getTime() - 9 * 60 * 60 * 1000; // KST to UTC
-          
-          if (!dataMap.has(utcTimestamp)) {
-            dataMap.set(utcTimestamp, { timestamp: utcTimestamp });
+          const timestamp = new Date(item.ds).getTime();
+          if (!dataMap.has(timestamp)) {
+            dataMap.set(timestamp, { timestamp });
           }
           const value = item[key];
           if (typeof value === 'number') {
-            dataMap.get(utcTimestamp)![key] = value;
+            dataMap.get(timestamp)![key] = value;
           }
         }
       });
@@ -69,23 +67,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(bpmData, 'bpm');
     processData(stepData, 'step');
     processData(calorieData, 'calorie');
-    
-    // 예측 데이터는 이미 UTC 기준이므로 변환하지 않음
-    predictMinuteData.forEach(item => {
-      const utcTimestamp = parseISO(item.ds).getTime();
-      if (!dataMap.has(utcTimestamp)) {
-        dataMap.set(utcTimestamp, { timestamp: utcTimestamp });
-      }
-      dataMap.get(utcTimestamp)!['min_pred_bpm'] = item.min_pred_bpm;
-    });
-
-    predictHourData.forEach(item => {
-      const utcTimestamp = parseISO(item.ds).getTime();
-      if (!dataMap.has(utcTimestamp)) {
-        dataMap.set(utcTimestamp, { timestamp: utcTimestamp });
-      }
-      dataMap.get(utcTimestamp)!['hour_pred_bpm'] = item.hour_pred_bpm;
-    });
+    processData(predictMinuteData, 'min_pred_bpm');
+    processData(predictHourData, 'hour_pred_bpm');
 
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     console.log('Combined data sample:', result.slice(0, 5));
@@ -94,12 +77,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
 
   const filteredData = useMemo(() => {
-    if (timeUnit === 'minute') {
-      const oneWeekAgo = subDays(new Date(), 7).getTime() - 9 * 60 * 60 * 1000; // KST to UTC
-      return combinedData.filter(item => item.timestamp >= oneWeekAgo);
-    }
-    return combinedData;
-  }, [combinedData, timeUnit]);
+    const oneWeekAgo = subDays(new Date(), 7).getTime();
+    const filtered = combinedData.filter(item => item.timestamp >= oneWeekAgo);
+    console.log('Filtered data length:', filtered.length);
+    console.log('Filtered data sample:', filtered.slice(0, 5));
+    return filtered;
+  }, [combinedData]);
 
   const processedData = useMemo(() => {
     console.log('Processing data for time unit:', timeUnit);
@@ -107,8 +90,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       const hourlyData: { [key: string]: any } = {};
       
       filteredData.forEach(item => {
-        const kstDate = new Date(item.timestamp);
-        const hourKey = format(kstDate, 'yyyy-MM-dd HH:00:00');
+        const date = new Date(item.timestamp);
+        const hourKey = format(date, 'yyyy-MM-dd HH:00:00');
         if (!hourlyData[hourKey]) {
           hourlyData[hourKey] = { 
             timestamp: item.timestamp,
@@ -129,21 +112,29 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         hourlyData[hourKey].count++;
       });
 
-      return Object.values(hourlyData).map(item => ({
+      const result = Object.values(hourlyData).map(item => ({
         ...item,
         bpm: item.count > 0 ? item.bpm / item.count : null,
         min_pred_bpm: item.count > 0 ? item.min_pred_bpm / item.count : null,
         hour_pred_bpm: item.hour_pred_bpm,
       }));
+      console.log('Processed hourly data sample:', result.slice(0, 5));
+      console.log('Processed hourly data length:', result.length);
+      return result;
     }
+    console.log('Processed minute data sample:', filteredData.slice(0, 5));
+    console.log('Processed minute data length:', filteredData.length);
     return filteredData;
   }, [filteredData, timeUnit]);
 
   const displayData = useMemo(() => {
     if (!brushDomain) return processedData;
-    return processedData.filter(
+    const brushedData = processedData.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
+    console.log('Display data length:', brushedData.length);
+    console.log('Display data sample:', brushedData.slice(0, 5));
+    return brushedData;
   }, [processedData, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
