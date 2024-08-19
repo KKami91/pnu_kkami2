@@ -145,16 +145,29 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const displayData = useMemo(() => {
     let filteredData = processedData;
-    // if (timeUnit === 'minute') {
-    //   const oneWeekAgo = subDays(new Date(), 7).getTime();
-    //   filteredData = processedData.filter(item => item.timestamp >= oneWeekAgo);
-    // }
+    
+    if (filteredData.length > 0) {
+      // 가장 최근 데이터의 타임스탬프 찾기
+      const latestTimestamp = Math.max(...filteredData.map(item => item.timestamp));
+      const latestDate = new Date(latestTimestamp);
+      
+      // 7일 전의 날짜 계산 (시간, 분, 초는 0으로 설정)
+      const sevenDaysAgo = subDays(latestDate, 7);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+      
+      console.log('Latest date:', format(latestDate, 'yyyy-MM-dd HH:mm:ss'));
+      console.log('Seven days ago:', format(sevenDaysAgo, 'yyyy-MM-dd HH:mm:ss'));
+
+      // 7일치 데이터만 필터링
+      filteredData = filteredData.filter(item => item.timestamp >= sevenDaysAgo.getTime());
+    }
+
     if (brushDomain) {
       filteredData = filteredData.filter(
         item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
       );
     }
-  
+
     console.log('Display data length:', filteredData.length);
     console.log('Display data sample:', filteredData.slice(0, 5));
     
@@ -164,9 +177,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       const endDate = new Date(filteredData[filteredData.length - 1].timestamp);
       console.log('Data range:', format(startDate, 'yyyy-MM-dd HH:mm'), 'to', format(endDate, 'yyyy-MM-dd HH:mm'));
     }
-  
+
     return filteredData;
-  }, [processedData, timeUnit, brushDomain]);
+  }, [processedData, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
