@@ -50,6 +50,8 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<'combined' | 'multi'>('combined');
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
 
+  const [hrvHourData, setHrvHourData] = useState<any[]>([]);
+
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [...bpmData, ...stepData, ...calorieData].map(item => new Date(item.ds).getTime());
     return {
@@ -119,6 +121,7 @@ export default function Home() {
         setCalorieData(calorie);
         
         await fetchPredictionData(selectedUser);
+        await fetchHrvData(selectedUser);
         setShowGraphs(true);
       } catch (error) {
         console.error('Error in handleDateSelect:', error);
@@ -126,6 +129,16 @@ export default function Home() {
       } finally {
         setIsLoading(false)
       }
+    }
+  }
+
+  const fetchHrvData = async (user: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/feature_hour/${user}`);
+      console.log('HRV Hour data:', response.data);
+      setHrvHourData(response.data.hour_hrv);
+    } catch (error) {
+      console.error('Error in fetchHrvData: ', error);
     }
   }
 
@@ -285,6 +298,7 @@ export default function Home() {
                 calorieData={calorieData}
                 predictMinuteData={predictMinuteData}
                 predictHourData={predictHourData}
+                hrvHourData={hrvHourData}  // 새로운 HRV 데이터 전달
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}

@@ -8,6 +8,7 @@ interface CombinedChartProps {
   calorieData: any[];
   predictMinuteData: any[];
   predictHourData: any[];
+  hrvHourData: any[];
   globalStartDate: Date;
   globalEndDate: Date;
   onBrushChange: (domain: [number, number] | null) => void;
@@ -18,6 +19,8 @@ type ChartVisibility = {
   step: boolean;
   bpm: boolean;
   pred_bpm: boolean;
+  rmssd: boolean;
+  sdnn: boolean;
 };
 
 const CombinedChart: React.FC<CombinedChartProps> = ({
@@ -26,6 +29,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   calorieData,
   predictMinuteData,
   predictHourData,
+  hrvHourData,
   globalStartDate,
   globalEndDate,
   onBrushChange,
@@ -35,6 +39,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     step: true,
     bpm: true,
     pred_bpm: true,
+    rmssd: true,
+    sdnn: true,
   });
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
@@ -87,11 +93,20 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(predictMinuteData, 'min_pred_bpm');
     processData(predictHourData, 'hour_pred_bpm');
 
+    hrvHourData.forEach(item => {
+      const timestamp = new Date(item.ds).getTime();
+      if (!dataMap.has(timestamp)) {
+        dataMap.set(timestamp, { timestamp });
+      }
+      dataMap.get(timestamp)!.hour_rmssd = item.hour_rmssd;
+      dataMap.get(timestamp)!.hour_sdnn = item.hour_sdnn;
+    });
+
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     console.log('Combined data sample:', result.slice(0, 5));
     console.log('Combined data length:', result.length);
     return result;
-  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
+  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
   const dateRange = useMemo(() => {
     if (combinedData.length === 0) return { start: new Date(), end: new Date() };
@@ -210,6 +225,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     bpm: '#ff7300',
     pred_bpm_minute: '#A0D283',
     pred_bpm_hour: '#82ca9d',
+    rmssd: '#8884d8',
+    sdnn: '#82ca9d',
   };
 
   return (
@@ -283,6 +300,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             )}
             {visibleCharts.pred_bpm && timeUnit === 'hour' && (
               <Line yAxisId="left" type="monotone" dataKey="hour_pred_bpm" stroke={colors.pred_bpm_hour} name="Predicted BPM (Hour)" dot={false} />
+            )}
+            {visibleCharts.rmssd && (
+              <Line yAxisId="left" type="monotone" dataKey="hour_rmssd" stroke={colors.rmssd} name="RMSSD" dot={false} />
+            )}
+            {visibleCharts.sdnn && (
+              <Line yAxisId="left" type="monotone" dataKey="hour_sdnn" stroke={colors.sdnn} name="SDNN" dot={false} />
             )}
             <Brush
               dataKey="timestamp"
