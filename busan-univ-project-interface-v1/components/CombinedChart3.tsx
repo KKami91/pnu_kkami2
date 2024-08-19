@@ -40,26 +40,51 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
 
+  useEffect(() => {
+    console.log('Input data lengths:', {
+      bpmData: bpmData.length,
+      stepData: stepData.length,
+      calorieData: calorieData.length,
+      predictMinuteData: predictMinuteData.length,
+      predictHourData: predictHourData.length
+    });
+    if (bpmData.length > 0) console.log('Sample bpmData:', bpmData[0]);
+    if (stepData.length > 0) console.log('Sample stepData:', stepData[0]);
+    if (calorieData.length > 0) console.log('Sample calorieData:', calorieData[0]);
+    if (predictMinuteData.length > 0) console.log('Sample predictMinuteData:', predictMinuteData[0]);
+    if (predictHourData.length > 0) console.log('Sample predictHourData:', predictHourData[0]);
+  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
+
   const combinedData = useMemo(() => {
     console.log('Combining data...');
     const dataMap = new Map<number, any>();
 
     const processData = (data: any[], key: string) => {
-      if (!Array.isArray(data)) {
-        console.error(`Invalid data for ${key}: expected array, got`, data);
+      if (!Array.isArray(data) || data.length === 0) {
+        console.warn(`No data for ${key}`);
         return;
       }
       console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          const timestamp = new Date(item.ds).getTime();
+          let timestamp;
+          try {
+            timestamp = new Date(item.ds).getTime();
+          } catch (error) {
+            console.error(`Invalid date format for ${key}:`, item.ds);
+            return;
+          }
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { timestamp });
           }
           const value = item[key];
-          if (typeof value === 'number') {
+          if (typeof value === 'number' && !isNaN(value)) {
             dataMap.get(timestamp)![key] = value;
+          } else {
+            console.warn(`Invalid value for ${key}:`, value);
           }
+        } else {
+          console.warn(`Invalid item format for ${key}:`, item);
         }
       });
     };
@@ -105,7 +130,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         }
         
         ['bpm', 'step', 'calorie', 'min_pred_bpm', 'hour_pred_bpm'].forEach((key) => {
-          if (item[key] !== null && item[key] !== undefined) {
+          if (item[key] !== null && item[key] !== undefined && !isNaN(item[key])) {
             hourlyData[hourKey][key] += item[key];
           }
         });
