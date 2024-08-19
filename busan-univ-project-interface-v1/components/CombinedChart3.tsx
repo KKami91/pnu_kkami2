@@ -45,7 +45,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   });
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
-  // const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
 
   const combinedData = useMemo(() => {
     console.log('Combining data...');
@@ -107,41 +106,38 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [combinedData, timeUnit]);
 
   const processedData = useMemo(() => {
+    console.log('Processing data for time unit:', timeUnit);
     if (timeUnit === 'hour') {
-      const hourlyData: { [key: string]: any } = {};
-      
-      combinedData.forEach(item => {
+      const hourlyData = combinedData.reduce((acc: any[], item: any) => {
         const hourKey = format(new Date(item.timestamp), 'yyyy-MM-dd HH:00:00');
-        if (!hourlyData[hourKey]) {
-          hourlyData[hourKey] = { 
-            timestamp: new Date(hourKey).getTime(),
-            bpm: 0,
-            step: 0,
-            calorie: 0,
-            min_pred_bpm: 0,
-            hour_pred_bpm: 0,
-            hour_rmssd: 0,
-            hour_sdnn: 0,
-            count: 0
-          };
-        }
+        const existingHour = acc.find(h => h.timestamp === new Date(hourKey).getTime());
         
-        Object.keys(item).forEach((key) => {
-          if (item[key] !== null && item[key] !== undefined && !isNaN(item[key])) {
-            if (key === 'bpm' || key === 'min_pred_bpm') {
-              hourlyData[hourKey][key] += item[key];
-            } else {
-              hourlyData[hourKey][key] = item[key];
+        if (existingHour) {
+          Object.keys(item).forEach(key => {
+            if (typeof item[key] === 'number') {
+              if (key === 'bpm' || key === 'min_pred_bpm') {
+                existingHour[key] = (existingHour[key] || 0) + item[key];
+                existingHour[`${key}Count`] = (existingHour[`${key}Count`] || 0) + 1;
+              } else {
+                existingHour[key] = Math.max(existingHour[key] || 0, item[key]);
+              }
             }
-          }
-        });
-        hourlyData[hourKey].count++;
-      });
+          });
+        } else {
+          acc.push({
+            ...item,
+            timestamp: new Date(hourKey).getTime(),
+            bpmCount: item.bpm ? 1 : 0,
+            min_pred_bpmCount: item.min_pred_bpm ? 1 : 0,
+          });
+        }
+        return acc;
+      }, []);
 
-      return Object.values(hourlyData).map(item => ({
+      return hourlyData.map(item => ({
         ...item,
-        bpm: item.count > 0 ? item.bpm / item.count : null,
-        min_pred_bpm: item.count > 0 ? item.min_pred_bpm / item.count : null,
+        bpm: item.bpmCount ? item.bpm / item.bpmCount : null,
+        min_pred_bpm: item.min_pred_bpmCount ? item.min_pred_bpm / item.min_pred_bpmCount : null,
       }));
     }
     return combinedData;
