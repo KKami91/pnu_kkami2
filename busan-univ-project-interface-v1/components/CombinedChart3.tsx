@@ -234,7 +234,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
-              {`${pld.name}: ${pld.value !== null ? pld.value.toFixed(2) : 'N/A'}`}
+              {`${pld.name}: ${pld.value !== null ? 
+                (pld.dataKey === 'step' || pld.dataKey === 'calorie' ? 
+                  pld.value.toFixed(0) : pld.value.toFixed(2)) 
+                : 'N/A'}`}
             </p>
           ))}
         </div>
@@ -303,16 +306,17 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <YAxis 
             yAxisId="right" 
             orientation="right" 
+            scale="log"
+            domain={[1, 'auto']}
             label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} 
-            domain={[0, 'dataMax']}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
           {visibleCharts.calorie && (
-            <Bar yAxisId="right" dataKey="calorie" fill="rgba(136, 132, 216, 0.6)" name="Calories" />
+            <Bar yAxisId="right" dataKey="calorie" fill="rgba(231, 78, 216, 0.6)" name="Calories" barSize={timeUnit === 'minute' ? 4 : 15} />
           )}
           {visibleCharts.step && (
-            <Bar yAxisId="right" dataKey="step" fill="rgba(130, 202, 157, 0.6)" name="Steps" />
+            <Bar yAxisId="right" dataKey="step" fill="rgba(130, 202, 157, 0.6)" name="Steps" barSize={timeUnit === 'minute' ? 4 : 15} />
           )}
           {visibleCharts.bpm && (
             <Line yAxisId="left" type="monotone" dataKey="bpm" stroke="#ff7300" name="BPM" dot={false} />
