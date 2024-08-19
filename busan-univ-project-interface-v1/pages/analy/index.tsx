@@ -315,6 +315,7 @@ export default function Home() {
                 calorieData={calorieData}
                 predictMinuteData={predictMinuteData}
                 predictHourData={predictHourData}
+                hrvHourData={hrvHourData}  // 새로운 HRV 데이터 전달
                 globalStartDate={globalStartDate}
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
