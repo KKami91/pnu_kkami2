@@ -67,21 +67,30 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     };
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
-  const [currentEndDate, setCurrentEndDate] = useState<Date>(() => {
-    return timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
+  const [dateWindow, setDateWindow] = useState<{start: Date, end: Date}>(() => {
+    const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
+    const start = subDays(end, parseInt(dateRange) - 1);
+    return { start, end };
   });
 
   useEffect(() => {
-    setCurrentEndDate(timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd);
-  }, [timeUnit, dataRange]);
+    const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
+    const start = subDays(end, parseInt(dateRange) - 1);
+    setDateWindow({ start, end });
+  }, [timeUnit, dateRange, dataRange]);
 
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
-    const days = dateRange === 'all' ? 30 : parseInt(dateRange);
-    setCurrentEndDate(prevDate => {
-      const newDate = direction === 'forward' 
-        ? min([addDays(prevDate, days), timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd])
-        : max([subDays(prevDate, days), addDays(dataRange.start, days)]);
-      return newDate;
+    const days = parseInt(dateRange);
+    setDateWindow(prev => {
+      let newStart: Date, newEnd: Date;
+      if (direction === 'forward') {
+        newEnd = min([addDays(prev.end, days), timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd]);
+        newStart = subDays(newEnd, days - 1);
+      } else {
+        newStart = max([subDays(prev.start, days), dataRange.start]);
+        newEnd = addDays(newStart, days - 1);
+      }
+      return { start: newStart, end: newEnd };
     });
   };
 
@@ -208,23 +217,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     let filteredData = processedData;
     
     if (filteredData.length > 0) {
-      let startDate: Date;
-      let endDate = currentEndDate;
-
-      if (dateRange === 'all') {
-        startDate = dataRange.start;
-        endDate = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
-      } else {
-        startDate = subDays(endDate, parseInt(dateRange));
-      }
-      
-      console.log('Start date:', format(startDate, 'yyyy-MM-dd HH:mm:ss'));
-      console.log('End date:', format(endDate, 'yyyy-MM-dd HH:mm:ss'));
+      console.log('Start date:', format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss'));
+      console.log('End date:', format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'));
 
       // 필터링 적용
       filteredData = filteredData.filter(item => 
-        item.timestamp >= startOfDay(startDate).getTime() && 
-        item.timestamp <= endDate.getTime()
+        item.timestamp >= startOfDay(dateWindow.start).getTime() && 
+        item.timestamp <= endOfDay(dateWindow.end).getTime()
       );
     }
 
@@ -238,14 +237,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     console.log('Display data sample:', filteredData.slice(0, 5));
     
     return filteredData;
-  }, [processedData, timeUnit, dateRange, brushDomain, currentEndDate, dataRange]);
+  }, [processedData, dateWindow, brushDomain]);
 
   const xAxisDomain = useMemo(() => {
-    if (displayData.length === 0) return ['dataMin', 'dataMax'];
-    const startTimestamp = displayData[0].timestamp;
-    const endTimestamp = timeUnit === 'minute' ? dataRange.minuteEnd.getTime() : dataRange.hourEnd.getTime();
-    return [startTimestamp, endTimestamp];
-  }, [displayData, timeUnit, dataRange]);
+    return [dateWindow.start.getTime(), dateWindow.end.getTime()];
+  }, [dateWindow]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -313,7 +309,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <button 
             onClick={() => handleDateNavigation('backward')}
             className="px-2 py-1 bg-blue-500 text-white rounded mr-2"
-            disabled={dateRange === 'all' || currentEndDate <= addDays(dataRange.start, parseInt(dateRange))}
+            disabled={dateRange === 'all' || dateWindow.start <= dataRange.start}
           >
             ←
           </button>
@@ -339,13 +335,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <button 
             onClick={() => handleDateNavigation('forward')}
             className="px-2 py-1 bg-blue-500 text-white rounded ml-2"
-            disabled={dateRange === 'all' || currentEndDate >= dataRange.end}
+            disabled={dateRange === 'all' || dateWindow.end >= (timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd)}
           >
             →
           </button>
         </div>
       </div>
-      
       <ResponsiveContainer width="100%" height={600}>
         <ComposedChart data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
