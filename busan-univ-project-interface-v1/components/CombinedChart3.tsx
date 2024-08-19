@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addHours, subHours, startOfHour, endOfHour } from 'date-fns';
+import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -48,6 +48,20 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   });
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+  const [currentEndDate, setCurrentEndDate] = useState<Date>(() => {
+    const latestPredictTimestamp = Math.max(
+      ...predictMinuteData.map(item => new Date(item.ds).getTime()),
+      ...predictHourData.map(item => new Date(item.ds).getTime())
+    );
+    return new Date(latestPredictTimestamp);
+  });
+
+  const handleDateNavigation = (direction: 'forward' | 'backward') => {
+    const days = dateRange === 'all' ? 30 : parseInt(dateRange);
+    setCurrentEndDate(prevDate => 
+      direction === 'forward' ? addDays(prevDate, days) : subDays(prevDate, days)
+    );
+  };
 
   const combinedData = useMemo(() => {
     console.log('Combining data...');
@@ -172,29 +186,32 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     let filteredData = processedData;
     
     if (filteredData.length > 0) {
-      // 예측 데이터의 마지막 타임스탬프 찾기
-      const latestPredictTimestamp = timeUnit === 'minute'
-        ? Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))
-        : Math.max(...predictHourData.map(item => new Date(item.ds).getTime()));
+      let startDate: Date;
+      let endDate = currentEndDate;
 
-      const latestDate = new Date(latestPredictTimestamp);
-      
-      let cutoffDate;
-      if (dateRange !== 'all') {
-        cutoffDate = subDays(latestDate, parseInt(dateRange));
-      } else {
-        cutoffDate = new Date(Math.min(
+      if (dateRange === 'all') {
+        startDate = new Date(Math.min(
           ...filteredData.map(item => item.timestamp),
           ...predictMinuteData.map(item => new Date(item.ds).getTime()),
           ...predictHourData.map(item => new Date(item.ds).getTime())
         ));
+        endDate = new Date(Math.max(
+          ...filteredData.map(item => item.timestamp),
+          ...predictMinuteData.map(item => new Date(item.ds).getTime()),
+          ...predictHourData.map(item => new Date(item.ds).getTime())
+        ));
+      } else {
+        startDate = subDays(endDate, parseInt(dateRange));
       }
       
-      console.log('Latest date:', format(latestDate, 'yyyy-MM-dd HH:mm:ss'));
-      console.log('Cutoff date:', format(cutoffDate, 'yyyy-MM-dd HH:mm:ss'));
+      console.log('Start date:', format(startDate, 'yyyy-MM-dd HH:mm:ss'));
+      console.log('End date:', format(endDate, 'yyyy-MM-dd HH:mm:ss'));
 
       // 필터링 적용
-      filteredData = filteredData.filter(item => item.timestamp >= cutoffDate.getTime() && item.timestamp <= latestDate.getTime());
+      filteredData = filteredData.filter(item => 
+        item.timestamp >= startOfDay(startDate).getTime() && 
+        item.timestamp <= endOfDay(endDate).getTime()
+      );
     }
 
     if (brushDomain) {
@@ -206,15 +223,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     console.log('Display data length:', filteredData.length);
     console.log('Display data sample:', filteredData.slice(0, 5));
     
-    // 데이터의 시간 범위 로깅
-    if (filteredData.length > 0) {
-      const startDate = new Date(filteredData[0].timestamp);
-      const endDate = new Date(filteredData[filteredData.length - 1].timestamp);
-      console.log('Data range:', format(startDate, 'yyyy-MM-dd HH:mm'), 'to', format(endDate, 'yyyy-MM-dd HH:mm'));
-    }
-
     return filteredData;
-  }, [processedData, timeUnit, dateRange, brushDomain, predictMinuteData, predictHourData]);
+  }, [processedData, timeUnit, dateRange, brushDomain, predictMinuteData, predictHourData, currentEndDate]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -277,7 +287,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           ))}
         </div>
         <div>
-          <button
+          {/* <button
             onClick={() => setTimeUnit('minute')}
             className={`px-4 py-2 rounded mr-2 ${timeUnit === 'minute' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
@@ -288,9 +298,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             className={`px-4 py-2 rounded ${timeUnit === 'hour' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
           >
             Hour
-          </button>
+          </button> */}
         </div>
         <div className="flex items-center">
+          <button 
+            onClick={() => handleDateNavigation('backward')}
+            className="px-2 py-1 bg-blue-500 text-white rounded mr-2"
+          >
+            ←
+          </button>
           <select
             value={timeUnit}
             onChange={(e) => setTimeUnit(e.target.value as 'minute' | 'hour')}
@@ -310,6 +326,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             <option value="30">30 Days</option>
             <option value="all">All Data</option>
           </select>
+          <button 
+            onClick={() => handleDateNavigation('forward')}
+            className="px-2 py-1 bg-blue-500 text-white rounded ml-2"
+          >
+            →
+          </button>
         </div>
       </div>
       
