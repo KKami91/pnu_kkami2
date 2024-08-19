@@ -169,25 +169,27 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     let filteredData = processedData;
     
     if (filteredData.length > 0) {
-      // 가장 최근 데이터의 타임스탬프 찾기
-      const latestTimestamp = Math.max(...filteredData.map(item => item.timestamp));
-      const latestDate = new Date(latestTimestamp);
+      // 예측 데이터의 마지막 타임스탬프 찾기
+      const latestPredictTimestamp = timeUnit === 'minute'
+        ? Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))
+        : Math.max(...predictHourData.map(item => new Date(item.ds).getTime()));
+
+      const latestDate = new Date(latestPredictTimestamp);
       
       let cutoffDate;
       if (timeUnit === 'minute') {
-        // 7일 전의 날짜 계산 (시간, 분, 초는 0으로 설정)
+        // 7일 전의 날짜 계산
         cutoffDate = subDays(latestDate, 7);
       } else {
-        // 30일 전의 날짜 계산 (시간, 분, 초는 0으로 설정)
+        // 30일 전의 날짜 계산
         cutoffDate = subDays(latestDate, 30);
       }
-      cutoffDate.setHours(0, 0, 0, 0);
       
       console.log('Latest date:', format(latestDate, 'yyyy-MM-dd HH:mm:ss'));
       console.log('Cutoff date:', format(cutoffDate, 'yyyy-MM-dd HH:mm:ss'));
 
       // 필터링 적용
-      filteredData = filteredData.filter(item => item.timestamp >= cutoffDate.getTime());
+      filteredData = filteredData.filter(item => item.timestamp >= cutoffDate.getTime() && item.timestamp <= latestDate.getTime());
     }
 
     if (brushDomain) {
@@ -207,7 +209,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
 
     return filteredData;
-  }, [processedData, timeUnit, brushDomain]);
+  }, [processedData, timeUnit, brushDomain, predictMinuteData, predictHourData]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
