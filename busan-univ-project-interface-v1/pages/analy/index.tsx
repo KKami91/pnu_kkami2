@@ -116,6 +116,8 @@ export default function Home() {
           fetchData('calories', selectedUser),
         ]);
 
+        console.log('bpm', bpm);
+
         setBpmData(bpm);
         setStepData(step);
         setCalorieData(calorie);
