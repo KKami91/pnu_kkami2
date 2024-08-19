@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, subHours, startOfDay, endOfDay, addHours, addDays, startOfHour } from 'date-fns';
+import { format, parseISO, subDays, addHours, subHours, startOfHour, endOfHour, addDays } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -47,27 +47,54 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const combinedData = useMemo(() => {
+    console.log('Combining data...');
     const dataMap = new Map<number, any>();
 
-    const processData = (data: any[], key: string) => {
+    const processData = (data: any[], key: string, adjustTime: boolean = true) => {
+      if (!Array.isArray(data)) {
+        console.error(`Invalid data for ${key}: expected array, got`, data);
+        return;
+      }
+      console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
-        const timestamp = new Date(item.ds).getTime();
-        if (!dataMap.has(timestamp)) {
-          dataMap.set(timestamp, { timestamp });
+        if (item && typeof item.ds === 'string') {
+          let timestamp = new Date(item.ds).getTime();
+          if (adjustTime) {
+            timestamp = subHours(new Date(timestamp), 9).getTime();
+          }
+          if (!dataMap.has(timestamp)) {
+            dataMap.set(timestamp, { timestamp });
+          }
+          const value = item[key];
+          if (typeof value === 'number') {
+            dataMap.get(timestamp)![key] = value;
+          }
         }
-        dataMap.get(timestamp)[key] = item[key];
       });
     };
 
-    processData(bpmData, 'bpm');
-    processData(stepData, 'step');
-    processData(calorieData, 'calorie');
-    processData(predictMinuteData, 'min_pred_bpm');
-    processData(predictHourData, 'hour_pred_bpm');
-    processData(hrvHourData, 'hour_rmssd');
-    processData(hrvHourData, 'hour_sdnn');
+    // MongoDB 데이터 처리 (시간 조정)
+    processData(bpmData, 'bpm', true);
+    processData(stepData, 'step', true);
+    processData(calorieData, 'calorie', true);
 
-    return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    // 예측 및 HRV 데이터 처리 (시간 조정 없음)
+    processData(predictMinuteData, 'min_pred_bpm', false);
+    processData(predictHourData, 'hour_pred_bpm', false);
+
+    hrvHourData.forEach(item => {
+      const timestamp = new Date(item.ds).getTime();
+      if (!dataMap.has(timestamp)) {
+        dataMap.set(timestamp, { timestamp });
+      }
+      dataMap.get(timestamp)!.hour_rmssd = item.hour_rmssd;
+      dataMap.get(timestamp)!.hour_sdnn = item.hour_sdnn;
+    });
+
+    const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    console.log('Combined data sample:', result.slice(0, 5));
+    console.log('Combined data length:', result.length);
+    return result;
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
   const filteredData = useMemo(() => {
@@ -138,42 +165,94 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return combinedData;
   }, [combinedData, timeUnit, hrvHourData, predictHourData]);
 
-  const dataRange = useMemo(() => {
-    if (combinedData.length === 0) return { start: new Date(), end: new Date() };
-
-    const lastPredictTimestamp = Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()));
-    const latestDataTimestamp = Math.max(...combinedData.map(item => item.timestamp));
-
-    const end = new Date(Math.max(lastPredictTimestamp, latestDataTimestamp));
-    const start = startOfDay(subDays(end, timeUnit === 'minute' ? 6 : 29));
-
-    return { start, end };
-  }, [combinedData, predictMinuteData, timeUnit]);
-
   const displayData = useMemo(() => {
-    return combinedData.filter(item => 
-      item.timestamp >= dataRange.start.getTime() && item.timestamp <= dataRange.end.getTime()
-    );
-  }, [combinedData, dataRange]);
+    let filteredData = processedData;
+    
+    if (filteredData.length > 0) {
+      const latestTimestamp = Math.max(...filteredData.map(item => item.timestamp));
+      const latestDate = new Date(latestTimestamp);
+      
+      let cutoffDate;
+      if (timeUnit === 'minute') {
+        cutoffDate = subDays(latestDate, 7);
+      } else {
+        cutoffDate = subDays(latestDate, 30);
+      }
+      cutoffDate.setHours(0, 0, 0, 0);
+      
+      console.log('Latest date:', format(latestDate, 'yyyy-MM-dd HH:mm:ss'));
+      console.log('Cutoff date:', format(cutoffDate, 'yyyy-MM-dd HH:mm:ss'));
+
+      filteredData = filteredData.filter(item => item.timestamp >= cutoffDate.getTime());
+    }
+
+    if (brushDomain) {
+      filteredData = filteredData.filter(
+        item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+      );
+    }
+
+    console.log('Display data length:', filteredData.length);
+    console.log('Display data sample:', filteredData.slice(0, 5));
+    
+    if (filteredData.length > 0) {
+      const startDate = new Date(filteredData[0].timestamp);
+      const endDate = new Date(filteredData[filteredData.length - 1].timestamp);
+      console.log('Data range:', format(startDate, 'yyyy-MM-dd HH:mm'), 'to', format(endDate, 'yyyy-MM-dd HH:mm'));
+    }
+
+    return filteredData;
+  }, [processedData, timeUnit, brushDomain]);
 
   const xAxisDomain = useMemo(() => {
-    return [dataRange.start.getTime(), endOfDay(dataRange.end).getTime()];
-  }, [dataRange]);
+    if (displayData.length === 0) return ['dataMin', 'dataMax'];
 
-  const handleBrushChange = useCallback((domain: any) => {
-    if (domain && domain.length === 2) {
-      setBrushDomain(domain);
-      onBrushChange(domain);
+    let startTimestamp, endTimestamp;
+
+    if (timeUnit === 'minute') {
+      // 모든 minute 데이터의 시작과 끝 시간을 고려
+      const allMinuteData = [
+        ...bpmData,
+        ...stepData,
+        ...calorieData,
+        ...predictMinuteData
+      ];
+
+      const allTimestamps = allMinuteData.map(item => new Date(item.ds).getTime());
+      startTimestamp = Math.min(...allTimestamps);
+      endTimestamp = Math.max(...allTimestamps);
+
+      // 시작 시간 30분 전, 종료 시간 30분 후로 여유 추가
+      return [
+        subHours(startTimestamp, 0.5).getTime(),
+        addHours(endTimestamp, 0.5).getTime()
+      ];
+    } else {
+      // hour 데이터의 경우 기존 로직 유지
+      startTimestamp = displayData[0].timestamp;
+      endTimestamp = displayData[displayData.length - 1].timestamp;
+
+      // Add 1 day padding to end
+      return [startTimestamp, addDays(endTimestamp, 1).getTime()];
+    }
+  }, [displayData, timeUnit, bpmData, stepData, calorieData, predictMinuteData]);
+
+  console.log('X-axis domain:', xAxisDomain.map(ts => format(new Date(ts), 'yyyy-MM-dd HH:mm:ss')));
+
+  const handleBrushChange = useCallback((newBrushDomain: any) => {
+    if (newBrushDomain && newBrushDomain.length === 2) {
+      setBrushDomain(newBrushDomain);
+      onBrushChange(newBrushDomain);
     } else {
       setBrushDomain(null);
       onBrushChange(null);
     }
   }, [onBrushChange]);
 
-  const visibleData = useMemo(() => {
-    if (!brushDomain) return displayData;
-    return displayData.filter(item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]);
-  }, [displayData, brushDomain]);
+  const formatDateForDisplay = (time: number) => {
+    const date = new Date(time);
+    return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
+  };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -239,7 +318,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         </div>
       </div>
       <ResponsiveContainer width="100%" height={600}>
-        <ComposedChart data={visibleData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <ComposedChart data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="timestamp"
@@ -252,7 +331,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <YAxis 
             yAxisId="left" 
             label={{ value: 'BPM / HRV', angle: -90, position: 'insideLeft' }} 
-            domain={[0, 'auto']}
+            domain={[0, 'dataMax']}
           />
           <YAxis 
             yAxisId="right" 
@@ -263,17 +342,27 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
-          <Bar yAxisId="right" dataKey="calorie" fill="rgba(136, 132, 216, 0.6)" name="Calories" barSize={timeUnit === 'minute' ? 4 : 15} />
-          <Bar yAxisId="right" dataKey="step" fill="rgba(130, 202, 157, 0.6)" name="Steps" barSize={timeUnit === 'minute' ? 4 : 15} />
-          <Line yAxisId="left" type="monotone" dataKey="bpm" stroke="#ff7300" name="BPM" dot={false} />
-          {timeUnit === 'minute' && (
+          {visibleCharts.calorie && (
+            <Bar yAxisId="right" dataKey="calorie" fill="rgba(231, 78, 216, 0.6)" name="Calories" barSize={timeUnit === 'minute' ? 4 : 15} />
+          )}
+          {visibleCharts.step && (
+            <Bar yAxisId="right" dataKey="step" fill="rgba(130, 202, 157, 0.6)" name="Steps" barSize={timeUnit === 'minute' ? 4 : 15} />
+          )}
+          {visibleCharts.bpm && (
+            <Line yAxisId="left" type="monotone" dataKey="bpm" stroke="#ff7300" name="BPM" dot={false} />
+          )}
+          {visibleCharts.pred_bpm && timeUnit === 'minute' && (
             <Line yAxisId="left" type="monotone" dataKey="min_pred_bpm" stroke="#A0D283" name="Predicted BPM (Minute)" dot={false} />
           )}
-          {timeUnit === 'hour' && (
+          {visibleCharts.pred_bpm && timeUnit === 'hour' && (
             <Line yAxisId="left" type="monotone" dataKey="hour_pred_bpm" stroke="#82ca9d" name="Predicted BPM (Hour)" dot={false} />
           )}
-          <Line yAxisId="left" type="monotone" dataKey="hour_rmssd" stroke="#8884d8" name="RMSSD" dot={false} />
-          <Line yAxisId="left" type="monotone" dataKey="hour_sdnn" stroke="#ffc658" name="SDNN" dot={false} />
+          {visibleCharts.rmssd && timeUnit === 'hour' && (
+            <Line yAxisId="left" type="monotone" dataKey="hour_rmssd" stroke="#8884d8" name="RMSSD" dot={false} />
+          )}
+          {visibleCharts.sdnn && timeUnit === 'hour' && (
+            <Line yAxisId="left" type="monotone" dataKey="hour_sdnn" stroke="#82ca9d" name="SDNN" dot={false} />
+          )}
           <Brush
             dataKey="timestamp"
             height={30}
