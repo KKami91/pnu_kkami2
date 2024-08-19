@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addHours, subHours, startOfHour, endOfHour, addDays } from 'date-fns';
+import { format, parseISO, subDays, addHours, subHours, startOfHour, endOfHour } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -209,21 +209,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return filteredData;
   }, [processedData, timeUnit, brushDomain]);
 
-  const xAxisDomain = useMemo(() => {
-    if (displayData.length === 0) return ['dataMin', 'dataMax'];
-
-    const startTimestamp = displayData[0].timestamp;
-    const endTimestamp = displayData[displayData.length - 1].timestamp;
-
-    if (timeUnit === 'minute') {
-      // For minute data, add 1 hour to the end
-      return [startTimestamp, addHours(endTimestamp, 1).getTime()];
-    } else {
-      // For hour data, add 1 day to the end
-      return [startTimestamp, addDays(endTimestamp, 1).getTime()];
-    }
-  }, [displayData, timeUnit]);
-
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
@@ -249,10 +234,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           </p>
           {payload.map((pld: any) => (
             <p key={pld.dataKey} style={{ color: pld.color }}>
-              {`${pld.name}: ${pld.value !== null ? 
-                (pld.dataKey === 'step' || pld.dataKey === 'calorie' ? 
-                  pld.value.toFixed(0) : pld.value.toFixed(2)) 
-                : 'N/A'}`}
+              {`${pld.name}: ${pld.value !== null ? pld.value.toFixed(2) : 'N/A'}`}
             </p>
           ))}
         </div>
@@ -309,7 +291,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             dataKey="timestamp"
             type="number"
             scale="time"
-            domain={xAxisDomain}
+            domain={['dataMin', 'dataMax']}
             tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
             padding={{ left: 30, right: 30 }}
           />
@@ -321,9 +303,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <YAxis 
             yAxisId="right" 
             orientation="right" 
-            scale="log"
-            domain={[1, 'auto']}
             label={{ value: 'Steps / Calories', angle: 90, position: 'insideRight' }} 
+            domain={[0, 'dataMax']}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
