@@ -23,6 +23,8 @@ type ChartVisibility = {
   sdnn: boolean;
 };
 
+type DateRange = '1' | '7' | '15' | '30' | 'all';
+
 const CombinedChart: React.FC<CombinedChartProps> = ({
   bpmData,
   stepData,
@@ -35,6 +37,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   onBrushChange,
 }) => {
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
+  const [dateRange, setDateRange] = useState<DateRange>('7');
   const [visibleCharts, setVisibleCharts] = useState<ChartVisibility>({
     calorie: true,
     step: true,
@@ -177,12 +180,14 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       const latestDate = new Date(latestPredictTimestamp);
       
       let cutoffDate;
-      if (timeUnit === 'minute') {
-        // 7일 전의 날짜 계산
-        cutoffDate = subDays(latestDate, 7);
+      if (dateRange !== 'all') {
+        cutoffDate = subDays(latestDate, parseInt(dateRange));
       } else {
-        // 30일 전의 날짜 계산
-        cutoffDate = subDays(latestDate, 30);
+        cutoffDate = new Date(Math.min(
+          ...filteredData.map(item => item.timestamp),
+          ...predictMinuteData.map(item => new Date(item.ds).getTime()),
+          ...predictHourData.map(item => new Date(item.ds).getTime())
+        ));
       }
       
       console.log('Latest date:', format(latestDate, 'yyyy-MM-dd HH:mm:ss'));
@@ -209,7 +214,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
 
     return filteredData;
-  }, [processedData, timeUnit, brushDomain, predictMinuteData, predictHourData]);
+  }, [processedData, timeUnit, dateRange, brushDomain, predictMinuteData, predictHourData]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -285,7 +290,29 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             Hour
           </button>
         </div>
+        <div className="flex items-center">
+          <select
+            value={timeUnit}
+            onChange={(e) => setTimeUnit(e.target.value as 'minute' | 'hour')}
+            className="mr-2 p-2 border rounded"
+          >
+            <option value="minute">Minute</option>
+            <option value="hour">Hour</option>
+          </select>
+          <select
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value as DateRange)}
+            className="p-2 border rounded"
+          >
+            <option value="1">1 Day</option>
+            <option value="7">7 Days</option>
+            <option value="15">15 Days</option>
+            <option value="30">30 Days</option>
+            <option value="all">All Data</option>
+          </select>
+        </div>
       </div>
+      
       <ResponsiveContainer width="100%" height={600}>
         <ComposedChart data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
