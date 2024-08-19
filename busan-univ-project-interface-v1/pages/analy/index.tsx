@@ -174,8 +174,11 @@ export default function Home() {
     setSaveDates([])
     if (user) {
       setIsLoadingUser(true)
+      const startTimeUser = performance.now();
       await checkDb(user)
       await fetchSaveDates(user)
+      const endTimeUser = performance.now();
+      console.log(`계정 선택 걸린 시간 : ${endTimeUser - startTimeUser} ms`);
       setIsLoadingUser(false)
     }
   }
