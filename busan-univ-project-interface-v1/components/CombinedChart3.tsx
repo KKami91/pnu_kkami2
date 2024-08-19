@@ -85,6 +85,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       dataMap.get(timestamp)!.hour_rmssd = item.hour_rmssd;
       dataMap.get(timestamp)!.hour_sdnn = item.hour_sdnn;
     });
+
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
     console.log('Combined data sample:', result.slice(0, 5));
     console.log('Combined data length:', result.length);
@@ -163,13 +164,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [onBrushChange]);
 
   const formatDateForDisplay = (time: number) => {
-    const date = new Date(time + 9 * 60 * 60 * 1000); // UTC to KST
+    const date = new Date(time);
     return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
-      const date = new Date(label); // UTC to KST
+      const date = new Date(label);
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
@@ -242,7 +243,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             type="number"
             scale="time"
             domain={['dataMin', 'dataMax']}
-            tickFormatter={(tick) => format(new Date(tick + 9 * 60 * 60 * 1000), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
             padding={{ left: 30, right: 30 }}
           />
           <YAxis 
@@ -285,7 +286,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             height={30}
             stroke="#8884d8"
             onChange={handleBrushChange}
-            tickFormatter={(tick) => format(new Date(tick + 9 * 60 * 60 * 1000), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+            tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
           />
         </ComposedChart>
       </ResponsiveContainer>
