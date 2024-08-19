@@ -47,7 +47,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const combinedData = useMemo(() => {
-    // 모든 데이터를 timestamp 기준으로 결합
     const dataMap = new Map<number, any>();
 
     const processData = (data: any[], key: string) => {
@@ -139,23 +138,27 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return combinedData;
   }, [combinedData, timeUnit, hrvHourData, predictHourData]);
 
-  const displayData = useMemo(() => {
-    if (combinedData.length === 0) return [];
+  const dataRange = useMemo(() => {
+    if (combinedData.length === 0) return { start: new Date(), end: new Date() };
 
     const lastPredictTimestamp = Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()));
-    const startDate = startOfDay(subDays(new Date(lastPredictTimestamp), timeUnit === 'minute' ? 6 : 29));
+    const latestDataTimestamp = Math.max(...combinedData.map(item => item.timestamp));
 
-    return combinedData.filter(item => item.timestamp >= startDate.getTime());
+    const end = new Date(Math.max(lastPredictTimestamp, latestDataTimestamp));
+    const start = startOfDay(subDays(end, timeUnit === 'minute' ? 6 : 29));
+
+    return { start, end };
   }, [combinedData, predictMinuteData, timeUnit]);
 
+  const displayData = useMemo(() => {
+    return combinedData.filter(item => 
+      item.timestamp >= dataRange.start.getTime() && item.timestamp <= dataRange.end.getTime()
+    );
+  }, [combinedData, dataRange]);
+
   const xAxisDomain = useMemo(() => {
-    if (displayData.length === 0) return ['dataMin', 'dataMax'];
-
-    const startTimestamp = displayData[0].timestamp;
-    const endTimestamp = displayData[displayData.length - 1].timestamp;
-
-    return [startTimestamp, endOfDay(new Date(endTimestamp)).getTime()];
-  }, [displayData]);
+    return [dataRange.start.getTime(), endOfDay(dataRange.end).getTime()];
+  }, [dataRange]);
 
   const handleBrushChange = useCallback((domain: any) => {
     if (domain && domain.length === 2) {
@@ -166,11 +169,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       onBrushChange(null);
     }
   }, [onBrushChange]);
-
-  const formatDateForDisplay = (time: number) => {
-    const date = new Date(time);
-    return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
-  };
 
   const visibleData = useMemo(() => {
     if (!brushDomain) return displayData;
