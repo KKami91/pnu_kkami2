@@ -48,6 +48,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   });
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+  const [zoomDomain, setZoomDomain] = useState<[number, number] | null>(null);
 
   const dataRange = useMemo(() => {
     const minuteEnd = new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime())));
@@ -242,22 +243,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   // }, [processedData, dateWindow, brushDomain]);
 
 
-  const handleBrushChange = useCallback((newBrushDomain: any) => {
-    if (newBrushDomain && newBrushDomain.length === 2) {
-      setBrushDomain(newBrushDomain);
-      onBrushChange(newBrushDomain);
-    } else {
-      setBrushDomain(null);
-      onBrushChange(null);
-    }
-  }, [onBrushChange]);
-
-
   const displayData = useMemo(() => {
     let filteredData = processedData;
     
     if (filteredData.length > 0) {
-      // 예측 데이터의 마지막 타임스탬프 찾기
       const latestPredictTimestamp = timeUnit === 'minute'
         ? Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))
         : Math.max(...predictHourData.map(item => new Date(item.ds).getTime()));
@@ -275,42 +264,36 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         ));
       }
       
-      console.log('Latest date:', format(latestDate, 'yyyy-MM-dd HH:mm:ss'));
-      console.log('Cutoff date:', format(cutoffDate, 'yyyy-MM-dd HH:mm:ss'));
-
-      // 필터링 적용
       filteredData = filteredData.filter(item => 
         item.timestamp >= cutoffDate.getTime() && 
         item.timestamp <= latestDate.getTime()
       );
     }
 
-    // 브러시 도메인에 따른 추가 필터링
-    if (brushDomain) {
-      filteredData = filteredData.filter(
-        item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
-      );
-    }
-
-    console.log('Display data length:', filteredData.length);
-    console.log('Display data sample:', filteredData.slice(0, 5));
-    
-    // 데이터의 시간 범위 로깅
-    if (filteredData.length > 0) {
-      const startDate = new Date(filteredData[0].timestamp);
-      const endDate = new Date(filteredData[filteredData.length - 1].timestamp);
-      console.log('Data range:', format(startDate, 'yyyy-MM-dd HH:mm'), 'to', format(endDate, 'yyyy-MM-dd HH:mm'));
-    }
-
     return filteredData;
-  }, [processedData, timeUnit, dateRange, brushDomain, predictMinuteData, predictHourData]);
+  }, [processedData, timeUnit, dateRange, predictMinuteData, predictHourData]);
 
   const xAxisDomain = useMemo(() => {
+    if (zoomDomain) {
+      return zoomDomain;
+    }
     if (displayData.length > 0) {
       return [displayData[0].timestamp, displayData[displayData.length - 1].timestamp];
     }
     return ['dataMin', 'dataMax'];
-  }, [displayData]);
+  }, [displayData, zoomDomain]);
+
+  const handleBrushChange = useCallback((newBrushDomain: any) => {
+    if (newBrushDomain && newBrushDomain.length === 2) {
+      setBrushDomain(newBrushDomain);
+      setZoomDomain(newBrushDomain);
+      onBrushChange(newBrushDomain);
+    } else {
+      setBrushDomain(null);
+      setZoomDomain(null);
+      onBrushChange(null);
+    }
+  }, [onBrushChange]);
 
 
 
