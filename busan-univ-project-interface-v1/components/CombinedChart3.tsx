@@ -245,11 +245,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
-      // 브러시 변경 시 dateWindow 업데이트
-      setDateWindow({
-        start: new Date(newBrushDomain[0]),
-        end: new Date(newBrushDomain[1])
-      });
       onBrushChange(newBrushDomain);
     } else {
       setBrushDomain(null);
@@ -257,29 +252,65 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
   }, [onBrushChange]);
 
+
   const displayData = useMemo(() => {
     let filteredData = processedData;
     
     if (filteredData.length > 0) {
-      console.log('Start date:', format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss'));
-      console.log('End date:', format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'));
+      // 예측 데이터의 마지막 타임스탬프 찾기
+      const latestPredictTimestamp = timeUnit === 'minute'
+        ? Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))
+        : Math.max(...predictHourData.map(item => new Date(item.ds).getTime()));
+      
+      const latestDate = new Date(latestPredictTimestamp);
+      
+      let cutoffDate;
+      if (dateRange !== 'all') {
+        cutoffDate = subDays(latestDate, parseInt(dateRange));
+      } else {
+        cutoffDate = new Date(Math.min(
+          ...filteredData.map(item => item.timestamp),
+          ...predictMinuteData.map(item => new Date(item.ds).getTime()),
+          ...predictHourData.map(item => new Date(item.ds).getTime())
+        ));
+      }
+      
+      console.log('Latest date:', format(latestDate, 'yyyy-MM-dd HH:mm:ss'));
+      console.log('Cutoff date:', format(cutoffDate, 'yyyy-MM-dd HH:mm:ss'));
 
-      // dateWindow를 기준으로 데이터 필터링
+      // 필터링 적용
       filteredData = filteredData.filter(item => 
-        item.timestamp >= dateWindow.start.getTime() && 
-        item.timestamp <= dateWindow.end.getTime()
+        item.timestamp >= cutoffDate.getTime() && 
+        item.timestamp <= latestDate.getTime()
+      );
+    }
+
+    // 브러시 도메인에 따른 추가 필터링
+    if (brushDomain) {
+      filteredData = filteredData.filter(
+        item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
       );
     }
 
     console.log('Display data length:', filteredData.length);
     console.log('Display data sample:', filteredData.slice(0, 5));
     
+    // 데이터의 시간 범위 로깅
+    if (filteredData.length > 0) {
+      const startDate = new Date(filteredData[0].timestamp);
+      const endDate = new Date(filteredData[filteredData.length - 1].timestamp);
+      console.log('Data range:', format(startDate, 'yyyy-MM-dd HH:mm'), 'to', format(endDate, 'yyyy-MM-dd HH:mm'));
+    }
+
     return filteredData;
-  }, [processedData, dateWindow]);
+  }, [processedData, timeUnit, dateRange, brushDomain, predictMinuteData, predictHourData]);
 
   const xAxisDomain = useMemo(() => {
-    return [dateWindow.start.getTime(), dateWindow.end.getTime()];
-  }, [dateWindow]);
+    if (displayData.length > 0) {
+      return [displayData[0].timestamp, displayData[displayData.length - 1].timestamp];
+    }
+    return ['dataMin', 'dataMax'];
+  }, [displayData]);
 
 
 
@@ -373,6 +404,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       </div>
       <ResponsiveContainer width="100%" height={600}>
         <ComposedChart data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="timestamp"
             type="number"
