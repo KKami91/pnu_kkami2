@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
+import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, set } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -54,9 +54,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       ...bpmData.map(item => new Date(item.ds).getTime()),
       ...stepData.map(item => new Date(item.ds).getTime()),
       ...calorieData.map(item => new Date(item.ds).getTime()),
-      ...predictMinuteData.map(item => new Date(item.ds).getTime()),
-      ...predictHourData.map(item => new Date(item.ds).getTime()),
-      ...hrvHourData.map(item => new Date(item.ds).getTime()),
     ];
 
     const start = new Date(Math.min(...allDates));
@@ -65,45 +62,57 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     const hourEnd = new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime())));
 
     return { start, end, minuteEnd, hourEnd };
-  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
+  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
 
-  const [dateWindow, setDateWindow] = useState<{start: Date, end: Date}>(() => {
-    const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
-    const start = subDays(end, parseInt(dateRange) - 1);
-    return { start, end };
-  });
+  // const [dateWindow, setDateWindow] = useState<{start: Date, end: Date}>(() => {
+  //   const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
+  //   const start = subDays(end, parseInt(dateRange) - 1);
+  //   return { start, end };
+  // });
 
   const calculateDateWindow = useCallback((range: DateRange, referenceDate: Date) => {
+    const relevantEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
     let start: Date, end: Date;
+
     switch (range) {
       case '1':
-        start = startOfDay(referenceDate);
-        end = endOfDay(referenceDate);
+        end = min([endOfDay(referenceDate), relevantEnd]);
+        start = startOfDay(end);
+        // 첫 데이터가 중간부터 시작할 경우 처리
+        if (start < dataRange.start) {
+          start = set(dataRange.start, { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 });
+        }
         break;
       case '7':
-        start = startOfWeek(referenceDate, { weekStartsOn: 1 }); // 월요일부터 시작
-        end = endOfWeek(referenceDate, { weekStartsOn: 1 });
+        end = min([endOfWeek(referenceDate, { weekStartsOn: 1 }), relevantEnd]);
+        start = max([startOfWeek(end, { weekStartsOn: 1 }), dataRange.start]);
         break;
       case '15':
-        start = startOfMonth(referenceDate);
-        end = new Date(start.getFullYear(), start.getMonth(), 15, 23, 59, 59);
+        end = min([new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 15, 23, 59, 59), relevantEnd]);
+        start = max([startOfMonth(end), dataRange.start]);
         break;
       case '30':
-        start = startOfMonth(referenceDate);
-        end = endOfMonth(referenceDate);
+        end = min([endOfMonth(referenceDate), relevantEnd]);
+        start = max([startOfMonth(end), dataRange.start]);
         break;
       case 'all':
         start = dataRange.start;
-        end = dataRange.end;
+        end = relevantEnd;
         break;
       default:
         start = startOfDay(referenceDate);
         end = endOfDay(referenceDate);
     }
+
+    // 마지막 날짜 처리
+    if (end > relevantEnd) {
+      end = relevantEnd;
+    }
+
     return { start, end };
-  }, [dataRange]);
+  }, [dataRange, timeUnit]);
 
-
+  const [dateWindow, setDateWindow] = useState(() => calculateDateWindow(dateRange, dataRange.minuteEnd));
 
   useEffect(() => {
     setDateWindow(calculateDateWindow(dateRange, dataRange.end));
