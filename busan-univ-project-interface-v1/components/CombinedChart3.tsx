@@ -215,31 +215,31 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return combinedData;
   }, [combinedData, timeUnit, hrvHourData, predictHourData]);
 
-  const displayData = useMemo(() => {
-    let filteredData = processedData;
+  // const displayData = useMemo(() => {
+  //   let filteredData = processedData;
     
-    if (filteredData.length > 0) {
-      console.log('Start date:', format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss'));
-      console.log('End date:', format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'));
+  //   if (filteredData.length > 0) {
+  //     console.log('Start date:', format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss'));
+  //     console.log('End date:', format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'));
 
-      // 필터링 적용
-      filteredData = filteredData.filter(item => 
-        item.timestamp >= startOfDay(dateWindow.start).getTime() && 
-        item.timestamp <= dateWindow.end.getTime()
-      );
-    }
+  //     // 필터링 적용
+  //     filteredData = filteredData.filter(item => 
+  //       item.timestamp >= startOfDay(dateWindow.start).getTime() && 
+  //       item.timestamp <= dateWindow.end.getTime()
+  //     );
+  //   }
 
-    if (brushDomain) {
-      filteredData = filteredData.filter(
-        item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
-      );
-    }
+  //   if (brushDomain) {
+  //     filteredData = filteredData.filter(
+  //       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+  //     );
+  //   }
 
-    console.log('Display data length:', filteredData.length);
-    console.log('Display data sample:', filteredData.slice(0, 5));
+  //   console.log('Display data length:', filteredData.length);
+  //   console.log('Display data sample:', filteredData.slice(0, 5));
     
-    return filteredData;
-  }, [processedData, dateWindow, brushDomain]);
+  //   return filteredData;
+  // }, [processedData, dateWindow, brushDomain]);
 
   const xAxisDomain = useMemo(() => {
     return [dateWindow.start.getTime(), dateWindow.end.getTime()];
@@ -248,12 +248,42 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
+      // 브러시 변경 시 dateWindow를 업데이트하지 않음
+      // 대신 onBrushChange 콜백을 통해 부모 컴포넌트에 브러시 위치만 알림
       onBrushChange(newBrushDomain);
     } else {
       setBrushDomain(null);
       onBrushChange(null);
     }
   }, [onBrushChange]);
+
+  const displayData = useMemo(() => {
+    let filteredData = processedData;
+    
+    if (filteredData.length > 0) {
+      console.log('Start date:', format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss'));
+      console.log('End date:', format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'));
+
+      // dateWindow를 기준으로 데이터 필터링
+      filteredData = filteredData.filter(item => 
+        item.timestamp >= startOfDay(dateWindow.start).getTime() && 
+        item.timestamp <= dateWindow.end.getTime()
+      );
+    }
+
+    // 브러시에 의한 필터링 제거
+    // if (brushDomain) {
+    //   filteredData = filteredData.filter(
+    //     item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+    //   );
+    // }
+
+    console.log('Display data length:', filteredData.length);
+    console.log('Display data sample:', filteredData.slice(0, 5));
+    
+    return filteredData;
+  }, [processedData, dateWindow]);
+
 
   // const formatDateForDisplay = (time: number) => {
   //   const date = new Date(time);
