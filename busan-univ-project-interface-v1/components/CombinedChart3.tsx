@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine } from 'recharts';
-import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
+import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -47,86 +47,54 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     sdnn: true,
   });
 
-  const [fullDataRange, setFullDataRange] = useState<{ start: Date; end: Date }>({ start: new Date(), end: new Date() });
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const dataRange = useMemo(() => {
+    const minuteEnd = new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime())));
+    const hourEnd = new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime())));
     const allDates = [
       ...bpmData.map(item => new Date(item.ds).getTime()),
       ...stepData.map(item => new Date(item.ds).getTime()),
       ...calorieData.map(item => new Date(item.ds).getTime()),
-      ...predictMinuteData.map(item => new Date(item.ds).getTime()),
-      ...predictHourData.map(item => new Date(item.ds).getTime()),
-      ...hrvHourData.map(item => new Date(item.ds).getTime()),
+      minuteEnd.getTime(),
+      hourEnd.getTime(),
     ];
 
-    const start = new Date(Math.min(...allDates));
-    const end = new Date(Math.max(...allDates));
-    const minuteEnd = new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime())));
-    const hourEnd = new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime())));
+    return {
+      start: new Date(Math.min(...allDates)),
+      end: new Date(Math.max(...allDates)),
+      minuteEnd,
+      hourEnd,
+    };
+  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
 
-    return { start, end, minuteEnd, hourEnd };
-  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
-
-  const calculateDateWindow = useCallback((range: DateRange, referenceDate: Date) => {
-    let start: Date, end: Date;
-    const relevantEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
-    switch (range) {
-      case '1':
-        end = min([endOfDay(referenceDate), relevantEnd]);
-        start = startOfDay(end);
-        break;
-      case '7':
-        end = min([endOfWeek(referenceDate, { weekStartsOn: 1 }), relevantEnd]);
-        start = max([startOfWeek(end, { weekStartsOn: 1 }), dataRange.start]);
-        break;
-      case '15':
-        end = min([new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 15, 23, 59, 59), relevantEnd]);
-        start = max([startOfMonth(end), dataRange.start]);
-        break;
-      case '30':
-        end = min([endOfMonth(referenceDate), relevantEnd]);
-        start = max([startOfMonth(end), dataRange.start]);
-        break;
-      case 'all':
-        start = dataRange.start;
-        end = relevantEnd;
-        break;
-      default:
-        start = startOfDay(referenceDate);
-        end = endOfDay(referenceDate);
-    }
+  const [dateWindow, setDateWindow] = useState<{start: Date, end: Date}>(() => {
+    const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
+    const start = subDays(end, parseInt(dateRange) - 1);
     return { start, end };
-  }, [dataRange, timeUnit]);
-
-  const [dateWindow, setDateWindow] = useState(() => calculateDateWindow(dateRange, dataRange.end));
+  });
 
   useEffect(() => {
-    setDateWindow(calculateDateWindow(dateRange, dataRange.end));
-  }, [dateRange, dataRange, calculateDateWindow, timeUnit]);
+    const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
+    const start = subDays(end, parseInt(dateRange) - 1);
+    setDateWindow({ start, end });
+  }, [timeUnit, dateRange, dataRange]);
 
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
+    const days = parseInt(dateRange);
     setDateWindow(prev => {
-      const diff = direction === 'forward' ? 1 : -1;
-      let newReferenceDate: Date;
-      switch (dateRange) {
-        case '1':
-          newReferenceDate = addDays(prev.start, diff);
-          break;
-        case '7':
-          newReferenceDate = addDays(prev.start, 7 * diff);
-          break;
-        case '15':
-        case '30':
-          newReferenceDate = addDays(prev.start, 30 * diff);
-          break;
-        default:
-          return prev;
+      let newStart: Date, newEnd: Date;
+      const currentEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
+      if (direction === 'forward') {
+        newEnd = min([addDays(prev.end, days), currentEnd]);
+        newStart = subDays(newEnd, days - 1);
+      } else {
+        newStart = max([subDays(prev.start, days), dataRange.start]);
+        newEnd = min([addDays(newStart, days - 1), currentEnd]);
       }
-      return calculateDateWindow(dateRange, newReferenceDate);
+      return { start: newStart, end: newEnd };
     });
   };
-
 
   const combinedData = useMemo(() => {
     console.log('Combining data...');
@@ -248,15 +216,34 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [combinedData, timeUnit, hrvHourData, predictHourData]);
 
   const displayData = useMemo(() => {
-    return processedData;
-  }, [processedData]);
+    let filteredData = processedData;
+    
+    if (filteredData.length > 0) {
+      console.log('Start date:', format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss'));
+      console.log('End date:', format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'));
+
+      // 필터링 적용
+      filteredData = filteredData.filter(item => 
+        item.timestamp >= startOfDay(dateWindow.start).getTime() && 
+        item.timestamp <= dateWindow.end.getTime()
+      );
+    }
+
+    if (brushDomain) {
+      filteredData = filteredData.filter(
+        item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+      );
+    }
+
+    console.log('Display data length:', filteredData.length);
+    console.log('Display data sample:', filteredData.slice(0, 5));
+    
+    return filteredData;
+  }, [processedData, dateWindow, brushDomain]);
 
   const xAxisDomain = useMemo(() => {
-    if (brushDomain) {
-      return brushDomain;
-    }
     return [dateWindow.start.getTime(), dateWindow.end.getTime()];
-  }, [dateWindow, brushDomain]);
+  }, [dateWindow]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
@@ -268,11 +255,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
   }, [onBrushChange]);
 
-  const isForwardDisabled = useMemo(() => {
-    if (dateRange === 'all') return true;
-    const relevantEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
-    return dateWindow.end >= relevantEnd;
-  }, [dateRange, timeUnit, dateWindow, dataRange]);
+  // const formatDateForDisplay = (time: number) => {
+  //   const date = new Date(time);
+  //   return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
+  // };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -292,7 +278,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
     return null;
   };
-
 
   const colors = {
     calorie: 'rgba(136, 132, 216, 0.6)',
@@ -352,7 +337,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <button 
             onClick={() => handleDateNavigation('forward')}
             className="px-2 py-1 bg-blue-500 text-white rounded ml-2"
-            disabled={isForwardDisabled}
+            disabled={dateRange === 'all' || dateWindow.end >= (timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd)}
           >
             →
           </button>
@@ -403,8 +388,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           {visibleCharts.sdnn && timeUnit === 'hour' && (
             <Line yAxisId="left" type="monotone" dataKey="hour_sdnn" stroke="#82ca9d" name="SDNN" dot={false} />
           )}
-          <ReferenceLine x={dateWindow.start.getTime()} stroke="red" />
-          <ReferenceLine x={dateWindow.end.getTime()} stroke="red" />
           <Brush
             dataKey="timestamp"
             height={30}
