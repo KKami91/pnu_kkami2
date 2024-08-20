@@ -51,6 +51,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const dataRange = useMemo(() => {
+    if (!bpmData.length || !stepData.length || !calorieData.length || 
+        !predictMinuteData.length || !predictHourData.length || !hrvHourData.length) {
+      return { start: new Date(), end: new Date(), minuteEnd: new Date(), hourEnd: new Date() };
+    }
+
     const allDates = [
       ...bpmData.map(item => new Date(item.ds).getTime()),
       ...stepData.map(item => new Date(item.ds).getTime()),
@@ -164,6 +169,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(predictMinuteData, 'min_pred_bpm', false);
     processData(predictHourData, 'hour_pred_bpm', false);
 
+    if (!bpmData.length || !stepData.length || !calorieData.length || 
+        !predictMinuteData.length || !predictHourData.length || !hrvHourData.length) {
+      return [];
+    }
+
     hrvHourData.forEach(item => {
       const timestamp = new Date(item.ds).getTime();
       if (!dataMap.has(timestamp)) {
@@ -189,6 +199,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const processedData = useMemo(() => {
     console.log('Processing data for time unit:', timeUnit);
+    
     if (timeUnit === 'hour') {
       const hourlyData = new Map<number, any>();
 
@@ -216,6 +227,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       processHourlyData(combinedData, 'step');
       processHourlyData(combinedData, 'calorie');
       processHourlyData(combinedData, 'min_pred_bpm');
+
+      
 
       // HRV 데이터 처리 (이미 시간별 데이터)
       hrvHourData.forEach(item => {
