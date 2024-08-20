@@ -245,16 +245,30 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return [dateWindow.start.getTime(), dateWindow.end.getTime()];
   }, [dateWindow]);
 
-  const handleBrushChange = useCallback((newBrushDomain: any) => {
-    if (newBrushDomain && newBrushDomain.length === 2) {
-      setBrushDomain(newBrushDomain);
-      onBrushChange(newBrushDomain);
+  const handleBrushChange = useCallback((domain: any, props?: any) => {
+    if (Array.isArray(domain) && domain.length === 2 && typeof domain[0] === 'number' && typeof domain[1] === 'number') {
+      setBrushDomain(domain as [number, number]);
+      onBrushChange(domain as [number, number]);
+    } else if (props && typeof props.startIndex === 'number' && typeof props.endIndex === 'number') {
+      const newDomain: [number, number] = [
+        displayData[props.startIndex].timestamp,
+        displayData[props.endIndex].timestamp
+      ];
+      setBrushDomain(newDomain);
+      onBrushChange(newDomain);
     } else {
       setBrushDomain(null);
       onBrushChange(null);
     }
-  }, [onBrushChange]);
+  }, [displayData, onBrushChange]);
 
+  const visibleData = useMemo(() => {
+    if (!brushDomain) return displayData;
+    return displayData.filter(item => 
+      item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+    );
+  }, [displayData, brushDomain]);
+  
   // const formatDateForDisplay = (time: number) => {
   //   const date = new Date(time);
   //   return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
