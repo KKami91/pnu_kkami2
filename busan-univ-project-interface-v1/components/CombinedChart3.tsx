@@ -2,11 +2,6 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine } from 'recharts';
 import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 
-interface DataItem {
-  ds: string;
-  [key: string]: any;
-}
-
 interface CombinedChartProps {
   bpmData: any[];
   stepData: any[];
@@ -37,6 +32,9 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   predictMinuteData,
   predictHourData,
   hrvHourData,
+  globalStartDate,
+  globalEndDate,
+  onBrushChange,
 }) => {
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
   const [dateRange, setDateRange] = useState<DateRange>('7');
@@ -54,13 +52,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const dataRange = useMemo(() => {
     const allDates = [
-      ...bpmData, ...stepData, ...calorieData,
-      ...predictMinuteData, ...predictHourData, ...hrvHourData
-    ].map(item => new Date(item.ds).getTime());
-
-    if (allDates.length === 0) {
-      return { start: new Date(), end: new Date(), minuteEnd: new Date(), hourEnd: new Date() };
-    }
+      ...bpmData.map(item => new Date(item.ds).getTime()),
+      ...stepData.map(item => new Date(item.ds).getTime()),
+      ...calorieData.map(item => new Date(item.ds).getTime()),
+      ...predictMinuteData.map(item => new Date(item.ds).getTime()),
+      ...predictHourData.map(item => new Date(item.ds).getTime()),
+      ...hrvHourData.map(item => new Date(item.ds).getTime()),
+    ];
 
     const start = new Date(Math.min(...allDates));
     const end = new Date(Math.max(...allDates));
@@ -71,9 +69,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
   const calculateDateWindow = useCallback((range: DateRange, referenceDate: Date) => {
-    const relevantEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
     let start: Date, end: Date;
-
+    const relevantEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
     switch (range) {
       case '1':
         end = min([endOfDay(referenceDate), relevantEnd]);
@@ -92,11 +89,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         start = max([startOfMonth(end), dataRange.start]);
         break;
       case 'all':
-      default:
         start = dataRange.start;
         end = relevantEnd;
+        break;
+      default:
+        start = startOfDay(referenceDate);
+        end = endOfDay(referenceDate);
     }
-
     return { start, end };
   }, [dataRange, timeUnit]);
 
@@ -104,7 +103,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   useEffect(() => {
     setDateWindow(calculateDateWindow(dateRange, dataRange.end));
-  }, [dateRange, dataRange, calculateDateWindow]);
+  }, [dateRange, dataRange, calculateDateWindow, timeUnit]);
 
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
     setDateWindow(prev => {
@@ -130,27 +129,54 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
 
   const combinedData = useMemo(() => {
+    console.log('Combining data...');
     const dataMap = new Map<number, any>();
 
-    const processData = (data: DataItem[], key: string) => {
+    const processData = (data: any[], key: string, adjustTime: boolean = true) => {
+      if (!Array.isArray(data)) {
+        console.error(`Invalid data for ${key}: expected array, got`, data);
+        return;
+      }
+      console.log(`Processing ${key} data, length:`, data.length);
       data.forEach(item => {
-        const timestamp = new Date(item.ds).getTime();
-        if (!dataMap.has(timestamp)) {
-          dataMap.set(timestamp, { timestamp });
+        if (item && typeof item.ds === 'string') {
+          let timestamp = new Date(item.ds).getTime();
+          if (adjustTime) {
+            timestamp = subHours(new Date(timestamp), 9).getTime();
+          }
+          if (!dataMap.has(timestamp)) {
+            dataMap.set(timestamp, { timestamp });
+          }
+          const value = item[key];
+          if (typeof value === 'number') {
+            dataMap.get(timestamp)![key] = value;
+          }
         }
-        dataMap.get(timestamp)![key] = item[key];
       });
     };
 
-    processData(bpmData, 'bpm');
-    processData(stepData, 'step');
-    processData(calorieData, 'calorie');
-    processData(predictMinuteData, 'min_pred_bpm');
-    processData(predictHourData, 'hour_pred_bpm');
-    processData(hrvHourData, 'hour_rmssd');
-    processData(hrvHourData, 'hour_sdnn');
+    // MongoDB 데이터 처리 (시간 조정)
+    processData(bpmData, 'bpm', true);
+    processData(stepData, 'step', true);
+    processData(calorieData, 'calorie', true);
 
-    return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    // 예측 및 HRV 데이터 처리 (시간 조정 없음)
+    processData(predictMinuteData, 'min_pred_bpm', false);
+    processData(predictHourData, 'hour_pred_bpm', false);
+
+    hrvHourData.forEach(item => {
+      const timestamp = new Date(item.ds).getTime();
+      if (!dataMap.has(timestamp)) {
+        dataMap.set(timestamp, { timestamp });
+      }
+      dataMap.get(timestamp)!.hour_rmssd = item.hour_rmssd;
+      dataMap.get(timestamp)!.hour_sdnn = item.hour_sdnn;
+    });
+
+    const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    console.log('Combined data sample:', result.slice(0, 5));
+    console.log('Combined data length:', result.length);
+    return result;
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
   // const filteredData = useMemo(() => {
@@ -163,7 +189,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const processedData = useMemo(() => {
     console.log('Processing data for time unit:', timeUnit);
-    
     if (timeUnit === 'hour') {
       const hourlyData = new Map<number, any>();
 
@@ -191,8 +216,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       processHourlyData(combinedData, 'step');
       processHourlyData(combinedData, 'calorie');
       processHourlyData(combinedData, 'min_pred_bpm');
-
-      
 
       // HRV 데이터 처리 (이미 시간별 데이터)
       hrvHourData.forEach(item => {
@@ -225,8 +248,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [combinedData, timeUnit, hrvHourData, predictHourData]);
 
   const displayData = useMemo(() => {
-    return combinedData;
-  }, [combinedData]);
+    return processedData;
+  }, [processedData]);
 
   const xAxisDomain = useMemo(() => {
     if (brushDomain) {
@@ -238,10 +261,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
+      onBrushChange(newBrushDomain);
     } else {
       setBrushDomain(null);
+      onBrushChange(null);
     }
-  }, []);
+  }, [onBrushChange]);
 
   const isForwardDisabled = useMemo(() => {
     if (dateRange === 'all') return true;
@@ -254,7 +279,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       const date = new Date(label);
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
-          <p className="font-bold" style={{ color: '#ff7300' }}>
+          <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
             {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
           {payload.map((pld: any) => (
@@ -267,10 +292,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
     return null;
   };
-
-  if (displayData.length === 0) {
-    return <div>Loading data...</div>;
-  }
 
 
   const colors = {
