@@ -47,14 +47,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     sdnn: true,
   });
 
-  const [brushPosition, setBrushPosition] = useState<[number, number] | null>(null);
-
-
-
-
-
-
-
   const combinedData = useMemo(() => {
     console.log('Combining data...');
     const dataMap = new Map<number, any>();
@@ -107,25 +99,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
   const dataRange = useMemo(() => {
-    const minuteEnd = new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime())));
-    const hourEnd = new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime())));
-    const allDates = [
-      ...bpmData.map(item => new Date(item.ds).getTime()),
-      ...stepData.map(item => new Date(item.ds).getTime()),
-      ...calorieData.map(item => new Date(item.ds).getTime()),
-      minuteEnd.getTime(),
-      hourEnd.getTime(),
-    ];
-
+    const allDates = combinedData.map(item => item.timestamp);
     return {
       start: new Date(Math.min(...allDates)),
       end: new Date(Math.max(...allDates)),
-      minuteEnd,
-      hourEnd,
+      minuteEnd: new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))),
+      hourEnd: new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime()))),
     };
-  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
+  }, [combinedData, predictMinuteData, predictHourData]);
 
-  
   const [dateWindow, setDateWindow] = useState<{start: Date, end: Date}>(() => {
     const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
     const start = subDays(end, parseInt(dateRange) - 1);
@@ -136,7 +118,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
     const start = subDays(end, parseInt(dateRange) - 1);
     setDateWindow({ start, end });
-    setBrushPosition(null);  // Reset brush position when date range changes
   }, [timeUnit, dateRange, dataRange]);
 
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
@@ -164,11 +145,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const handleBrushChange = useCallback((domain: any) => {
     if (Array.isArray(domain) && domain.length === 2) {
-      setBrushPosition(domain as [number, number]);
+      setDateWindow({
+        start: new Date(domain[0]),
+        end: new Date(domain[1])
+      });
       onBrushChange(domain as [number, number]);
-    } else {
-      setBrushPosition(null);
-      onBrushChange(null);
     }
   }, [onBrushChange]);
 
@@ -410,13 +391,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           )}
           {visibleCharts.sdnn && timeUnit === 'hour' && (
             <Line yAxisId="left" type="monotone" dataKey="hour_sdnn" stroke="#82ca9d" name="SDNN" dot={false} />
-          )}
-          {brushPosition && (
-            <ReferenceArea
-              x1={brushPosition[0]}
-              x2={brushPosition[1]}
-              strokeOpacity={0.3}
-            />
           )}
           <Brush
             dataKey="timestamp"
