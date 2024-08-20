@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min } from 'date-fns';
+import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -38,7 +38,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 }) => {
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
   const [dateRange, setDateRange] = useState<DateRange>('7');
-  const [fullDataRange, setFullDataRange] = useState<{ start: Date; end: Date }>({ start: new Date(), end: new Date() });
   const [visibleCharts, setVisibleCharts] = useState<ChartVisibility>({
     calorie: true,
     step: true,
@@ -48,6 +47,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     sdnn: true,
   });
 
+  const [fullDataRange, setFullDataRange] = useState<{ start: Date; end: Date }>({ start: new Date(), end: new Date() });
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const dataRange = useMemo(() => {
@@ -62,43 +62,70 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
     const start = new Date(Math.min(...allDates));
     const end = new Date(Math.max(...allDates));
+    const minuteEnd = new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime())));
+    const hourEnd = new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime())));
 
-    setFullDataRange({ start, end });
-
-    return {
-      start,
-      end,
-      minuteEnd: end,
-      hourEnd: end,
-    };
+    return { start, end, minuteEnd, hourEnd };
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
-  const [dateWindow, setDateWindow] = useState<{start: Date, end: Date}>(() => {
-    const end = dataRange.end;
-    const start = subDays(end, parseInt(dateRange) - 1);
+  const calculateDateWindow = useCallback((range: DateRange, referenceDate: Date) => {
+    let start: Date, end: Date;
+    switch (range) {
+      case '1':
+        start = startOfDay(referenceDate);
+        end = endOfDay(referenceDate);
+        break;
+      case '7':
+        start = startOfWeek(referenceDate, { weekStartsOn: 1 }); // 월요일부터 시작
+        end = endOfWeek(referenceDate, { weekStartsOn: 1 });
+        break;
+      case '15':
+        start = startOfMonth(referenceDate);
+        end = new Date(start.getFullYear(), start.getMonth(), 15, 23, 59, 59);
+        break;
+      case '30':
+        start = startOfMonth(referenceDate);
+        end = endOfMonth(referenceDate);
+        break;
+      case 'all':
+        start = dataRange.start;
+        end = dataRange.end;
+        break;
+      default:
+        start = startOfDay(referenceDate);
+        end = endOfDay(referenceDate);
+    }
     return { start, end };
-  });
+  }, [dataRange]);
+
+  const [dateWindow, setDateWindow] = useState(() => calculateDateWindow(dateRange, dataRange.end));
 
   useEffect(() => {
-    const end = dataRange.end;
-    const start = subDays(end, parseInt(dateRange) - 1);
-    setDateWindow({ start, end });
-  }, [dateRange, dataRange]);
+    setDateWindow(calculateDateWindow(dateRange, dataRange.end));
+  }, [dateRange, dataRange, calculateDateWindow]);
 
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
-    const days = parseInt(dateRange);
     setDateWindow(prev => {
-      let newStart: Date, newEnd: Date;
-      if (direction === 'forward') {
-        newEnd = min([addDays(prev.end, days), dataRange.end]);
-        newStart = subDays(newEnd, days - 1);
-      } else {
-        newStart = max([subDays(prev.start, days), dataRange.start]);
-        newEnd = min([addDays(newStart, days - 1), dataRange.end]);
+      const diff = direction === 'forward' ? 1 : -1;
+      let newReferenceDate: Date;
+      switch (dateRange) {
+        case '1':
+          newReferenceDate = addDays(prev.start, diff);
+          break;
+        case '7':
+          newReferenceDate = addDays(prev.start, 7 * diff);
+          break;
+        case '15':
+        case '30':
+          newReferenceDate = addDays(prev.start, 30 * diff);
+          break;
+        default:
+          return prev;
       }
-      return { start: newStart, end: newEnd };
+      return calculateDateWindow(dateRange, newReferenceDate);
     });
   };
+
 
   const combinedData = useMemo(() => {
     console.log('Combining data...');
@@ -219,70 +246,29 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return combinedData;
   }, [combinedData, timeUnit, hrvHourData, predictHourData]);
 
-  // const displayData = useMemo(() => {
-  //   let filteredData = processedData;
-    
-  //   if (filteredData.length > 0) {
-  //     console.log('Start date:', format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss'));
-  //     console.log('End date:', format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'));
-
-  //   // 날짜 범위에 따른 필터링
-  //   filteredData = filteredData.filter(item => 
-  //     item.timestamp >= dateWindow.start.getTime() && 
-  //     item.timestamp <= dateWindow.end.getTime()
-  //   );
-  //   }
-
-  //   if (brushDomain) {
-  //     filteredData = filteredData.filter(
-  //       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
-  //     );
-  //   }
-
-  //   console.log('Display data length:', filteredData.length);
-  //   console.log('Display data sample:', filteredData.slice(0, 5));
-    
-  //   return filteredData;
-  // }, [processedData, dateWindow, brushDomain]);
-
   const displayData = useMemo(() => {
-    let filteredData = processedData;
-    
-    // 날짜 범위에 따른 필터링
-    filteredData = filteredData.filter(item => 
+    return processedData.filter(item => 
       item.timestamp >= dateWindow.start.getTime() && 
       item.timestamp <= dateWindow.end.getTime()
     );
-
-    // 브러시 도메인에 따른 필터링 제거
-    // if (brushDomain) {
-    //   filteredData = filteredData.filter(
-    //     item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
-    //   );
-    // }
-
-    return filteredData;
   }, [processedData, dateWindow]);
 
   const xAxisDomain = useMemo(() => {
+    if (brushDomain) {
+      return brushDomain;
+    }
     return [dateWindow.start.getTime(), dateWindow.end.getTime()];
-  }, [dateWindow]);
+  }, [dateWindow, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
-      // 브러시 변경 시 dateWindow 업데이트
-      setDateWindow({
-        start: new Date(newBrushDomain[0]),
-        end: new Date(newBrushDomain[1])
-      });
+      setBrushDomain(newBrushDomain);
       onBrushChange(newBrushDomain);
+    } else {
+      setBrushDomain(null);
+      onBrushChange(null);
     }
   }, [onBrushChange]);
-
-  // const formatDateForDisplay = (time: number) => {
-  //   const date = new Date(time);
-  //   return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
-  // };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -302,6 +288,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
     return null;
   };
+
+  const isForwardDisabled = useMemo(() => {
+    if (dateRange === 'all') return true;
+    const relevantEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
+    return dateWindow.end >= relevantEnd;
+  }, [dateRange, timeUnit, dateWindow, dataRange]);
 
   const colors = {
     calorie: 'rgba(136, 132, 216, 0.6)',
@@ -361,7 +353,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <button 
             onClick={() => handleDateNavigation('forward')}
             className="px-2 py-1 bg-blue-500 text-white rounded ml-2"
-            disabled={dateRange === 'all' || dateWindow.end >= (timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd)}
+            disabled={isForwardDisabled}
           >
             →
           </button>
