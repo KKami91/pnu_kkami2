@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceArea } from 'recharts';
-import { format, parseISO, subDays, addDays, startOfDay, endOfDay, max, min, subHours, startOfHour } from 'date-fns';
+import { format, parseISO, subDays, addDays, startOfDay, endOfDay, max, min, subHours, startOfHour, differenceInDays } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -126,11 +126,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       let newStart: Date, newEnd: Date;
       const currentEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
       if (direction === 'forward') {
-        newEnd = min([addDays(prev.end, days), currentEnd]);
+        newEnd = new Date(Math.min(addDays(prev.end, days).getTime(), currentEnd.getTime()));
         newStart = subDays(newEnd, days - 1);
       } else {
-        newStart = max([subDays(prev.start, days), dataRange.start]);
-        newEnd = min([addDays(newStart, days - 1), currentEnd]);
+        newStart = new Date(Math.max(subDays(prev.start, days).getTime(), dataRange.start.getTime()));
+        newEnd = addDays(newStart, days - 1);
       }
       return { start: newStart, end: newEnd };
     });
@@ -145,11 +145,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const handleBrushChange = useCallback((domain: any) => {
     if (Array.isArray(domain) && domain.length === 2) {
-      setDateWindow({
-        start: new Date(domain[0]),
-        end: new Date(domain[1])
-      });
-      onBrushChange(domain as [number, number]);
+      const newStart = new Date(domain[0]);
+      const newEnd = new Date(domain[1]);
+      if (differenceInDays(newEnd, newStart) >= 1) {
+        setDateWindow({ start: newStart, end: newEnd });
+        onBrushChange([newStart.getTime(), newEnd.getTime()]);
+      }
     }
   }, [onBrushChange]);
 
@@ -398,6 +399,8 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             stroke="#8884d8"
             onChange={handleBrushChange}
             tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+            startIndex={0}
+            endIndex={displayData.length - 1}
           />
         </ComposedChart>
       </ResponsiveContainer>
