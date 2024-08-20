@@ -48,85 +48,63 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   });
 
   const combinedData = useMemo(() => {
-    console.log('Combining data...');
     const dataMap = new Map<number, any>();
 
-    const processData = (data: any[], key: string, adjustTime: boolean = true) => {
-      if (!Array.isArray(data)) {
-        console.error(`Invalid data for ${key}: expected array, got`, data);
-        return;
-      }
-      console.log(`Processing ${key} data, length:`, data.length);
+    const processData = (data: any[], key: string) => {
       data.forEach(item => {
         if (item && typeof item.ds === 'string') {
-          let timestamp = new Date(item.ds).getTime();
-          if (adjustTime) {
-            timestamp = subHours(new Date(timestamp), 9).getTime();
-          }
+          const timestamp = new Date(item.ds).getTime();
           if (!dataMap.has(timestamp)) {
             dataMap.set(timestamp, { timestamp });
           }
-          const value = item[key];
-          if (typeof value === 'number') {
-            dataMap.get(timestamp)![key] = value;
-          }
+          dataMap.get(timestamp)[key] = item[key];
         }
       });
     };
 
-    // MongoDB 데이터 처리 (시간 조정)
-    processData(bpmData, 'bpm', true);
-    processData(stepData, 'step', true);
-    processData(calorieData, 'calorie', true);
-
-    // 예측 및 HRV 데이터 처리 (시간 조정 없음)
-    processData(predictMinuteData, 'min_pred_bpm', false);
-    processData(predictHourData, 'hour_pred_bpm', false);
-
+    processData(bpmData, 'bpm');
+    processData(stepData, 'step');
+    processData(calorieData, 'calorie');
+    processData(predictMinuteData, 'min_pred_bpm');
+    processData(predictHourData, 'hour_pred_bpm');
     hrvHourData.forEach(item => {
       const timestamp = new Date(item.ds).getTime();
       if (!dataMap.has(timestamp)) {
         dataMap.set(timestamp, { timestamp });
       }
-      dataMap.get(timestamp)!.hour_rmssd = item.hour_rmssd;
-      dataMap.get(timestamp)!.hour_sdnn = item.hour_sdnn;
+      dataMap.get(timestamp).hour_rmssd = item.hour_rmssd;
+      dataMap.get(timestamp).hour_sdnn = item.hour_sdnn;
     });
 
-    const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
-    console.log('Combined data sample:', result.slice(0, 5));
-    console.log('Combined data length:', result.length);
-    return result;
+    return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
   const dataRange = useMemo(() => {
-    const allDates = combinedData.map(item => item.timestamp);
+    const timestamps = combinedData.map(item => item.timestamp);
     return {
-      start: new Date(Math.min(...allDates)),
-      end: new Date(Math.max(...allDates)),
-      minuteEnd: new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))),
-      hourEnd: new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime()))),
+      start: new Date(Math.min(...timestamps)),
+      end: new Date(Math.max(...timestamps)),
     };
-  }, [combinedData, predictMinuteData, predictHourData]);
+  }, [combinedData]);
 
   const [dateWindow, setDateWindow] = useState<{start: Date, end: Date}>(() => {
-    const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
+    const end = dataRange.end;
     const start = subDays(end, parseInt(dateRange) - 1);
     return { start, end };
   });
 
   useEffect(() => {
-    const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
-    const start = subDays(end, parseInt(dateRange) - 1);
+    const end = dataRange.end;
+    const start = dateRange === 'all' ? dataRange.start : subDays(end, parseInt(dateRange) - 1);
     setDateWindow({ start, end });
-  }, [timeUnit, dateRange, dataRange]);
+  }, [dateRange, dataRange]);
 
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
-    const days = parseInt(dateRange);
+    const days = dateRange === 'all' ? differenceInDays(dataRange.end, dataRange.start) : parseInt(dateRange);
     setDateWindow(prev => {
       let newStart: Date, newEnd: Date;
-      const currentEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
       if (direction === 'forward') {
-        newEnd = new Date(Math.min(addDays(prev.end, days).getTime(), currentEnd.getTime()));
+        newEnd = new Date(Math.min(addDays(prev.end, days).getTime(), dataRange.end.getTime()));
         newStart = subDays(newEnd, days - 1);
       } else {
         newStart = new Date(Math.max(subDays(prev.start, days).getTime(), dataRange.start.getTime()));
@@ -136,139 +114,24 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     });
   };
 
-  const processedData = useMemo(() => {
-    console.log('Processing data for time unit:', timeUnit);
-    if (timeUnit === 'hour') {
-      const hourlyData = new Map<number, any>();
-
-      const processHourlyData = (data: any[], key: string) => {
-        data.forEach(item => {
-          const hourTimestamp = startOfHour(new Date(item.timestamp)).getTime();
-          if (!hourlyData.has(hourTimestamp)) {
-            hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
-          }
-          const hourData = hourlyData.get(hourTimestamp);
-          
-          if (key === 'bpm' || key === 'min_pred_bpm') {
-            if (!hourData[key]) {
-              hourData[key] = { sum: 0, count: 0 };
-            }
-            hourData[key].sum += item[key];
-            hourData[key].count++;
-          } else {
-            hourData[key] = (hourData[key] || 0) + item[key];
-          }
-        });
-      };
-
-      processHourlyData(combinedData, 'bpm');
-      processHourlyData(combinedData, 'step');
-      processHourlyData(combinedData, 'calorie');
-      processHourlyData(combinedData, 'min_pred_bpm');
-
-      // HRV 데이터 처리 (이미 시간별 데이터)
-      hrvHourData.forEach(item => {
-        const hourTimestamp = startOfHour(new Date(item.ds)).getTime();
-        if (!hourlyData.has(hourTimestamp)) {
-          hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
-        }
-        const hourData = hourlyData.get(hourTimestamp);
-        hourData.hour_rmssd = item.hour_rmssd;
-        hourData.hour_sdnn = item.hour_sdnn;
-      });
-
-      // 시간별 예측 데이터 처리
-      predictHourData.forEach(item => {
-        const hourTimestamp = startOfHour(new Date(item.ds)).getTime();
-        if (!hourlyData.has(hourTimestamp)) {
-          hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
-        }
-        const hourData = hourlyData.get(hourTimestamp);
-        hourData.hour_pred_bpm = item.hour_pred_bpm;
-      });
-
-      return Array.from(hourlyData.values()).map(hourData => ({
-        ...hourData,
-        bpm: hourData.bpm ? hourData.bpm.sum / hourData.bpm.count : null,
-        min_pred_bpm: hourData.min_pred_bpm ? hourData.min_pred_bpm.sum / hourData.min_pred_bpm.count : null,
-      }));
-    }
-    return combinedData;
-  }, [combinedData, timeUnit, hrvHourData, predictHourData]);
-
   const displayData = useMemo(() => {
-    return processedData.filter(item => 
+    return combinedData.filter(item => 
       item.timestamp >= dateWindow.start.getTime() && 
       item.timestamp <= dateWindow.end.getTime()
     );
-  }, [processedData, dateWindow]);
+  }, [combinedData, dateWindow]);
 
-  const [brushIndices, setBrushIndices] = useState<[number, number] | null>(null);
-
-  const handleBrushChange = useCallback((brushIndices: any) => {
-    if (Array.isArray(brushIndices) && brushIndices.length === 2) {
-      setBrushIndices(brushIndices as [number, number]);
-      const brushedData = displayData.slice(brushIndices[0], brushIndices[1] + 1);
-      if (brushedData.length > 0) {
-        onBrushChange([brushedData[0].timestamp, brushedData[brushedData.length - 1].timestamp]);
-      }
+  const handleBrushChange = useCallback((brushDomain: any) => {
+    if (Array.isArray(brushDomain) && brushDomain.length === 2) {
+      onBrushChange([brushDomain[0], brushDomain[1]]);
     } else {
-      setBrushIndices(null);
       onBrushChange(null);
     }
-  }, [displayData, onBrushChange]);
+  }, [onBrushChange]);
 
   const xAxisDomain = useMemo(() => {
     return [dateWindow.start.getTime(), dateWindow.end.getTime()];
   }, [dateWindow]);
-
-  // const filteredData = useMemo(() => {
-  //   if (timeUnit === 'minute') {
-  //     const oneWeekAgo = subHours(new Date(), 24 * 7).getTime();
-  //     return combinedData.filter(item => item.timestamp >= oneWeekAgo);
-  //   }
-  //   return combinedData;
-  // }, [combinedData, timeUnit]);
-
-
-
-  // const displayData = useMemo(() => {
-  //   let filteredData = combinedData.filter(item => 
-  //     item.timestamp >= dateWindow.start.getTime() && 
-  //     item.timestamp <= dateWindow.end.getTime()
-  //   );
-
-  //   console.log('Display data length:', filteredData.length);
-  //   console.log('Display data range:', format(dateWindow.start, 'yyyy-MM-dd HH:mm'), 'to', format(dateWindow.end, 'yyyy-MM-dd HH:mm'));
-    
-  //   return filteredData;
-  // }, [combinedData, dateWindow]);
-
-  // const handleBrushChange = useCallback((domain: any) => {
-  //   if (Array.isArray(domain) && domain.length === 2) {
-  //     setBrushPosition(domain as [number, number]);
-  //     onBrushChange(domain as [number, number]);
-  //   } else {
-  //     setBrushPosition(null);
-  //     onBrushChange(null);
-  //   }
-  // }, [onBrushChange]);
-
-  // const xAxisDomain = useMemo(() => {
-  //   return [dateWindow.start.getTime(), dateWindow.end.getTime()];
-  // }, [dateWindow]);
-
-  // const visibleData = useMemo(() => {
-  //   if (!brushDomain) return displayData;
-  //   return displayData.filter(item => 
-  //     item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
-  //   );
-  // }, [displayData, brushDomain]);
-
-  // const formatDateForDisplay = (time: number) => {
-  //   const date = new Date(time);
-  //   return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
-  // };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -289,16 +152,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return null;
   };
 
-  const colors = {
-    calorie: 'rgba(136, 132, 216, 0.6)',
-    step: 'rgba(130, 202, 157, 0.6)',
-    bpm: '#ff7300',
-    pred_bpm_minute: '#A0D283',
-    pred_bpm_hour: '#82ca9d',
-    rmssd: '#8884d8',
-    sdnn: '#82ca9d',
-  };
-
   return (
     <div className='bg-white p-4 rounded-lg shadow'>
       <div className="mb-4 flex flex-wrap gap-4 justify-between">
@@ -314,8 +167,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
               <span className="ml-2 text-gray-700">{chartName.toUpperCase()}</span>
             </label>
           ))}
-        </div>
-        <div>
         </div>
         <div className="flex items-center">
           <button 
@@ -347,7 +198,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           <button 
             onClick={() => handleDateNavigation('forward')}
             className="px-2 py-1 bg-blue-500 text-white rounded ml-2"
-            disabled={dateRange === 'all' || dateWindow.end >= (timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd)}
+            disabled={dateRange === 'all' || dateWindow.end >= dataRange.end}
           >
             →
           </button>
