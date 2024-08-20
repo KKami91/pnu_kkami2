@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceArea } from 'recharts';
 import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min } from 'date-fns';
 
 interface CombinedChartProps {
@@ -49,6 +49,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
   const [zoomDomain, setZoomDomain] = useState<[number, number] | null>(null);
+  const [fullDomain, setFullDomain] = useState<[number, number] | null>(null);
 
   const dataRange = useMemo(() => {
     const minuteEnd = new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime())));
@@ -270,32 +271,40 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       );
     }
 
+    if (filteredData.length > 0 && (!fullDomain || fullDomain[0] !== filteredData[0].timestamp || fullDomain[1] !== filteredData[filteredData.length - 1].timestamp)) {
+      setFullDomain([filteredData[0].timestamp, filteredData[filteredData.length - 1].timestamp]);
+    }
+
     return filteredData;
   }, [processedData, timeUnit, dateRange, predictMinuteData, predictHourData]);
 
   const xAxisDomain = useMemo(() => {
-    if (zoomDomain) {
-      return zoomDomain;
+    if (brushDomain) {
+      return brushDomain;
     }
-    if (displayData.length > 0) {
-      return [displayData[0].timestamp, displayData[displayData.length - 1].timestamp];
+    if (fullDomain) {
+      return fullDomain;
     }
     return ['dataMin', 'dataMax'];
-  }, [displayData, zoomDomain]);
+  }, [brushDomain, fullDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
-      setZoomDomain(newBrushDomain);
       onBrushChange(newBrushDomain);
     } else {
       setBrushDomain(null);
-      setZoomDomain(null);
       onBrushChange(null);
     }
   }, [onBrushChange]);
 
-
+  const handleChartMouseUp = useCallback(() => {
+    if (brushDomain) {
+      // Brush 끝난 후 차트 도메인 업데이트
+      setFullDomain(brushDomain);
+      setBrushDomain(null);
+    }
+  }, [brushDomain]);
 
   // const formatDateForDisplay = (time: number) => {
   //   const date = new Date(time);
@@ -386,7 +395,11 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         </div>
       </div>
       <ResponsiveContainer width="100%" height={600}>
-        <ComposedChart data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <ComposedChart 
+          data={displayData} 
+          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+          onMouseUp={handleChartMouseUp}
+        >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="timestamp"
@@ -437,6 +450,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             onChange={handleBrushChange}
             tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
           />
+          {brushDomain && (
+            <ReferenceArea
+              x1={brushDomain[0]}
+              x2={brushDomain[1]}
+              strokeOpacity={0.3}
+            />
+          )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
