@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min } from 'date-fns';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceArea } from 'recharts';
+import { format, parseISO, subDays, addDays, startOfDay, endOfDay, max, min, subHours, startOfHour } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -48,6 +48,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   });
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+  const [brushPosition, setBrushPosition] = useState<[number, number] | null>(null);
 
   const dataRange = useMemo(() => {
     const minuteEnd = new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime())));
@@ -68,6 +69,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     };
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
 
+  
   const [dateWindow, setDateWindow] = useState<{start: Date, end: Date}>(() => {
     const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
     const start = subDays(end, parseInt(dateRange) - 1);
@@ -78,6 +80,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
     const start = subDays(end, parseInt(dateRange) - 1);
     setDateWindow({ start, end });
+    setBrushPosition(null);  // Reset brush position when date range changes
   }, [timeUnit, dateRange, dataRange]);
 
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
@@ -216,51 +219,30 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [combinedData, timeUnit, hrvHourData, predictHourData]);
 
   const displayData = useMemo(() => {
-    let filteredData = processedData;
-    
-    if (filteredData.length > 0) {
-      console.log('Start date:', format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss'));
-      console.log('End date:', format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'));
-
-      // 필터링 적용
-      filteredData = filteredData.filter(item => 
-        item.timestamp >= startOfDay(dateWindow.start).getTime() && 
-        item.timestamp <= dateWindow.end.getTime()
-      );
-    }
-
-    if (brushDomain) {
-      filteredData = filteredData.filter(
-        item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
-      );
-    }
+    let filteredData = combinedData.filter(item => 
+      item.timestamp >= dateWindow.start.getTime() && 
+      item.timestamp <= dateWindow.end.getTime()
+    );
 
     console.log('Display data length:', filteredData.length);
-    console.log('Display data sample:', filteredData.slice(0, 5));
+    console.log('Display data range:', format(dateWindow.start, 'yyyy-MM-dd HH:mm'), 'to', format(dateWindow.end, 'yyyy-MM-dd HH:mm'));
     
     return filteredData;
-  }, [processedData, dateWindow, brushDomain]);
+  }, [combinedData, dateWindow]);
+
+  const handleBrushChange = useCallback((domain: any) => {
+    if (Array.isArray(domain) && domain.length === 2) {
+      setBrushPosition(domain as [number, number]);
+      onBrushChange(domain as [number, number]);
+    } else {
+      setBrushPosition(null);
+      onBrushChange(null);
+    }
+  }, [onBrushChange]);
 
   const xAxisDomain = useMemo(() => {
     return [dateWindow.start.getTime(), dateWindow.end.getTime()];
   }, [dateWindow]);
-
-  const handleBrushChange = useCallback((domain: any, props?: any) => {
-    if (Array.isArray(domain) && domain.length === 2 && typeof domain[0] === 'number' && typeof domain[1] === 'number') {
-      setBrushDomain(domain as [number, number]);
-      onBrushChange(domain as [number, number]);
-    } else if (props && typeof props.startIndex === 'number' && typeof props.endIndex === 'number') {
-      const newDomain: [number, number] = [
-        displayData[props.startIndex].timestamp,
-        displayData[props.endIndex].timestamp
-      ];
-      setBrushDomain(newDomain);
-      onBrushChange(newDomain);
-    } else {
-      setBrushDomain(null);
-      onBrushChange(null);
-    }
-  }, [displayData, onBrushChange]);
 
   const visibleData = useMemo(() => {
     if (!brushDomain) return displayData;
@@ -268,7 +250,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
   }, [displayData, brushDomain]);
-  
+
   // const formatDateForDisplay = (time: number) => {
   //   const date = new Date(time);
   //   return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
@@ -401,6 +383,15 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           )}
           {visibleCharts.sdnn && timeUnit === 'hour' && (
             <Line yAxisId="left" type="monotone" dataKey="hour_sdnn" stroke="#82ca9d" name="SDNN" dot={false} />
+          )}
+          <Tooltip content={<CustomTooltip />} />
+          <Legend />
+          {brushPosition && (
+            <ReferenceArea
+              x1={brushPosition[0]}
+              x2={brushPosition[1]}
+              strokeOpacity={0.3}
+            />
           )}
           <Brush
             dataKey="timestamp"
