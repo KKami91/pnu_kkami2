@@ -136,36 +136,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     });
   };
 
-  const displayData = useMemo(() => {
-    return combinedData.filter(item => 
-      item.timestamp >= dateWindow.start.getTime() && 
-      item.timestamp <= dateWindow.end.getTime()
-    );
-  }, [combinedData, dateWindow]);
-
-  const handleBrushChange = useCallback((domain: any) => {
-    if (Array.isArray(domain) && domain.length === 2) {
-      const newStart = new Date(domain[0]);
-      const newEnd = new Date(domain[1]);
-      if (differenceInDays(newEnd, newStart) >= 1) {
-        setDateWindow({ start: newStart, end: newEnd });
-        onBrushChange([newStart.getTime(), newEnd.getTime()]);
-      }
-    }
-  }, [onBrushChange]);
-
-  const xAxisDomain = useMemo(() => {
-    return [dateWindow.start.getTime(), dateWindow.end.getTime()];
-  }, [dateWindow]);
-
-  // const filteredData = useMemo(() => {
-  //   if (timeUnit === 'minute') {
-  //     const oneWeekAgo = subHours(new Date(), 24 * 7).getTime();
-  //     return combinedData.filter(item => item.timestamp >= oneWeekAgo);
-  //   }
-  //   return combinedData;
-  // }, [combinedData, timeUnit]);
-
   const processedData = useMemo(() => {
     console.log('Processing data for time unit:', timeUnit);
     if (timeUnit === 'hour') {
@@ -225,6 +195,42 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     }
     return combinedData;
   }, [combinedData, timeUnit, hrvHourData, predictHourData]);
+
+  const displayData = useMemo(() => {
+    return processedData.filter(item => 
+      item.timestamp >= dateWindow.start.getTime() && 
+      item.timestamp <= dateWindow.end.getTime()
+    );
+  }, [processedData, dateWindow]);
+
+  const [brushIndices, setBrushIndices] = useState<[number, number] | null>(null);
+
+  const handleBrushChange = useCallback((brushIndices: any) => {
+    if (Array.isArray(brushIndices) && brushIndices.length === 2) {
+      setBrushIndices(brushIndices as [number, number]);
+      const brushedData = displayData.slice(brushIndices[0], brushIndices[1] + 1);
+      if (brushedData.length > 0) {
+        onBrushChange([brushedData[0].timestamp, brushedData[brushedData.length - 1].timestamp]);
+      }
+    } else {
+      setBrushIndices(null);
+      onBrushChange(null);
+    }
+  }, [displayData, onBrushChange]);
+
+  const xAxisDomain = useMemo(() => {
+    return [dateWindow.start.getTime(), dateWindow.end.getTime()];
+  }, [dateWindow]);
+
+  // const filteredData = useMemo(() => {
+  //   if (timeUnit === 'minute') {
+  //     const oneWeekAgo = subHours(new Date(), 24 * 7).getTime();
+  //     return combinedData.filter(item => item.timestamp >= oneWeekAgo);
+  //   }
+  //   return combinedData;
+  // }, [combinedData, timeUnit]);
+
+
 
   // const displayData = useMemo(() => {
   //   let filteredData = combinedData.filter(item => 
@@ -399,8 +405,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             stroke="#8884d8"
             onChange={handleBrushChange}
             tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
-            startIndex={0}
-            endIndex={displayData.length - 1}
           />
         </ComposedChart>
       </ResponsiveContainer>
