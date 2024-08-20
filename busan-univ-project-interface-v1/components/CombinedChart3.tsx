@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceArea } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
 import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min } from 'date-fns';
 
 interface CombinedChartProps {
@@ -48,8 +48,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   });
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
-  const [zoomDomain, setZoomDomain] = useState<[number, number] | null>(null);
-  const [fullDomain, setFullDomain] = useState<[number, number] | null>(null);
 
   const dataRange = useMemo(() => {
     const minuteEnd = new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime())));
@@ -244,10 +242,22 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   // }, [processedData, dateWindow, brushDomain]);
 
 
+  const handleBrushChange = useCallback((newBrushDomain: any) => {
+    if (newBrushDomain && newBrushDomain.length === 2) {
+      setBrushDomain(newBrushDomain);
+      onBrushChange(newBrushDomain);
+    } else {
+      setBrushDomain(null);
+      onBrushChange(null);
+    }
+  }, [onBrushChange]);
+
+
   const displayData = useMemo(() => {
     let filteredData = processedData;
     
     if (filteredData.length > 0) {
+      // 예측 데이터의 마지막 타임스탬프 찾기
       const latestPredictTimestamp = timeUnit === 'minute'
         ? Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))
         : Math.max(...predictHourData.map(item => new Date(item.ds).getTime()));
@@ -265,46 +275,44 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         ));
       }
       
+      console.log('Latest date:', format(latestDate, 'yyyy-MM-dd HH:mm:ss'));
+      console.log('Cutoff date:', format(cutoffDate, 'yyyy-MM-dd HH:mm:ss'));
+
+      // 필터링 적용
       filteredData = filteredData.filter(item => 
         item.timestamp >= cutoffDate.getTime() && 
         item.timestamp <= latestDate.getTime()
       );
     }
 
-    if (filteredData.length > 0 && (!fullDomain || fullDomain[0] !== filteredData[0].timestamp || fullDomain[1] !== filteredData[filteredData.length - 1].timestamp)) {
-      setFullDomain([filteredData[0].timestamp, filteredData[filteredData.length - 1].timestamp]);
+    // 브러시 도메인에 따른 추가 필터링
+    if (brushDomain) {
+      filteredData = filteredData.filter(
+        item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+      );
+    }
+
+    console.log('Display data length:', filteredData.length);
+    console.log('Display data sample:', filteredData.slice(0, 5));
+    
+    // 데이터의 시간 범위 로깅
+    if (filteredData.length > 0) {
+      const startDate = new Date(filteredData[0].timestamp);
+      const endDate = new Date(filteredData[filteredData.length - 1].timestamp);
+      console.log('Data range:', format(startDate, 'yyyy-MM-dd HH:mm'), 'to', format(endDate, 'yyyy-MM-dd HH:mm'));
     }
 
     return filteredData;
-  }, [processedData, timeUnit, dateRange, predictMinuteData, predictHourData]);
+  }, [processedData, timeUnit, dateRange, brushDomain, predictMinuteData, predictHourData]);
 
   const xAxisDomain = useMemo(() => {
-    if (brushDomain) {
-      return brushDomain;
-    }
-    if (fullDomain) {
-      return fullDomain;
+    if (displayData.length > 0) {
+      return [displayData[0].timestamp, displayData[displayData.length - 1].timestamp];
     }
     return ['dataMin', 'dataMax'];
-  }, [brushDomain, fullDomain]);
+  }, [displayData]);
 
-  const handleBrushChange = useCallback((newBrushDomain: any) => {
-    if (newBrushDomain && newBrushDomain.length === 2) {
-      setBrushDomain(newBrushDomain);
-      onBrushChange(newBrushDomain);
-    } else {
-      setBrushDomain(null);
-      onBrushChange(null);
-    }
-  }, [onBrushChange]);
 
-  const handleChartMouseUp = useCallback(() => {
-    if (brushDomain) {
-      // Brush 끝난 후 차트 도메인 업데이트
-      setFullDomain(brushDomain);
-      setBrushDomain(null);
-    }
-  }, [brushDomain]);
 
   // const formatDateForDisplay = (time: number) => {
   //   const date = new Date(time);
@@ -395,11 +403,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         </div>
       </div>
       <ResponsiveContainer width="100%" height={600}>
-        <ComposedChart 
-          data={displayData} 
-          margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-          onMouseUp={handleChartMouseUp}
-        >
+        <ComposedChart data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="timestamp"
@@ -450,13 +454,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             onChange={handleBrushChange}
             tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
           />
-          {brushDomain && (
-            <ReferenceArea
-              x1={brushDomain[0]}
-              x2={brushDomain[1]}
-              strokeOpacity={0.3}
-            />
-          )}
         </ComposedChart>
       </ResponsiveContainer>
     </div>
