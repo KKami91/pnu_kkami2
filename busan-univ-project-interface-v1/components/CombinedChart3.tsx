@@ -38,6 +38,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 }) => {
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
   const [dateRange, setDateRange] = useState<DateRange>('7');
+  const [fullDataRange, setFullDataRange] = useState<{ start: Date; end: Date }>({ start: new Date(), end: new Date() });
   const [visibleCharts, setVisibleCharts] = useState<ChartVisibility>({
     calorie: true,
     step: true,
@@ -50,47 +51,50 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
   const dataRange = useMemo(() => {
-    const minuteEnd = new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime())));
-    const hourEnd = new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime())));
     const allDates = [
       ...bpmData.map(item => new Date(item.ds).getTime()),
       ...stepData.map(item => new Date(item.ds).getTime()),
       ...calorieData.map(item => new Date(item.ds).getTime()),
-      minuteEnd.getTime(),
-      hourEnd.getTime(),
+      ...predictMinuteData.map(item => new Date(item.ds).getTime()),
+      ...predictHourData.map(item => new Date(item.ds).getTime()),
+      ...hrvHourData.map(item => new Date(item.ds).getTime()),
     ];
 
+    const start = new Date(Math.min(...allDates));
+    const end = new Date(Math.max(...allDates));
+
+    setFullDataRange({ start, end });
+
     return {
-      start: new Date(Math.min(...allDates)),
-      end: new Date(Math.max(...allDates)),
-      minuteEnd,
-      hourEnd,
+      start,
+      end,
+      minuteEnd: end,
+      hourEnd: end,
     };
-  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
+  }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
   const [dateWindow, setDateWindow] = useState<{start: Date, end: Date}>(() => {
-    const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
+    const end = dataRange.end;
     const start = subDays(end, parseInt(dateRange) - 1);
     return { start, end };
   });
 
   useEffect(() => {
-    const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
+    const end = dataRange.end;
     const start = subDays(end, parseInt(dateRange) - 1);
     setDateWindow({ start, end });
-  }, [timeUnit, dateRange, dataRange]);
+  }, [dateRange, dataRange]);
 
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
     const days = parseInt(dateRange);
     setDateWindow(prev => {
       let newStart: Date, newEnd: Date;
-      const currentEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
       if (direction === 'forward') {
-        newEnd = min([addDays(prev.end, days), currentEnd]);
+        newEnd = min([addDays(prev.end, days), dataRange.end]);
         newStart = subDays(newEnd, days - 1);
       } else {
         newStart = max([subDays(prev.start, days), dataRange.start]);
-        newEnd = min([addDays(newStart, days - 1), currentEnd]);
+        newEnd = min([addDays(newStart, days - 1), dataRange.end]);
       }
       return { start: newStart, end: newEnd };
     });
@@ -215,31 +219,50 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return combinedData;
   }, [combinedData, timeUnit, hrvHourData, predictHourData]);
 
+  // const displayData = useMemo(() => {
+  //   let filteredData = processedData;
+    
+  //   if (filteredData.length > 0) {
+  //     console.log('Start date:', format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss'));
+  //     console.log('End date:', format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'));
+
+  //   // 날짜 범위에 따른 필터링
+  //   filteredData = filteredData.filter(item => 
+  //     item.timestamp >= dateWindow.start.getTime() && 
+  //     item.timestamp <= dateWindow.end.getTime()
+  //   );
+  //   }
+
+  //   if (brushDomain) {
+  //     filteredData = filteredData.filter(
+  //       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+  //     );
+  //   }
+
+  //   console.log('Display data length:', filteredData.length);
+  //   console.log('Display data sample:', filteredData.slice(0, 5));
+    
+  //   return filteredData;
+  // }, [processedData, dateWindow, brushDomain]);
+
   const displayData = useMemo(() => {
     let filteredData = processedData;
     
-    if (filteredData.length > 0) {
-      console.log('Start date:', format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss'));
-      console.log('End date:', format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'));
+    // 날짜 범위에 따른 필터링
+    filteredData = filteredData.filter(item => 
+      item.timestamp >= dateWindow.start.getTime() && 
+      item.timestamp <= dateWindow.end.getTime()
+    );
 
-      // 필터링 적용
-      filteredData = filteredData.filter(item => 
-        item.timestamp >= startOfDay(dateWindow.start).getTime() && 
-        item.timestamp <= dateWindow.end.getTime()
-      );
-    }
+    // 브러시 도메인에 따른 필터링 제거
+    // if (brushDomain) {
+    //   filteredData = filteredData.filter(
+    //     item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+    //   );
+    // }
 
-    if (brushDomain) {
-      filteredData = filteredData.filter(
-        item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
-      );
-    }
-
-    console.log('Display data length:', filteredData.length);
-    console.log('Display data sample:', filteredData.slice(0, 5));
-    
     return filteredData;
-  }, [processedData, dateWindow, brushDomain]);
+  }, [processedData, dateWindow]);
 
   const xAxisDomain = useMemo(() => {
     return [dateWindow.start.getTime(), dateWindow.end.getTime()];
@@ -247,11 +270,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     if (newBrushDomain && newBrushDomain.length === 2) {
-      setBrushDomain(newBrushDomain);
+      // 브러시 변경 시 dateWindow 업데이트
+      setDateWindow({
+        start: new Date(newBrushDomain[0]),
+        end: new Date(newBrushDomain[1])
+      });
       onBrushChange(newBrushDomain);
-    } else {
-      setBrushDomain(null);
-      onBrushChange(null);
     }
   }, [onBrushChange]);
 
