@@ -1,6 +1,7 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, set } from 'date-fns';
+import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, set, getDate } from 'date-fns';
+import { log } from 'console';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -25,6 +26,15 @@ type ChartVisibility = {
 
 type DateRange = '1' | '7' | '15' | '30' | 'all';
 
+const originalError = console.error;
+console.error = (...args) => {
+  if (typeof args[0] === 'string' && args[0].includes('Encountered two children with the same key')) {
+    return;
+  }
+  originalError.apply(console, args);
+};
+
+
 const CombinedChart: React.FC<CombinedChartProps> = ({
   bpmData,
   stepData,
@@ -36,7 +46,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   globalEndDate,
   onBrushChange,
 }) => {
-  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
+  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('hour');
   const [dateRange, setDateRange] = useState<DateRange>('7');
   const [visibleCharts, setVisibleCharts] = useState<ChartVisibility>({
     calorie: true,
@@ -48,18 +58,23 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   });
 
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+  
+
+  const adjustTimeZone = (date: Date) => {
+    return subHours(date, 9);
+  };
 
   const dataRange = useMemo(() => {
     const allDates = [
-      ...bpmData.map(item => new Date(item.ds).getTime()),
-      ...stepData.map(item => new Date(item.ds).getTime()),
-      ...calorieData.map(item => new Date(item.ds).getTime()),
+      ...bpmData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
+      ...stepData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
+      ...calorieData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
     ];
 
-    const start = new Date(Math.min(...allDates));
-    const end = new Date(Math.max(...allDates));
-    const minuteEnd = new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime())));
-    const hourEnd = new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime())));
+    const start = startOfDay(new Date(Math.min(...allDates)));
+    const end = endOfDay(new Date(Math.max(...allDates)));
+    const minuteEnd = endOfDay(new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))));
+    const hourEnd = endOfDay(new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime()))));
 
     return { start, end, minuteEnd, hourEnd };
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
@@ -70,6 +85,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   //   return { start, end };
   // });
 
+  console.log('맨 위 rendering, 2brushDomain:', brushDomain);
   const calculateDateWindow = useCallback((range: DateRange, referenceDate: Date) => {
     const relevantEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
     let start: Date, end: Date;
@@ -78,22 +94,18 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       case '1':
         end = min([endOfDay(referenceDate), relevantEnd]);
         start = startOfDay(end);
-        // 첫 데이터가 중간부터 시작할 경우 처리
-        if (start < dataRange.start) {
-          start = set(dataRange.start, { hours: 0, minutes: 0, seconds: 0, milliseconds: 0 });
-        }
         break;
       case '7':
-        end = min([endOfWeek(referenceDate, { weekStartsOn: 1 }), relevantEnd]);
-        start = max([startOfWeek(end, { weekStartsOn: 1 }), dataRange.start]);
+        end = min([endOfDay(addDays(referenceDate, 6)), relevantEnd]);
+        start = startOfDay(subDays(end, 6));
         break;
       case '15':
-        end = min([new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 15, 23, 59, 59), relevantEnd]);
-        start = max([startOfMonth(end), dataRange.start]);
+        end = min([endOfDay(addDays(startOfMonth(referenceDate), 14)), relevantEnd]);
+        start = startOfMonth(end);
         break;
       case '30':
         end = min([endOfMonth(referenceDate), relevantEnd]);
-        start = max([startOfMonth(end), dataRange.start]);
+        start = startOfMonth(end);
         break;
       case 'all':
         start = dataRange.start;
@@ -104,39 +116,55 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         end = endOfDay(referenceDate);
     }
 
-    // 마지막 날짜 처리
-    if (end > relevantEnd) {
-      end = relevantEnd;
-    }
+    // 시작 날짜가 데이터 범위 시작보다 이전인 경우 조정
+    start = max([start, dataRange.start]);
+
+    // 끝 날짜가 데이터 범위 끝보다 이후인 경우 조정
+    end = min([end, relevantEnd]);
 
     return { start, end };
   }, [dataRange, timeUnit]);
 
   const [dateWindow, setDateWindow] = useState(() => calculateDateWindow(dateRange, dataRange.minuteEnd));
 
+
   useEffect(() => {
-    setDateWindow(calculateDateWindow(dateRange, dataRange.end));
-  }, [dateRange, dataRange, calculateDateWindow]);
+    setDateWindow(calculateDateWindow(dateRange, timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd));
+  }, [dateRange, dataRange, calculateDateWindow, timeUnit]);
 
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
+    setBrushDomain(null);  // Reset brush when navigating
     setDateWindow(prev => {
-      const diff = direction === 'forward' ? 1 : -1;
       let newReferenceDate: Date;
       switch (dateRange) {
         case '1':
-          newReferenceDate = addDays(prev.start, diff);
+          newReferenceDate = direction === 'forward' ? addDays(prev.start, 1) : subDays(prev.start, 1);
           break;
         case '7':
-          newReferenceDate = addDays(prev.start, 7 * diff);
+          newReferenceDate = direction === 'forward' ? addDays(prev.start, 7) : subDays(prev.start, 7);
           break;
         case '15':
+          if (getDate(prev.start) === 1) {
+            newReferenceDate = direction === 'forward' ? set(prev.start, { date: 16 }) : subDays(prev.start, 15);
+          } else {
+            newReferenceDate = direction === 'forward' ? addDays(prev.start, 15) : set(prev.start, { date: 1 });
+          }
+          break;
         case '30':
-          newReferenceDate = addDays(prev.start, 30 * diff);
+          newReferenceDate = direction === 'forward' ? addDays(prev.start, 30) : subDays(prev.start, 30);
           break;
         default:
           return prev;
       }
-      return calculateDateWindow(dateRange, newReferenceDate);
+      const newWindow = calculateDateWindow(dateRange, newReferenceDate);
+      console.log('New date window after navigation:', newWindow);
+      
+      // 새 창이 데이터 범위를 벗어나면 이전 창을 유지
+      if (newWindow.start < dataRange.start || newWindow.end > (timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd)) {
+        return prev;
+      }
+      
+      return newWindow;
     });
   };
 
@@ -150,18 +178,19 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         return;
       }
       console.log(`Processing ${key} data, length:`, data.length);
-      data.forEach(item => {
+      data.forEach((item, index) => {
         if (item && typeof item.ds === 'string') {
-          let timestamp = new Date(item.ds).getTime();
+          let timestamp = new Date(item.ds);
           if (adjustTime) {
-            timestamp = subHours(new Date(timestamp), 9).getTime();
+            timestamp = adjustTimeZone(timestamp);
           }
-          if (!dataMap.has(timestamp)) {
-            dataMap.set(timestamp, { timestamp });
+          const timeKey = timestamp.getTime();
+          if (!dataMap.has(timeKey)) {
+            dataMap.set(timeKey, { timestamp: timeKey, id: `${key}-${index}` });
           }
           const value = item[key];
           if (typeof value === 'number') {
-            dataMap.get(timestamp)![key] = value;
+            dataMap.get(timeKey)![key] = value;
           }
         }
       });
@@ -176,10 +205,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     processData(predictMinuteData, 'min_pred_bpm', false);
     processData(predictHourData, 'hour_pred_bpm', false);
 
-    hrvHourData.forEach(item => {
+    hrvHourData.forEach((item, index) => {
       const timestamp = new Date(item.ds).getTime();
       if (!dataMap.has(timestamp)) {
-        dataMap.set(timestamp, { timestamp });
+        dataMap.set(timestamp, { timestamp, id: `hrv-${index}` });
       }
       dataMap.get(timestamp)!.hour_rmssd = item.hour_rmssd;
       dataMap.get(timestamp)!.hour_sdnn = item.hour_sdnn;
@@ -259,21 +288,38 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return combinedData;
   }, [combinedData, timeUnit, hrvHourData, predictHourData]);
 
+
+
   const displayData = useMemo(() => {
-    return processedData.filter(item => 
+    console.log('Calculating displayData, brushDomain:', brushDomain);
+  
+    const baseData = processedData.filter(item => 
       item.timestamp >= dateWindow.start.getTime() && 
       item.timestamp <= dateWindow.end.getTime()
     );
-  }, [processedData, dateWindow]);
+  
+    if (!brushDomain) return baseData;
+  
+    return baseData.filter(
+      item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+    );
+  }, [processedData, dateWindow, brushDomain]);
+
 
   const xAxisDomain = useMemo(() => {
+    console.log('in xAxisDomain ---- brushDomain', brushDomain);
     if (brushDomain) {
       return brushDomain;
     }
+    if (displayData.length > 0) {
+      return [displayData[0].timestamp, displayData[displayData.length - 1].timestamp];
+    }
     return [dateWindow.start.getTime(), dateWindow.end.getTime()];
-  }, [dateWindow, brushDomain]);
+  }, [displayData, dateWindow, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
+    console.log('Brush changed:', newBrushDomain);
+  
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
       onBrushChange(newBrushDomain);
@@ -282,6 +328,39 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       onBrushChange(null);
     }
   }, [onBrushChange]);
+
+// const handleBrushChange = useCallback((newBrushDomain: any) => {
+//   console.log('newBrushDomain:', newBrushDomain);
+
+//   if (newBrushDomain && 'startIndex' in newBrushDomain && 'endIndex' in newBrushDomain) {
+//     const { startIndex, endIndex } = newBrushDomain;
+
+//     // displayData에서 실제 타임스탬프 값 추출
+//     const startTimestamp = displayData[startIndex].timestamp;
+//     const endTimestamp = displayData[endIndex].timestamp;
+
+//     console.log('st', startTimestamp);
+//     console.log('et', endTimestamp);
+
+//     const brushDomainValue: [number, number] = [startTimestamp, endTimestamp];
+
+//     console.log('Calculated brushDomain:', brushDomainValue);
+//     setBrushDomain(brushDomainValue);
+//     onBrushChange(brushDomainValue);
+
+//     // 필터링된 데이터 계산
+//     const filteredData = displayData.slice(startIndex, endIndex + 1);
+
+//     console.log('Filtered data length:', filteredData.length);
+//     console.log('First data point:', filteredData[0]);
+//     console.log('Last data point:', filteredData[filteredData.length - 1]);
+//   } else {
+//     console.log('Resetting brush');
+//     setBrushDomain(null);
+//     onBrushChange(null);
+//   }
+// }, [onBrushChange, displayData]);
+  
 
   // const formatDateForDisplay = (time: number) => {
   //   const date = new Date(time);
@@ -369,6 +448,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           >
             →
           </button>
+          
         </div>
       </div>
       <ResponsiveContainer width="100%" height={600}>
@@ -422,6 +502,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
             stroke="#8884d8"
             onChange={handleBrushChange}
             tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
+            alwaysShowText={true}
           />
         </ComposedChart>
       </ResponsiveContainer>
