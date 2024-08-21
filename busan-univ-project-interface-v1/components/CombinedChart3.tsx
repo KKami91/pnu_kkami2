@@ -79,13 +79,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     return { start, end, minuteEnd, hourEnd };
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
 
-  // const [dateWindow, setDateWindow] = useState<{start: Date, end: Date}>(() => {
-  //   const end = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
-  //   const start = subDays(end, parseInt(dateRange) - 1);
-  //   return { start, end };
-  // });
-
-  console.log('맨 위 rendering, 2brushDomain:', brushDomain);
   const calculateDateWindow = useCallback((range: DateRange, referenceDate: Date) => {
     const relevantEnd = timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd;
     let start: Date, end: Date;
@@ -116,10 +109,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         end = endOfDay(referenceDate);
     }
 
-    // 시작 날짜가 데이터 범위 시작보다 이전인 경우 조정
     start = max([start, dataRange.start]);
-
-    // 끝 날짜가 데이터 범위 끝보다 이후인 경우 조정
     end = min([end, relevantEnd]);
 
     return { start, end };
@@ -133,7 +123,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   }, [dateRange, dataRange, calculateDateWindow, timeUnit]);
 
   const handleDateNavigation = (direction: 'forward' | 'backward') => {
-    setBrushDomain(null);  // Reset brush when navigating
+    setBrushDomain(null);
     setDateWindow(prev => {
       let newReferenceDate: Date;
       switch (dateRange) {
@@ -157,9 +147,7 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
           return prev;
       }
       const newWindow = calculateDateWindow(dateRange, newReferenceDate);
-      console.log('New date window after navigation:', newWindow);
       
-      // 새 창이 데이터 범위를 벗어나면 이전 창을 유지
       if (newWindow.start < dataRange.start || newWindow.end > (timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd)) {
         return prev;
       }
@@ -169,15 +157,12 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   };
 
   const combinedData = useMemo(() => {
-    console.log('Combining data...');
     const dataMap = new Map<number, any>();
 
     const processData = (data: any[], key: string, adjustTime: boolean = true) => {
       if (!Array.isArray(data)) {
-        console.error(`Invalid data for ${key}: expected array, got`, data);
         return;
       }
-      console.log(`Processing ${key} data, length:`, data.length);
       data.forEach((item, index) => {
         if (item && typeof item.ds === 'string') {
           let timestamp = new Date(item.ds);
@@ -196,12 +181,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       });
     };
 
-    // MongoDB 데이터 처리 (시간 조정)
     processData(bpmData, 'bpm', true);
     processData(stepData, 'step', true);
     processData(calorieData, 'calorie', true);
 
-    // 예측 및 HRV 데이터 처리 (시간 조정 없음)
     processData(predictMinuteData, 'min_pred_bpm', false);
     processData(predictHourData, 'hour_pred_bpm', false);
 
@@ -215,21 +198,10 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
     });
 
     const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
-    console.log('Combined data sample:', result.slice(0, 5));
-    console.log('Combined data length:', result.length);
     return result;
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData, hrvHourData]);
 
-  // const filteredData = useMemo(() => {
-  //   if (timeUnit === 'minute') {
-  //     const oneWeekAgo = subHours(new Date(), 24 * 7).getTime();
-  //     return combinedData.filter(item => item.timestamp >= oneWeekAgo);
-  //   }
-  //   return combinedData;
-  // }, [combinedData, timeUnit]);
-
   const processedData = useMemo(() => {
-    console.log('Processing data for time unit:', timeUnit);
     if (timeUnit === 'hour') {
       const hourlyData = new Map<number, any>();
 
@@ -290,36 +262,31 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
 
 
 
+
+
   const displayData = useMemo(() => {
-    console.log('Calculating displayData, brushDomain:', brushDomain);
-  
-    const baseData = processedData.filter(item => 
+    return processedData.filter(item => 
       item.timestamp >= dateWindow.start.getTime() && 
       item.timestamp <= dateWindow.end.getTime()
     );
+  }, [processedData, dateWindow]);
   
-    if (!brushDomain) return baseData;
-  
-    return baseData.filter(
+  const filteredData = useMemo(() => {
+    if (!brushDomain) return displayData;
+    return displayData.filter(
       item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
     );
-  }, [processedData, dateWindow, brushDomain]);
-
+  }, [displayData, brushDomain]);
+  
 
   const xAxisDomain = useMemo(() => {
-    console.log('in xAxisDomain ---- brushDomain', brushDomain);
-    if (brushDomain) {
-      return brushDomain;
-    }
     if (displayData.length > 0) {
       return [displayData[0].timestamp, displayData[displayData.length - 1].timestamp];
     }
     return [dateWindow.start.getTime(), dateWindow.end.getTime()];
-  }, [displayData, dateWindow, brushDomain]);
+  }, [displayData, dateWindow]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
-    console.log('Brush changed:', newBrushDomain);
-  
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
       onBrushChange(newBrushDomain);
@@ -328,44 +295,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       onBrushChange(null);
     }
   }, [onBrushChange]);
-
-// const handleBrushChange = useCallback((newBrushDomain: any) => {
-//   console.log('newBrushDomain:', newBrushDomain);
-
-//   if (newBrushDomain && 'startIndex' in newBrushDomain && 'endIndex' in newBrushDomain) {
-//     const { startIndex, endIndex } = newBrushDomain;
-
-//     // displayData에서 실제 타임스탬프 값 추출
-//     const startTimestamp = displayData[startIndex].timestamp;
-//     const endTimestamp = displayData[endIndex].timestamp;
-
-//     console.log('st', startTimestamp);
-//     console.log('et', endTimestamp);
-
-//     const brushDomainValue: [number, number] = [startTimestamp, endTimestamp];
-
-//     console.log('Calculated brushDomain:', brushDomainValue);
-//     setBrushDomain(brushDomainValue);
-//     onBrushChange(brushDomainValue);
-
-//     // 필터링된 데이터 계산
-//     const filteredData = displayData.slice(startIndex, endIndex + 1);
-
-//     console.log('Filtered data length:', filteredData.length);
-//     console.log('First data point:', filteredData[0]);
-//     console.log('Last data point:', filteredData[filteredData.length - 1]);
-//   } else {
-//     console.log('Resetting brush');
-//     setBrushDomain(null);
-//     onBrushChange(null);
-//   }
-// }, [onBrushChange, displayData]);
-  
-
-  // const formatDateForDisplay = (time: number) => {
-  //   const date = new Date(time);
-  //   return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
-  // };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -384,16 +313,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
       );
     }
     return null;
-  };
-
-  const colors = {
-    calorie: 'rgba(136, 132, 216, 0.6)',
-    step: 'rgba(130, 202, 157, 0.6)',
-    bpm: '#ff7300',
-    pred_bpm_minute: '#A0D283',
-    pred_bpm_hour: '#82ca9d',
-    rmssd: '#8884d8',
-    sdnn: '#82ca9d',
   };
 
   return (
@@ -452,13 +371,13 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
         </div>
       </div>
       <ResponsiveContainer width="100%" height={600}>
-        <ComposedChart data={displayData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <ComposedChart data={filteredData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="timestamp"
             type="number"
             scale="time"
-            domain={xAxisDomain}
+            domain={['dataMin', 'dataMax']}
             tickFormatter={(tick) => format(new Date(tick), timeUnit === 'minute' ? 'MM-dd HH:mm' : 'MM-dd HH:00')}
             padding={{ left: 30, right: 30 }}
           />
