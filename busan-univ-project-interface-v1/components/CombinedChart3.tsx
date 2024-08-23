@@ -1,7 +1,6 @@
-import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { ComposedChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush } from 'recharts';
-import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isSameDay, set, getDate } from 'date-fns';
-import { log } from 'console';
+import { format, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours,max, min, startOfMonth, endOfMonth, set, getDate } from 'date-fns';
 
 interface CombinedChartProps {
   bpmData: any[];
@@ -26,13 +25,13 @@ type ChartVisibility = {
 
 type DateRange = '1' | '7' | '15' | '30' | 'all';
 
-const originalError = console.error;
-console.error = (...args) => {
-  if (typeof args[0] === 'string' && args[0].includes('Encountered two children with the same key')) {
-    return;
-  }
-  originalError.apply(console, args);
-};
+// const originalError = console.error;
+// console.error = (...args) => {
+//   if (typeof args[0] === 'string' && args[0].includes('Encountered two children with the same key')) {
+//     return;
+//   }
+//   originalError.apply(console, args);
+// };
 
 
 const CombinedChart: React.FC<CombinedChartProps> = ({
@@ -42,8 +41,6 @@ const CombinedChart: React.FC<CombinedChartProps> = ({
   predictMinuteData,
   predictHourData,
   hrvHourData,
-  globalStartDate,
-  globalEndDate,
   onBrushChange,
 }) => {
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('hour');
