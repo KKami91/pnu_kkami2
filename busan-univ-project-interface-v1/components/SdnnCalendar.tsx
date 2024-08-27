@@ -39,7 +39,7 @@ const SdnnCalendar: React.FC<SdnnCalendarProps> = ({ hrvDayData }) => {
 
     return (
         <div className="p-4 bg-gray-900 text-white">
-            <h2 className="text-xl font-bold mb-4">Sdnn Calendar Heatmap ({currentYear})</h2>
+            <h2 className="text-xl font-bold mb-4">SDNN Calendar Heatmap ({currentYear})</h2>
             <CalendarHeatmap
                 startDate={startDate}
                 endDate={endDate}
@@ -48,14 +48,14 @@ const SdnnCalendar: React.FC<SdnnCalendarProps> = ({ hrvDayData }) => {
                     if (!value) {
                         return 'color-empty';
                     }
-                    console.log(`Date: ${value.date}, Sdnn: ${value.count}, Class: ${getColorClass(value.count)}`);
+                    console.log(`Date: ${value.date}, SDNN: ${value.count}, Class: ${getColorClass(value.count)}`);
                     return getColorClass(value.count);
                 }}
                 titleForValue={(value) => {
                     if (!value) {
                         return 'No data';
                     }
-                    return `Date: ${value.date}, Sdnn: ${value.count.toFixed(2)}`;
+                    return `Date: ${value.date}, SDNN: ${value.count.toFixed(2)}`;
                 }}
                 showWeekdayLabels={true}
                 gutterSize={1}
