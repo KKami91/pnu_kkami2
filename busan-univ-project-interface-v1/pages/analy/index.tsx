@@ -110,20 +110,31 @@ export default function Home() {
       setRenderTime(null)
       startTimeRef.current = performance.now();
       try {
+        // MongoDB 3개 데이터 불러오기 (3)
+        const fetchDataStartTimeBpmStepsCalories = performance.now()
         const [bpm, step, calorie] = await Promise.all([
           fetchData('bpm', selectedUser),
           fetchData('steps', selectedUser),
           fetchData('calories', selectedUser),
         ]);
-
-        console.log('bpm', bpm);
-
+        const fetchDataEndTimeBpmStepsCalories = performance.now()
+        console.groupCollapsed(`BPM, Steps, Calories fetchData 걸린 시간 (3) : ${fetchDataEndTimeBpmStepsCalories - fetchDataStartTimeBpmStepsCalories} ms`);
+        
         setBpmData(bpm);
         setStepData(step);
         setCalorieData(calorie);
         
+        // 서버 Prediction 데이터 가져오기 min + hour (4+5)
+        const predictionDataStartTime = performance.now();
         await fetchPredictionData(selectedUser);
+        const predictionDataEndTime = performance.now();
+        console.log(`prediction data 서버로부터 가져오는데 걸린 시간 (4+5) : ${predictionDataEndTime - predictionDataStartTime} ms`);
+
+        // 서버 hrv 데이터 가져오기 hour (6)
+        const hrvDataStartTime = performance.now();
         await fetchHrvData(selectedUser);
+        const hrvDataEndTime = performance.now();
+        console.log(`hrv 계산 데이터 가져오기 걸린 시간 (6) : ${hrvDataEndTime - hrvDataStartTime} ms`);
         setShowGraphs(true);
       } catch (error) {
         console.error('Error in handleDateSelect:', error);
@@ -174,11 +185,17 @@ export default function Home() {
     setSaveDates([])
     if (user) {
       setIsLoadingUser(true)
-      const startTimeUser = performance.now();
+      // 서버 dynamodb 데이터 처리 및 mongodb 저장 걸린 시간 (1)
+      const startTimeCheckDB = performance.now();
       await checkDb(user)
+      const endTimeCheckDB = performance.now();
+      console.log(`checkDB 걸린 시간 (1) : ${endTimeCheckDB - startTimeCheckDB} ms`);
+
+      // 서버 저장 시간 가져오기 걸린 시간
+      const startTimeFetchSaveDates = performance.now();
       await fetchSaveDates(user)
-      const endTimeUser = performance.now();
-      console.log(`계정 선택 걸린 시간 : ${endTimeUser - startTimeUser} ms`);
+      const endTimeFetchSaveDates = performance.now();
+      console.log(`fetchSaveDates 걸린 시간 (저장 시간 가져오기) : ${endTimeFetchSaveDates - startTimeFetchSaveDates} ms`);
       setIsLoadingUser(false)
     }
   }
