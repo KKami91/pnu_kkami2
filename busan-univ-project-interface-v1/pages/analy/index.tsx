@@ -252,7 +252,7 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Heart Rate and Sleep Analysis Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-4">Heart Rate Analysis Dashboard</h1>
       <div className="mb-4 flex items-center">
         <label className="mr-2">계정 선택:</label>
         <select 
