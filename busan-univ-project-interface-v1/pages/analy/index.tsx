@@ -5,6 +5,8 @@ import CombinedChart from '../../components/CombinedChart3';
 import { SkeletonLoader } from '../../components/SkeletonLoaders3';
 import { LaptopMinimal, LayoutGrid } from 'lucide-react';
 import { parseISO, format, startOfHour, endOfHour } from 'date-fns';
+import RmssdCalendar from '../../components/RmssdCalendar';
+import SdnnCalendar from '../../components/SdnnCalendar';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
@@ -51,6 +53,7 @@ export default function Home() {
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
 
   const [hrvHourData, setHrvHourData] = useState<any[]>([]);
+  const [hrvDayData, setHrvDayData] = useState<any[]>([]);
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [...bpmData, ...stepData, ...calorieData].map(item => new Date(item.ds).getTime());
@@ -149,6 +152,8 @@ export default function Home() {
     try {
       const response = await axios.get(`${API_URL}/feature_hour/${user}`);
       console.log('HRV Hour data:', response.data);
+      const responseDay = await axios.get(`${API_URL}/feature_day/${user}`);
+      setHrvDayData(responseDay.data.day_hrv);
       setHrvHourData(response.data.hour_hrv);
     } catch (error) {
       console.error('Error in fetchHrvData: ', error);
@@ -343,6 +348,12 @@ export default function Home() {
                 Total render time: {renderTime.toFixed(2)} ms
               </div>
             )}
+            {hrvDayData.length > 0 && (
+              <div className="mt-8">
+                <RmssdCalendar hrvDayData={hrvDayData} />
+                <SdnnCalendar hrvDayData={hrvDayData} />
+              </div>
+          )}
           </>
         ) : null}
         {showGraphs && processedData.bpmData.length === 0 && processedData.stepData.length === 0 && processedData.calorieData.length === 0 && processedData.predictMinuteData.length === 0 && (
