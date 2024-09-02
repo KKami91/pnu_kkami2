@@ -9,7 +9,7 @@ import RmssdCalendar from '../../components/RmssdCalendar';
 import SdnnCalendar from '../../components/SdnnCalendar';
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com']
-const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
+const API_URL = 'http://127.0.0.1:8000'
 
 const LoadingSpinner = () => (
   <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] ml-2">
@@ -28,6 +28,12 @@ interface DataItem {
   pred_rmssd?: number;
 }
 
+interface SleepData {
+  ds_start: string;
+  ds_end: string;
+  stage: number | null;
+}
+
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('');
   const [message, setMessage] = useState('');
@@ -41,6 +47,7 @@ export default function Home() {
   const [bpmData, setBpmData] = useState<DataItem[]>([]);
   const [stepData, setStepData] = useState<DataItem[]>([]);
   const [calorieData, setCalorieData] = useState<DataItem[]>([]);
+  const [sleepData, setSleepData] = useState<SleepData[]>([]);
   // const [predictHourData, setPredictHourData] = useState<DataItem[]>([]);
 
   const [predictMinuteData, setPredictMinuteData] = useState<any[]>([]);
@@ -100,7 +107,7 @@ export default function Home() {
   };
 
   const handleBrushChange = (domain: [number, number] | null) => {
-    console.log("Brush domain changed:", domain);
+    //console.log("Brush domain changed2:", domain);
   };
 
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -115,18 +122,22 @@ export default function Home() {
       try {
         // MongoDB 3개 데이터 불러오기 (3)
         const fetchDataStartTimeBpmStepsCalories = performance.now()
-        const [bpm, step, calorie] = await Promise.all([
+        const [bpm, step, calorie, sleep] = await Promise.all([
           fetchData('bpm', selectedUser),
           fetchData('steps', selectedUser),
           fetchData('calories', selectedUser),
+          fetchData('sleeps', selectedUser),
         ]);
         const fetchDataEndTimeBpmStepsCalories = performance.now()
         console.groupCollapsed(`BPM, Steps, Calories fetchData 걸린 시간 (3) : ${fetchDataEndTimeBpmStepsCalories - fetchDataStartTimeBpmStepsCalories} ms`);
-        
+
+        //console.log('bpm', bpm);
+
         setBpmData(bpm);
         setStepData(step);
         setCalorieData(calorie);
-        
+        setSleepData(sleep);
+
         // 서버 Prediction 데이터 가져오기 min + hour (4+5)
         const predictionDataStartTime = performance.now();
         await fetchPredictionData(selectedUser);
@@ -138,6 +149,7 @@ export default function Home() {
         await fetchHrvData(selectedUser);
         const hrvDataEndTime = performance.now();
         console.log(`hrv 계산 데이터 가져오기 걸린 시간 (6) : ${hrvDataEndTime - hrvDataStartTime} ms`);
+
         setShowGraphs(true);
       } catch (error) {
         console.error('Error in handleDateSelect:', error);
@@ -151,10 +163,10 @@ export default function Home() {
   const fetchHrvData = async (user: string) => {
     try {
       const response = await axios.get(`${API_URL}/feature_hour/${user}`);
-      console.log('HRV Hour data:', response.data);
+      setHrvHourData(response.data.hour_hrv);
       const responseDay = await axios.get(`${API_URL}/feature_day/${user}`);
       setHrvDayData(responseDay.data.day_hrv);
-      setHrvHourData(response.data.hour_hrv);
+      console.log(responseDay.data.day_hrv);
     } catch (error) {
       console.error('Error in fetchHrvData: ', error);
     }
@@ -167,8 +179,8 @@ export default function Home() {
         axios.get(`${API_URL}/predict_hour/${user}`)
       ]);
   
-      console.log('Minute prediction data:', minuteResponse.data);
-      console.log('Hour prediction data:', hourResponse.data);
+      //console.log('Minute prediction data:', minuteResponse.data);
+      //console.log('Hour prediction data:', hourResponse.data);
   
       // 객체에서 배열을 추출
       const minutePredictions = minuteResponse.data.min_pred_bpm || [];
@@ -201,6 +213,7 @@ export default function Home() {
       await fetchSaveDates(user)
       const endTimeFetchSaveDates = performance.now();
       console.log(`fetchSaveDates 걸린 시간 (저장 시간 가져오기) : ${endTimeFetchSaveDates - startTimeFetchSaveDates} ms`);
+      
       setIsLoadingUser(false)
     }
   }
@@ -252,7 +265,7 @@ export default function Home() {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Heart Rate Analysis Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-4">Heart Rate and Sleep Analysis Dashboard</h1>
       <div className="mb-4 flex items-center">
         <label className="mr-2">계정 선택:</label>
         <select 
@@ -335,6 +348,7 @@ export default function Home() {
                 bpmData={bpmData}
                 stepData={stepData}
                 calorieData={calorieData}
+                sleepData={sleepData}
                 predictMinuteData={predictMinuteData}
                 predictHourData={predictHourData}
                 hrvHourData={hrvHourData}  // 새로운 HRV 데이터 전달
@@ -348,11 +362,11 @@ export default function Home() {
                 Total render time: {renderTime.toFixed(2)} ms
               </div>
             )}
-            {hrvDayData.length > 0 && (
-              <div className="mt-8">
-                <RmssdCalendar hrvDayData={hrvDayData} />
-                <SdnnCalendar hrvDayData={hrvDayData} />
-              </div>
+          {hrvDayData.length > 0 && (
+            <div className="mt-8">
+              <RmssdCalendar hrvDayData={hrvDayData} />
+              <SdnnCalendar hrvDayData={hrvDayData} />
+            </div>
           )}
           </>
         ) : null}
