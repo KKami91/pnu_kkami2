@@ -72,9 +72,12 @@ export default function Home() {
 
   const fetchData = async (collection: string, user: string) => {
     try {
+      const fetchStart = performance.now()
       const response = await axios.get('/api/getData3', {
         params: { collection, user_email: user }
       });
+      const fetchEnd = performance.now()
+      console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
       return response.data;
     } catch (error) {
       console.error(`Error fetching ${collection} data:`, error);
