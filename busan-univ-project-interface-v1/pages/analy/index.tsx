@@ -56,7 +56,7 @@ export default function Home() {
   const [renderTime, setRenderTime] = useState<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
-  const [viewMode, setViewMode] = useState<'combined' | 'multi'>('combined');
+  const [viewMode, setViewMode] = useState<'combined' | 'multi'>('multi');
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
 
   const [hrvHourData, setHrvHourData] = useState<any[]>([]);
