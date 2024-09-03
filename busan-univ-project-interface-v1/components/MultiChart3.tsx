@@ -54,7 +54,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
   globalEndDate,
   onBrushChange,
 }) => {
-  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('hour');
+  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
   const [dateRange, setDateRange] = useState<DateRange>('7');
   const [columnCount, setColumnCount] = useState(1);
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
