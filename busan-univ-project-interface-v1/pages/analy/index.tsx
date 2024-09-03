@@ -329,7 +329,7 @@ export default function Home() {
       )}
       <div className="mt-8">
         {isLoading ? (
-          <SkeletonLoader viewMode={viewMode} columns={1} />
+          <SkeletonLoader viewMode={viewMode} columns={2} />
         ) : error ? (
           <div className="text-center text-red-500">{error}</div>
         ) : showGraphs ? (
