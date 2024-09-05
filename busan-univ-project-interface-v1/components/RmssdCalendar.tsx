@@ -33,9 +33,9 @@ const RmssdCalendar: React.FC<RmssdCalendarProps> = ({ hrvDayData }) => {
         return 'color-empty';
     };
 
-    console.log('Calendar Data:', calendarData);
-    console.log('Start Date:', startDate);
-    console.log('End Date:', endDate);
+    // console.log('Calendar Data:', calendarData);
+    // console.log('Start Date:', startDate);
+    // console.log('End Date:', endDate);
 
     return (
         <div className="p-4 bg-gray-900 text-white">
@@ -48,7 +48,7 @@ const RmssdCalendar: React.FC<RmssdCalendarProps> = ({ hrvDayData }) => {
                     if (!value) {
                         return 'color-empty';
                     }
-                    console.log(`Date: ${value.date}, RMSSD: ${value.count}, Class: ${getColorClass(value.count)}`);
+                    //console.log(`Date: ${value.date}, RMSSD: ${value.count}, Class: ${getColorClass(value.count)}`);
                     return getColorClass(value.count);
                 }}
                 titleForValue={(value) => {
