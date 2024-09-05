@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { MongoClient } from 'mongodb';
 
-const uri = 'mongodb+srv://ghkdth919:NDP08tR24zOD5OcX@prophetdb.77dodcp.mongodb.net/?appName=prophetDB'
+const uri = process.env.MONGODB_URI
 let client: MongoClient | null = null;
 
 async function connectToDatabase() {
