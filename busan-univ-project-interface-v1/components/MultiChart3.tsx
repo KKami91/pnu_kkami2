@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine, TooltipProps, Cell } from 'recharts';
-import { format, parseISO, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours, max, min, startOfMonth, endOfMonth, addMinutes, startOfMinute, isBefore } from 'date-fns';
+import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine, TooltipProps } from 'recharts';
+import { format, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours, max, min, startOfMonth, endOfMonth, addMinutes, startOfMinute, isBefore } from 'date-fns';
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 
 interface MultiChartProps {
@@ -16,28 +16,11 @@ interface MultiChartProps {
   onBrushChange: (domain: [number, number] | null) => void;
 }
 
-type ChartVisibility = {
-  sleep_stage: boolean;
-  calorie: boolean;
-  step: boolean;
-  bpm: boolean;
-  pred_bpm: boolean;
-  rmssd: boolean;
-  sdnn: boolean;
-};
-
 interface SleepData {
   ds_start: string;
   ds_end: string;
   stage: number | null;
 }
-
-type CustomTooltipPayload = {
-  dataKey: string;
-  name: string;
-  value: number;
-  color?: string;
-};
 
 type DateRange = '1' | '7' | '15' | '30' | 'all';
 
@@ -50,23 +33,12 @@ const MultiChart: React.FC<MultiChartProps> = ({
   predictMinuteData,
   predictHourData,
   hrvHourData,
-  globalStartDate,
-  globalEndDate,
   onBrushChange,
 }) => {
-  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
+  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('hour');
   const [dateRange, setDateRange] = useState<DateRange>('7');
-  const [columnCount, setColumnCount] = useState(2);
+  const [columnCount, setColumnCount] = useState(1);
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
-  const [visibleCharts, setVisibleCharts] = useState<ChartVisibility>({
-    sleep_stage: true,
-    calorie: true,
-    step: true,
-    bpm: true,
-    pred_bpm: true,
-    rmssd: true,
-    sdnn: true,
-  });
 
   const adjustTimeZone = (date: Date) => {
     return subHours(date, 9);
@@ -83,27 +55,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
       default: return 0;
     }
   };
-
-  // const getSleepStageLabel = (value: number): string => {
-  //   switch(value) {
-  //     case 0: return 'Unused';
-  //     case -1: return 'Awake';
-  //     case -1.5: return 'Light1';
-  //     case -2: return 'Light2';
-  //     case -2.5: return 'REM';
-  //     case -3: return 'Deep';
-  //     default: return 'Unknown';
-  //   }
-  // };
-
-  // const sleepStageColors: { [key: string]: string } = {
-  //   '0': '#808080',   // Unused or active (gray)
-  //   '-1': '#FFA500', // Awake (orange)
-  //   '-1.5': '#90EE90', // Light sleep 1 (light green)
-  //   '-2': '#32CD32', // Light sleep 2 (lime green)
-  //   '-2.5': '#4169E1', // REM sleep (royal blue)
-  //   '-3': '#000080', // Deep sleep (navy)
-  // };
 
   const sleepStageConfig = {
     0: { color: '#808080', label: 'Unused' },
@@ -139,8 +90,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
             tickFormatter={formatDateForDisplay}
           />
           <YAxis 
-            label={{ value: 'Sleep Stage', angle: -90, position: 'insideLeft' }} 
-            domain={[-3.5, 0.5]}
+            label={{ value: '', angle: -90, position: 'insideLeft' }} 
+            domain={[-3.5, 0]}
             ticks={[-3, -2.5, -2, -1.5, -1, 0]}
             tickFormatter={(value) => getSleepStageLabel(value)}
           />
@@ -163,15 +114,13 @@ const MultiChart: React.FC<MultiChartProps> = ({
     </div>
   );
 
-
   const processSleepData = (sleepData: SleepData[]) => {
     const processedData: { timestamp: number; sleep_stage: number }[] = [];
     
     sleepData.forEach((item, index) => {
       let start = new Date(item.ds_start);
       const end = new Date(item.ds_end);
-      
-      // Round up the start time to the next minute if seconds are 30 or more
+
       if (start.getSeconds() >= 30) {
         start = addMinutes(startOfMinute(start), 1);
       } else {
@@ -182,22 +131,17 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
       while (isBefore(currentTime, end)) {
         const timestamp = adjustTimeZone(currentTime).getTime();
-        
 
-        // Check if there's an overlap with the next sleep data item
         if (index < sleepData.length - 1) {
           const nextItem = sleepData[index + 1];
           let nextStart = new Date(nextItem.ds_start);
-          
-          // Round up the next start time if seconds are 30 or more
+
           if (nextStart.getSeconds() >= 30) {
             nextStart = addMinutes(startOfMinute(nextStart), 1);
           } else {
             nextStart = startOfMinute(nextStart);
           }
-          
-          // If the current time is equal to or after the start of the next item,
-          // we prioritize the next item's stage
+
           if (currentTime >= nextStart) {
             processedData.push({
               timestamp,
@@ -207,7 +151,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
             continue;
           }
         }
-
         processedData.push({
           timestamp,
           sleep_stage: mapSleepStage(item.stage),
@@ -216,27 +159,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
         currentTime = addMinutes(currentTime, 1);
       }
     });
-
     return processedData;
   };
-
-  //   return sleepData.flatMap(item => {
-  //     const start = new Date(item.ds_start);
-  //     const end = new Date(item.ds_end);
-  //     const processedData = []
-  //     let currentTime = start;
-
-  //     while (currentTime < end) {
-  //       const nextMinute = addMinutes(currentTime, 1);
-  //       processedData.push({
-  //         timestamp: adjustTimeZone(currentTime).getTime(),
-  //         sleep_stage: item.stage,
-  //       });
-  //       currentTime = nextMinute;
-  //     }
-  //     return processedData;
-  //   })
-  // }
 
   const dataRange = useMemo(() => {
     const allDates = [
@@ -323,8 +247,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
       
       if (newWindow.start < dataRange.start || newWindow.end > (timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd)) {
         return prev;
-      }
-      
+      }    
       return newWindow;
     });
   };
@@ -360,7 +283,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
     processData(predictMinuteData, 'min_pred_bpm', false);
     processData(predictHourData, 'hour_pred_bpm', false);
 
-
     const processedSleepData = processSleepData(sleepData);
     processedSleepData.forEach(item => {
       const timeKey = item.timestamp;
@@ -369,7 +291,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
       }
       dataMap.get(timeKey)!.sleep_stage = item.sleep_stage;
     });
-
 
     hrvHourData.forEach((item, index) => {
       const timestamp = new Date(item.ds).getTime();
@@ -472,33 +393,43 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const CustomTooltip: React.FC<TooltipProps<ValueType, NameType>> = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const date = new Date(label as number);
-      const sleepStage = payload.find((p) => p.dataKey === 'sleep_stage')?.value as number | undefined;
+      const currentChart = payload[0].dataKey as string;
+
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
             {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
-          <p style={{ color: getSleepStageColor(sleepStage) }}>
-            Sleep Stage: {getSleepStageLabel(sleepStage)}
-          </p>
-          
-          {payload.map((pld, index) => (
-            pld.dataKey && pld.dataKey !== 'sleep_stage' && (
-              <p key={`${pld.dataKey}-${index}`} style={{ color: pld.color }}>
-                {`${pld.name}: ${pld.value !== null ? 
-                  (pld.dataKey === 'step' || pld.dataKey === 'calorie' ? 
-                    Number(pld.value).toFixed(0) : 
-                    Number(pld.value).toFixed(2)) 
-                  : 'N/A'}`}
-              </p>
-            )
-          ))}
+          {payload.map((pld, index) => {
+            if (pld.dataKey === currentChart || (currentChart === 'bpm' && (pld.dataKey === 'min_pred_bpm' || pld.dataKey === 'hour_pred_bpm'))) {
+              let value = pld.value !== null ? 
+                (pld.dataKey === 'step' || pld.dataKey === 'calorie' ? 
+                  Number(pld.value).toFixed(0) : 
+                  Number(pld.value).toFixed(2)) 
+                : 'N/A';
+              
+              if (pld.dataKey === 'sleep_stage') {
+                const sleepStage = pld.value as number;
+                value = getSleepStageLabel(sleepStage);
+                return (
+                  <p key={`${pld.dataKey}-${index}`} style={{ color: getSleepStageColor(sleepStage) }}>
+                    Sleep Stage: {value}
+                  </p>
+                );
+              }           
+              return (
+                <p key={`${pld.dataKey}-${index}`} style={{ color: pld.color }}>
+                  {`${pld.name}: ${value}`}
+                </p>
+              );
+            }
+            return null;
+          })}
         </div>
       );
     }
     return null;
   };
-
 
   const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartType: typeof LineChart | typeof BarChart = LineChart, additionalProps = {}) => (
     <div className="w-full h-full">
@@ -518,7 +449,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
             domain={dataKey === 'sleep_stage' ? [-3.5, 0.5] : ['auto', 'auto']}
             ticks={dataKey === 'sleep_stage' ? [-3, -2.5, -2, -1.5, -1] : undefined}
             scale={ChartType === BarChart ? 'log' : 'auto'}
-            // domain={ChartType === BarChart ? ['auto', 'auto'] : undefined}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
@@ -550,8 +480,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
     </div>
   );
 
-
-  
   const charts = [
     { key: 'bpm', color: '#ff7300', label: 'BPM', type: LineChart },
     { key: 'step', color: 'rgba(130, 202, 157, 0.6)', label: 'Steps', type: BarChart },
