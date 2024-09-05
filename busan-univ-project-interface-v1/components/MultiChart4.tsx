@@ -36,7 +36,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
   onBrushChange,
 }) => {
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
-  const [dateRange, setDateRange] = useState<DateRange>('7');
+  const [dateRange, setDateRange] = useState<DateRange>('1');
   const [columnCount, setColumnCount] = useState(2);
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
 
@@ -114,65 +114,77 @@ const MultiChart: React.FC<MultiChartProps> = ({
     </div>
   );
 
-  const processSleepData = (sleepData: SleepData[]) => {
+  const roundToNearestMinute = (date: Date) => {
+    const minutes = date.getMinutes();
+    const seconds = date.getSeconds();
+    if (seconds >= 30) {
+      return addMinutes(startOfMinute(date), 1);
+    }
+    return startOfMinute(date);
+  };
+
+  const processSleepData = (sleepData: any[]) => {
     const processedData: { timestamp: number; sleep_stage: number }[] = [];
     
-    sleepData.forEach((item, index) => {
-      let start = new Date(item.ds_start);
-      const end = new Date(item.ds_end);
+    sleepData.forEach((item) => {
+      let start = roundToNearestMinute(adjustTimeZone(new Date(item.timestamp_start)));
+      const end = roundToNearestMinute(adjustTimeZone(new Date(item.timestamp_end)));
 
-      if (start.getSeconds() >= 30) {
-        start = addMinutes(startOfMinute(start), 1);
-      } else {
-        start = startOfMinute(start);
-      }
-
-      let currentTime = start;
-
-      while (isBefore(currentTime, end)) {
-        const timestamp = adjustTimeZone(currentTime).getTime();
-
-        if (index < sleepData.length - 1) {
-          const nextItem = sleepData[index + 1];
-          let nextStart = new Date(nextItem.ds_start);
-
-          if (nextStart.getSeconds() >= 30) {
-            nextStart = addMinutes(startOfMinute(nextStart), 1);
-          } else {
-            nextStart = startOfMinute(nextStart);
-          }
-
-          if (currentTime >= nextStart) {
-            processedData.push({
-              timestamp,
-              sleep_stage: mapSleepStage(nextItem.stage),
-            });
-            currentTime = addMinutes(currentTime, 1);
-            continue;
-          }
-        }
+      while (isBefore(start, end)) {
         processedData.push({
-          timestamp,
-          sleep_stage: mapSleepStage(item.stage),
+          timestamp: start.getTime(),
+          sleep_stage: mapSleepStage(item.value),
         });
-
-        currentTime = addMinutes(currentTime, 1);
+        start = addMinutes(start, 1);
       }
     });
     return processedData;
   };
 
   const dataRange = useMemo(() => {
+
+    const parseTimestamp = (item: any) => {
+        const timestamp = new Date(item.timestamp).getTime();
+        // console.log('Parsing timestamp:', item.timestamp, '->', timestamp);
+        return timestamp;
+      };
+
+    // const allDates = [
+    //   ...bpmData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
+    //   ...stepData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
+    //   ...calorieData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
+    // ];
+
     const allDates = [
-      ...bpmData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
-      ...stepData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
-      ...calorieData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
-    ];
+        ...bpmData.map(parseTimestamp),
+        ...stepData.map(parseTimestamp),
+        ...calorieData.map(parseTimestamp),
+      ];
+  
+
+    // console.log('Sample data:',
+    //     { 
+    //       bpm: bpmData.slice(0, 3),
+    //       step: stepData.slice(0, 3),
+    //       calorie: calorieData.slice(0, 3)
+    //     }
+    //   );
+
+    // console.log('???')
+    // console.log(stepData)
+    // console.log('???')
 
     const start = startOfDay(new Date(Math.min(...allDates)));
     const end = endOfDay(new Date(Math.max(...allDates)));
     const minuteEnd = endOfDay(new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))));
     const hourEnd = endOfDay(new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime()))));
+
+    // console.log('Data Range:', { 
+    //     start: start.toISOString(), 
+    //     end: end.toISOString(),
+    //     minuteEnd: minuteEnd.toISOString(),
+    //     hourEnd: hourEnd.toISOString()
+    //   });
 
     return { start, end, minuteEnd, hourEnd };
   }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
@@ -255,53 +267,62 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const combinedData = useMemo(() => {
     const dataMap = new Map<number, any>();
 
-    const processData = (data: any[], key: string, adjustTime: boolean = true) => {
-      if (!Array.isArray(data)) {
-        return;
-      }
-      data.forEach((item, index) => {
-        if (item && typeof item.ds === 'string') {
-          let timestamp = new Date(item.ds);
-          if (adjustTime) {
-            timestamp = adjustTimeZone(timestamp);
-          }
-          const timeKey = timestamp.getTime();
-          if (!dataMap.has(timeKey)) {
-            dataMap.set(timeKey, { timestamp: timeKey, id: `${key}-${index}` });
-          }
-          const value = item[key];
-          if (typeof value === 'number') {
-            dataMap.get(timeKey)![key] = value;
-          }
+    const processData = (data: any[], key: string) => {
+      data.forEach(item => {
+        const timestamp = roundToNearestMinute(adjustTimeZone(new Date(item.timestamp))).getTime();
+        // console.log(`----> ${timestamp}`)
+        if (!dataMap.has(timestamp)) {
+          dataMap.set(timestamp, { timestamp });
         }
+        dataMap.get(timestamp)![key] = item.value;
+        //console.log(`DataMap - - - > ${item.user_email}`)
       });
     };
 
-    processData(bpmData, 'bpm', true);
-    processData(stepData, 'step', true);
-    processData(calorieData, 'calorie', true);
-    processData(predictMinuteData, 'min_pred_bpm', false);
-    processData(predictHourData, 'hour_pred_bpm', false);
+    processData(bpmData, 'bpm');
+    processData(stepData, 'step');
+    // console.log('---asd---')
+    // console.log(processData(stepData, 'step'));
+    // console.log('@@#!@#!');
+    processData(calorieData, 'calorie');
 
     const processedSleepData = processSleepData(sleepData);
     processedSleepData.forEach(item => {
-      const timeKey = item.timestamp;
-      if (!dataMap.has(timeKey)) {
-        dataMap.set(timeKey, { timestamp: timeKey });
+      if (!dataMap.has(item.timestamp)) {
+        dataMap.set(item.timestamp, { timestamp: item.timestamp });
       }
-      dataMap.get(timeKey)!.sleep_stage = item.sleep_stage;
+      dataMap.get(item.timestamp)!.sleep_stage = item.sleep_stage;
     });
 
-    hrvHourData.forEach((item, index) => {
-      const timestamp = new Date(item.ds).getTime();
+    // Prediction 데이터와 HRV 데이터 처리에도 roundToNearestMinute와 adjustTimeZone 적용
+    predictMinuteData.forEach(item => {
+      const timestamp = roundToNearestMinute(new Date(item.ds)).getTime();
       if (!dataMap.has(timestamp)) {
-        dataMap.set(timestamp, { timestamp, id: `hrv-${index}` });
+        dataMap.set(timestamp, { timestamp });
+      }
+      dataMap.get(timestamp)!.min_pred_bpm = item.min_pred_bpm;
+    });
+
+    predictHourData.forEach(item => {
+      const timestamp = startOfHour(new Date(item.ds)).getTime();
+      if (!dataMap.has(timestamp)) {
+        dataMap.set(timestamp, { timestamp });
+      }
+      dataMap.get(timestamp)!.hour_pred_bpm = item.hour_pred_bpm;
+    });
+
+    hrvHourData.forEach(item => {
+      const timestamp = startOfHour(new Date(item.ds)).getTime();
+      if (!dataMap.has(timestamp)) {
+        dataMap.set(timestamp, { timestamp });
       }
       dataMap.get(timestamp)!.hour_rmssd = item.hour_rmssd;
       dataMap.get(timestamp)!.hour_sdnn = item.hour_sdnn;
     });
-
-    return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    const result = Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    // console.log(`in combinedData result : ${JSON.stringify(result)}`)
+    //return Array.from(dataMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+    return result
   }, [bpmData, stepData, calorieData, sleepData, predictMinuteData, predictHourData, hrvHourData]);
 
   const processedData = useMemo(() => {
@@ -362,10 +383,17 @@ const MultiChart: React.FC<MultiChartProps> = ({
   }, [combinedData, timeUnit, hrvHourData, predictHourData]);
 
   const displayData = useMemo(() => {
-    return processedData.filter(item => 
-      item.timestamp >= dateWindow.start.getTime() && 
-      item.timestamp <= dateWindow.end.getTime()
-    );
+
+    const result = processedData.filter(item => 
+        item.timestamp >= dateWindow.start.getTime() && 
+        item.timestamp <= dateWindow.end.getTime()
+      );
+    // console.log(`in displayData result : ${dateWindow.start}`)
+    // console.log('Date Window:', {
+    //     start: dateWindow.start.toISOString(),
+    //     end: dateWindow.end.toISOString()
+    //   });
+    return result
   }, [processedData, dateWindow]);
   
   const filteredData = useMemo(() => {
@@ -431,7 +459,12 @@ const MultiChart: React.FC<MultiChartProps> = ({
     return null;
   };
 
+//   useEffect(() => {
+//     console.log('Filtered Data Update : ', filteredData);
+//   }, [filteredData])
+
   const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartType: typeof LineChart | typeof BarChart = LineChart, additionalProps = {}) => (
+    
     <div className="w-full h-full">
       <ResponsiveContainer width="100%" height="100%">
         <ChartType data={filteredData} syncId="healthMetrics">
