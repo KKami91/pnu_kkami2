@@ -35,7 +35,7 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
           {getLayout(<Component {...pageProps} />)}
         </ThemeProvider>
         <BubbleChat
-          chatflowid="54afc871-7024-4b9e-80c0-238d1793e992"
+          chatflowid="1352afdb-1933-4a3f-88ea-b55d560ea805"
           apiHost="https://flowise-6pxd.onrender.com"
           theme={{ chatWindow: { poweredByTextColor: "#fff" } }}
         />
