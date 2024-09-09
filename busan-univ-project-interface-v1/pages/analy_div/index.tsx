@@ -203,8 +203,8 @@ export default function Home() {
   const fetchPredictionData = async (user: string) => {
     try {
       const [minuteResponse, hourResponse] = await Promise.all([
-        axios.get(`${API_URL}/predict_minute/${user}`),
-        axios.get(`${API_URL}/predict_hour/${user}`)
+        axios.get(`${API_URL}/predict_minute_div/${user}`),
+        axios.get(`${API_URL}/predict_hour_div/${user}`)
       ]);
   
       //console.log('Minute prediction data:', minuteResponse.data);
