@@ -26,7 +26,16 @@ type AppPropsWithLayout = AppProps & {
 const queryClient = new QueryClient();
 
 function MyApp({ Component, pageProps }: AppPropsWithLayout) {
-  const getLayout = Component.getLayout ?? ((page) => <DefaultLayout>{page}</DefaultLayout>);
+  const isHeatmapCharts = Component.name === 'HeatmapCharts';
+    // HeatmapCharts 페이지일 경우 레이아웃을 적용하지 않습니다.
+  const getLayout = isHeatmapCharts
+    ? (page: ReactElement) => page
+    : Component.getLayout ?? ((page) => <DefaultLayout>{page}</DefaultLayout>);
+
+  // --- 기존 --- 
+  // const getLayout = Component.getLayout ?? ((page) => <DefaultLayout>{page}</DefaultLayout>);
+
+  
 
   return (
     <RecoilRoot>
@@ -34,21 +43,16 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {getLayout(<Component {...pageProps} />)}
         </ThemeProvider>
-        <BubbleChat
-          chatflowid="1352afdb-1933-4a3f-88ea-b55d560ea805"
-          apiHost="https://flowise-6pxd.onrender.com"
-          theme={{ chatWindow: { poweredByTextColor: "#fff" } }}
-        />
+        {!isHeatmapCharts && (
+          <BubbleChat
+            chatflowid="1352afdb-1933-4a3f-88ea-b55d560ea805"
+            apiHost="https://flowise-6pxd.onrender.com"
+            theme={{ chatWindow: { poweredByTextColor: "#fff" } }}
+          />
+        )}
       </QueryClientProvider>
     </RecoilRoot>
   );
 }
 
 export default MyApp;
-
-{/* <BubbleChat
-chatflowid="1352afdb-1933-4a3f-88ea-b55d560ea805"
-apiHost="https://flowise-6pxd.onrender.com"
-https://xbqbhszemiywwwucjnex.supabase.co
-theme={{ chatWindow: { poweredByTextColor: "#fff" } }}
-/> */}

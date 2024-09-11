@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heatmap Charts</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        iframe {
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <iframe id="heatmapFrame" src="" title="Heatmap Charts"></iframe>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('userId');
+        const width = urlParams.get('width') || '100%';
+        const height = urlParams.get('height') || '100%';
+        
+        const iframe = document.getElementById('heatmapFrame');
+        
+        if (userId) {
+            iframe.src = `/heatmap-charts?userId=${userId}&width=${width}&height=${height}`;
+            iframe.style.width = width.includes('%') ? width : `${width}px`;
+            iframe.style.height = height.includes('%') ? height : `${height}px`;
+        } else {
+            document.body.innerHTML = '<p style="color: red;">Error: Missing userId parameter</p>';
+        }
+    </script>
+</body>
+</html>
