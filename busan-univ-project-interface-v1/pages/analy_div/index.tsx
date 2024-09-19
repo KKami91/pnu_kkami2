@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import axios from 'axios'
 import MultiChart from '../../components/MultiChart4';
 import CombinedChart from '../../components/CombinedChart3';
 import { SkeletonLoader } from '../../components/SkeletonLoaders3';
 import { LaptopMinimal, LayoutGrid } from 'lucide-react';
-import { parseISO, format, startOfHour, endOfHour } from 'date-fns';
+import { parseISO, format, startOfHour, endOfHour, startOfWeek, endOfWeek, addDays, subDays, isSunday, nextSunday, endOfDay, startOfDay, previousSunday, previousMonday, isSaturday, isFriday, isFuture, nextMonday, nextSaturday } from 'date-fns';
 import RmssdCalendar from '../../components/RmssdCalendar';
 import SdnnCalendar from '../../components/SdnnCalendar';
 
@@ -16,6 +16,14 @@ const LoadingSpinner = () => (
     <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
   </div>
 )
+
+interface AdditionalData {
+  bpmData: any[];
+  stepData: any[];
+  calorieData: any[];
+  sleepData: any[];
+  hrvData: any[];
+}
 
 interface DataItem {
   ds: string;
@@ -65,6 +73,9 @@ export default function Home() {
   const [hrvHourData, setHrvHourData] = useState<any[]>([]);
   const [hrvDayData, setHrvDayData] = useState<any[]>([]);
 
+  const [currentDisplayRange, setCurrentDisplayRange] = useState<{ start: Date; end: Date } | null>(null);
+  const [initialDateWindow, setInitialDateWindow] = useState<{ start: Date; end: Date } | null>(null);
+
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [...bpmData, ...stepData, ...calorieData].map(item => new Date(item.timestamp).getTime());
     return {
@@ -75,23 +86,91 @@ export default function Home() {
 
   // console.log(`all---dates--- ${globalStartDate}`)
 
-  const fetchData = async (collection: string, user: string) => {
+  // const fetchData = async (collection: string, user: string, date: string) => {
+  //   try {
+  //     const fetchStart = performance.now()
+  //     const selectDate = new Date(date);
+  //     const startDate = startOfWeek(subDays(selectDate, 7), { weekStartsOn: 1 });
+  //     const endDate = endOfWeek(addDays(selectDate, 7), { weekStartsOn: 1 });
+
+  //     const response = await axios.get('/api/getData3_div', {
+  //       params: { 
+  //         collection, 
+  //         user_email: user, 
+  //         startDate: format(startDate, 'yyyy-MM-dd'),
+  //         endDate: format(endDate, 'yyyy-MM-dd')
+  //        }
+  //     });
+  //     //console.log('in fetchData response.data')
+  //     //console.log(typeof(response.data))
+  //     //console.log('in fetchData response.data')
+  //     const fetchEnd = performance.now()
+  //     //console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error(`Error fetching ${collection} data:`, error);
+  //     throw error;
+  //   }
+  // };
+
+  const getWeekRange = (date: Date) => {
+    const datePreviousMonday = previousMonday(startOfWeek(date, {weekStartsOn: 1}));
+    const dateNextSunday = nextSunday(endOfWeek(date, {weekStartsOn: 1}));
+
+    return { start: startOfDay(datePreviousMonday), end: dateNextSunday };
+  };
+
+  const fetchData = async (collection: string, user: string, startDate: Date, endDate: Date) => {
     try {
       const fetchStart = performance.now()
       const response = await axios.get('/api/getData3_div', {
-        params: { collection, user_email: user }
+        params: { 
+          collection, 
+          user_email: user, 
+          startDate: format(startDate, 'yyyy-MM-dd'),
+          endDate: format(endDate, 'yyyy-MM-dd')
+        }
       });
-      //console.log('in fetchData response.data')
-      //console.log(typeof(response.data))
-      //console.log('in fetchData response.data')
+      if (collection === 'calorie_div') {
+        console.log('123123123')
+        console.log(response)
+      }
       const fetchEnd = performance.now()
-      //console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
+      console.log(`2024-09-19 --- fetchData length --- ${fetchData.length} ---- `)
+      console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
       return response.data;
     } catch (error) {
       console.error(`Error fetching ${collection} data:`, error);
       throw error;
     }
   };
+
+  // const fetchAdditionalData = useCallback(async (startDate: Date, endDate: Date): Promise<AdditionalData> => {
+  //   if (!selectedUser) return { bpmData: [], stepData: [], calorieData: [], sleepData: [] };
+
+  //   try {
+  //     const [bpm, step, calorie, sleep] = await Promise.all([
+  //       fetchData('bpm_div', selectedUser, startDate, endDate),
+  //       fetchData('step_div', selectedUser, startDate, endDate),
+  //       fetchData('calorie_div', selectedUser, startDate, endDate),
+  //       fetchData('sleep_div', selectedUser, startDate, endDate),
+  //     ]);
+
+  //     console.log('--0--')
+  //     console.log(calorie)
+
+  //     return { 
+  //       bpmData: bpm || [], 
+  //       stepData: step || [], 
+  //       calorieData: calorie || [], 
+  //       sleepData: sleep || [] 
+  //     };
+  //   } catch (error) {
+  //     console.error('Error fetching additional data:', error);
+  //     // Return empty arrays instead of throwing an error
+  //     return { bpmData: [], stepData: [], calorieData: [], sleepData: [] };
+  //   }
+  // }, [selectedUser, fetchData]);
 
   const processHourlyData = (data: DataItem[], key: 'bpm' | 'step' | 'calorie') => {
     const hourlyData: { [hour: string]: number[] } = {};
@@ -122,83 +201,121 @@ export default function Home() {
   };
 
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const date = e.target.value
-    setSelectedDate(date)
+    const date = e.target.value;
+    console.log(`in handleDateSelect date : ${date}`);
+    setSelectedDate(date);
     if (date) {
-      setIsLoading(true)
-      setError(null)
-      setShowGraphs(false)
-      setRenderTime(null)
+      setIsLoading(true);
+      setError(null);
+      setShowGraphs(false);
+      setRenderTime(null);
       startTimeRef.current = performance.now();
       try {
-        // MongoDB 3개 데이터 불러오기 (3)
-        const fetchDataStartTimeBpmStepsCalories = performance.now()
+        const selectedDate = new Date(date);
+        const { start: fetchStartDate, end: fetchEndDate } = getWeekRange(selectedDate);
+  
+        console.log(`Fetching data from ${fetchStartDate} to ${fetchEndDate}`);
+  
         const [bpm, step, calorie, sleep] = await Promise.all([
-          fetchData('bpm_div', selectedUser),
-          fetchData('step_div', selectedUser),
-          fetchData('calorie_div', selectedUser),
-          fetchData('sleep_div', selectedUser),
+          fetchData('bpm_div', selectedUser, fetchStartDate, fetchEndDate),
+          fetchData('step_div', selectedUser, fetchStartDate, fetchEndDate),
+          fetchData('calorie_div', selectedUser, fetchStartDate, fetchEndDate),
+          fetchData('sleep_div', selectedUser, fetchStartDate, fetchEndDate),
         ]);
-        // console.log('------BPM--------');
-        // console.log(`-----${JSON.stringify(bpm, null, 2)}-----`);
-        // console.log('------BPM--------');
-
-        // console.log('------step--------');
-        // console.log(`-----${JSON.stringify(step, null, 2)}-----`);
-        // console.log(typeof(JSON.stringify(step, null, 2)))
-        // console.log(step)
-        // console.log('------step--------');
-
-        // console.log('------calorie--------');
-        // console.log(`-----${JSON.stringify(calorie, null, 2)}-----`);
-        // console.log('------calorie--------');
-
-        // console.log('------sleep--------');
-        // console.log(`-----${JSON.stringify(sleep, null, 2)}-----`);
-        // console.log('------sleep--------');
-        const fetchDataEndTimeBpmStepsCalories = performance.now()
-        console.groupCollapsed(`BPM, Steps, Calories fetchData 걸린 시간 (3) : ${fetchDataEndTimeBpmStepsCalories - fetchDataStartTimeBpmStepsCalories} ms`);
-
-        //console.log('bpm', bpm);
-
+  
+        console.log(`fetch bpm length : ${bpm.length}`);
+  
         setBpmData(bpm);
         setStepData(step);
         setCalorieData(calorie);
         setSleepData(sleep);
-
-        // 서버 Prediction 데이터 가져오기 min + hour (4+5)
-        const predictionDataStartTime = performance.now();
+  
+        // Prediction 데이터 가져오기
         await fetchPredictionData(selectedUser);
-        const predictionDataEndTime = performance.now();
-        console.log(`prediction data 서버로부터 가져오는데 걸린 시간 (4+5) : ${predictionDataEndTime - predictionDataStartTime} ms`);
-
-        // 서버 hrv 데이터 가져오기 hour (6)
-        const hrvDataStartTime = performance.now();
-        await fetchHrvData(selectedUser);
-        const hrvDataEndTime = performance.now();
-        console.log(`hrv 계산 데이터 가져오기 걸린 시간 (6) : ${hrvDataEndTime - hrvDataStartTime} ms`);
-
+  
+        // HRV 데이터 가져오기
+        console.log(`in index.tsx - handleDateSelect - fetchStartDate : ${fetchStartDate} <------> fetchEndDate : ${fetchEndDate}`)
+        await fetchHrvData(selectedUser, fetchStartDate, fetchEndDate);
+  
+        const renderStartDate = startOfDay(nextSunday(selectedDate));
+        const renderEndDate = endOfDay(addDays(renderStartDate, 6));
+  
+        setInitialDateWindow({ start: renderStartDate, end: renderEndDate });
+  
         setShowGraphs(true);
       } catch (error) {
         console.error('Error in handleDateSelect:', error);
         setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
-  }
+  };
 
-  const fetchHrvData = async (user: string) => {
+
+  // const fetchHrvData = async (user: string, start: Date, end: Date) => {
+  //   try {
+  //     const response = await axios.get(`${API_URL}/feature_hour_div/${user}/${start.getTime()}/${end.getTime()}`);
+  //     setHrvHourData(response.data.hour_hrv);
+  //     const dayFeatureStart = performance.now()
+  //     const responseDay = await axios.get(`${API_URL}/feature_day_div/${user}`);
+  //     const dayFeatureEnd = performance.now()
+  //     console.log(`day feature 걸린 시간 : ${dayFeatureEnd - dayFeatureStart}ms`)
+  //     setHrvDayData(responseDay.data.day_hrv);
+  //     //console.log(responseDay.data.day_hrv);
+  //   } catch (error) {
+  //     console.error('Error in fetchHrvData: ', error);
+  //   }
+  // }
+
+  const fetchHrvData = useCallback(async (user: string, start: Date, end: Date) => {
     try {
-      const response = await axios.get(`${API_URL}/feature_hour/${user}`);
-      setHrvHourData(response.data.hour_hrv);
-      const responseDay = await axios.get(`${API_URL}/feature_day/${user}`);
-      setHrvDayData(responseDay.data.day_hrv);
-      //console.log(responseDay.data.day_hrv);
+      console.log(`in fetchHrvData in index.tsx - - - - - - - - - - -`)
+      console.log(`in fetchHrvData2 start : ${start} ------ > end : ${end}`)
+      const response = await axios.get(`${API_URL}/feature_hour_div/${user}/${start.getTime()}/${end.getTime()}`);
+      console.log(response.data.hour_hrv)
+      console.log('123124124234dasdvxvxvxvxcvxcvx')
+      console.log('123124124234dasdvxvxvxvxcvxcvx : ', response.data)
+      console.log('#############@@@@@@@@@@@@@@############')
+      console.log(`in fetchHrvData2 start : ${start} ------ > end : ${end} -------> data : ${response.data}`)
+      return response.data.hour_hrv;
     } catch (error) {
       console.error('Error in fetchHrvData: ', error);
+      return [];
     }
-  }
+  }, [API_URL]);
+
+  const fetchAdditionalData = useCallback(async (startDate: Date, endDate: Date): Promise<AdditionalData> => {
+    if (!selectedUser) return { bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] };
+
+    console.log(`in fetchAdditionalData --- startDate : ${startDate} <------> endDate : ${endDate}`)
+
+    try {
+      const [bpm, step, calorie, sleep, hrv] = await Promise.all([
+        fetchData('bpm_div', selectedUser, startDate, endDate),
+        fetchData('step_div', selectedUser, startDate, endDate),
+        fetchData('calorie_div', selectedUser, startDate, endDate),
+        fetchData('sleep_div', selectedUser, startDate, endDate),
+        fetchHrvData(selectedUser, startDate, endDate),  // HRV 데이터 fetch 추가
+      ]);
+
+      console.log('@@@@@@@@@@@@@@@hrv@@@@@@@@@@')
+      console.log(hrv)
+      console.log('@@@@@@@@@@@@@@@hrv@@@@@@@@@@')
+
+      return { 
+        bpmData: bpm || [], 
+        stepData: step || [], 
+        calorieData: calorie || [], 
+        sleepData: sleep || [],
+        hrvData: hrv || [],  // HRV 데이터 추가
+      };
+    } catch (error) {
+      console.error('Error fetching additional data:', error);
+      return { bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] };
+    }
+  }, [selectedUser, fetchData, fetchHrvData]);
+  
 
   const fetchPredictionData = async (user: string) => {
     try {
@@ -374,17 +491,22 @@ export default function Home() {
               /> 
             ) : (
               <MultiChart
-                bpmData={bpmData}
-                stepData={stepData}
-                calorieData={calorieData}
-                sleepData={sleepData}
-                predictMinuteData={predictMinuteData}
-                predictHourData={predictHourData}
-                hrvHourData={hrvHourData}  // 새로운 HRV 데이터 전달
-                globalStartDate={globalStartDate}
-                globalEndDate={globalEndDate}
-                onBrushChange={handleBrushChange}
-              />
+              bpmData={bpmData}
+              stepData={stepData}
+              calorieData={calorieData}
+              sleepData={sleepData}
+              predictMinuteData={predictMinuteData}
+              predictHourData={predictHourData}
+              hrvHourData={hrvHourData}
+              globalStartDate={globalStartDate}
+              globalEndDate={globalEndDate}
+              onBrushChange={handleBrushChange}
+              fetchAdditionalData={fetchAdditionalData}
+              fetchHrvData={fetchHrvData}
+              initialDateWindow={initialDateWindow}
+              selectedDate={selectedDate}
+              //timeUnit={timeUnit}
+            />
             )}
             {renderTime !== null && (
               <div className="mt-4 text-center text-gray-600">

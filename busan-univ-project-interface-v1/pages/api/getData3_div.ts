@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { MongoClient } from 'mongodb';
+import { startOfDay, endOfDay, subDays, addDays, subHours, startOfWeek, endOfWeek, parseISO, addHours } from 'date-fns'
 
 const uri = process.env.MONGODB_URI
 let client: MongoClient | null = null;
@@ -12,12 +13,18 @@ async function connectToDatabase() {
   return client;
 }
 
+const adjustTimeZone = (date: Date) => {
+  return addHours(date, 9);
+};
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
-    const startTime = performance.now()
-    const { collection, user_email } = req.query;
+    const startTime = performance.now();
+    const { collection, user_email, startDate, endDate } = req.query;
 
-    if (!collection || !user_email) {
+    console.log(`in getData3_div date : ${startDate} ~ ${endDate}`);
+
+    if (!collection || !user_email || !startDate || !endDate) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
@@ -26,16 +33,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const database = client.db('heart_rate_db');
       const dataCollection = database.collection(collection as string);
 
-      const query = {
+      const start = adjustTimeZone(startOfDay(parseISO(startDate as string)));
+      const end = adjustTimeZone(endOfDay(parseISO(endDate as string)));
+
+      console.log(`In getData3_div Date Range : ${start} ~ ${end}`);
+
+      let query: any = {
         user_email,
-        // ['save_date']: date,
+        timestamp: { $gte: start, $lte: end }
       };
 
-      // findOne ->
-      //const result = await dataCollection.findOne(query);
+      if (collection === 'sleep_div') {
+        query = {
+          user_email,
+          timestamp_start: { $gte: start, $lte: end }
+        };
+      }
+
       const result = await dataCollection.find(query).toArray();
-      // console.log(result);
-      const endTime = performance.now()
+      
+      console.log(`In getData3_div ${collection} result 길이 : ${result.length}`);
+      const endTime = performance.now();
       console.log(`getData ${collection}에서의 걸린 시간 ${endTime - startTime}ms`);
 
       if (result) {
@@ -52,6 +70,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
+
+
+
+
 
 
 
