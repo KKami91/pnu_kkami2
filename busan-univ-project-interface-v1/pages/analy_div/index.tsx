@@ -200,49 +200,86 @@ export default function Home() {
     //console.log("Brush domain changed2:", domain);
   };
 
+  // const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //   const date = e.target.value;
+  //   console.log(`in handleDateSelect date : ${date}`);
+  //   setSelectedDate(date);
+  //   if (date) {
+  //     setIsLoading(true);
+  //     setError(null);
+  //     setShowGraphs(false);
+  //     setRenderTime(null);
+  //     startTimeRef.current = performance.now();
+  //     try {
+  //       const selectedDate = new Date(date);
+  //       const { start: fetchStartDate, end: fetchEndDate } = getWeekRange(selectedDate);
+  
+  //       console.log(`Fetching data from ${fetchStartDate} to ${fetchEndDate}`);
+  
+  //       const [bpm, step, calorie, sleep] = await Promise.all([
+  //         fetchData('bpm_div', selectedUser, fetchStartDate, fetchEndDate),
+  //         fetchData('step_div', selectedUser, fetchStartDate, fetchEndDate),
+  //         fetchData('calorie_div', selectedUser, fetchStartDate, fetchEndDate),
+  //         fetchData('sleep_div', selectedUser, fetchStartDate, fetchEndDate),
+  //       ]);
+  
+  //       console.log(`fetch bpm length : ${bpm.length}`);
+  
+  //       setBpmData(bpm);
+  //       setStepData(step);
+  //       setCalorieData(calorie);
+  //       setSleepData(sleep);
+  
+  //       // Prediction 데이터 가져오기
+  //       await fetchPredictionData(selectedUser);
+  
+  //       // HRV 데이터 가져오기
+  //       console.log(`in index.tsx - handleDateSelect - fetchStartDate : ${fetchStartDate} <------> fetchEndDate : ${fetchEndDate}`)
+  //       await fetchHrvData(selectedUser, fetchStartDate, fetchEndDate);
+  
+  //       const renderStartDate = startOfDay(nextSunday(selectedDate));
+  //       const renderEndDate = endOfDay(addDays(renderStartDate, 6));
+  
+  //       setInitialDateWindow({ start: renderStartDate, end: renderEndDate });
+  
+  //       setShowGraphs(true);
+  //     } catch (error) {
+  //       console.error('Error in handleDateSelect:', error);
+  //       setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   }
+  // };
+
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value;
-    console.log(`in handleDateSelect date : ${date}`);
     setSelectedDate(date);
     if (date) {
       setIsLoading(true);
       setError(null);
-      setShowGraphs(false);
-      setRenderTime(null);
-      startTimeRef.current = performance.now();
+      setShowGraphs(false);  // 그래프를 숨깁니다.
+      setRenderTime(null);   // 렌더 시간을 초기화합니다.
+      startTimeRef.current = performance.now();  // 시작 시간을 기록합니다.
       try {
         const selectedDate = new Date(date);
         const { start: fetchStartDate, end: fetchEndDate } = getWeekRange(selectedDate);
+        
+        const responseDay = await axios.get(`${API_URL}/feature_day_div/${selectedUser}`);
+        setHrvDayData(responseDay.data.day_hrv);
   
-        console.log(`Fetching data from ${fetchStartDate} to ${fetchEndDate}`);
+        const data = await fetchAdditionalData(fetchStartDate, fetchEndDate);
+        
+        setBpmData(data.bpmData);
+        setStepData(data.stepData);
+        setCalorieData(data.calorieData);
+        setSleepData(data.sleepData);
+        setHrvHourData(data.hrvData);
   
-        const [bpm, step, calorie, sleep] = await Promise.all([
-          fetchData('bpm_div', selectedUser, fetchStartDate, fetchEndDate),
-          fetchData('step_div', selectedUser, fetchStartDate, fetchEndDate),
-          fetchData('calorie_div', selectedUser, fetchStartDate, fetchEndDate),
-          fetchData('sleep_div', selectedUser, fetchStartDate, fetchEndDate),
-        ]);
-  
-        console.log(`fetch bpm length : ${bpm.length}`);
-  
-        setBpmData(bpm);
-        setStepData(step);
-        setCalorieData(calorie);
-        setSleepData(sleep);
-  
-        // Prediction 데이터 가져오기
+        // Prediction 데이터 가져오기 (필요한 경우)
         await fetchPredictionData(selectedUser);
   
-        // HRV 데이터 가져오기
-        console.log(`in index.tsx - handleDateSelect - fetchStartDate : ${fetchStartDate} <------> fetchEndDate : ${fetchEndDate}`)
-        await fetchHrvData(selectedUser, fetchStartDate, fetchEndDate);
-  
-        const renderStartDate = startOfDay(nextSunday(selectedDate));
-        const renderEndDate = endOfDay(addDays(renderStartDate, 6));
-  
-        setInitialDateWindow({ start: renderStartDate, end: renderEndDate });
-  
-        setShowGraphs(true);
+        setShowGraphs(true);  // 모든 데이터 로딩이 완료되면 그래프를 표시합니다.
       } catch (error) {
         console.error('Error in handleDateSelect:', error);
         setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`);
