@@ -920,7 +920,7 @@ const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartTy
             tickFormatter={(value) => value.toFixed(1)}
             domain={dataKey === 'sleep_stage' ? [-3.5, 0.5] : ['auto', 'auto']}
             ticks={dataKey === 'sleep_stage' ? [-3, -2.5, -2, -1.5, -1] : undefined}
-            scale={ChartType === BarChart ? 'log' : 'auto'}
+            //scale={ChartType === BarChart ? 'log' : 'auto'}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
