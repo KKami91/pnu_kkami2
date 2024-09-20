@@ -22,7 +22,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const startTime = performance.now();
     const { collection, user_email, startDate, endDate } = req.query;
 
-    console.log(`in getData3_div date : ${startDate} ~ ${endDate}`);
+    //console.log(`in getData3_div date : ${startDate} ~ ${endDate}`);
 
     if (!collection || !user_email || !startDate || !endDate) {
       return res.status(400).json({ error: 'Missing required parameters' });
@@ -36,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const start = adjustTimeZone(startOfDay(parseISO(startDate as string)));
       const end = adjustTimeZone(endOfDay(parseISO(endDate as string)));
 
-      console.log(`In getData3_div Date Range : ${start} ~ ${end}`);
+      //console.log(`In getData3_div Date Range : ${start} ~ ${end}`);
 
       let query: any = {
         user_email,
@@ -52,7 +52,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const result = await dataCollection.find(query).toArray();
       
-      console.log(`In getData3_div ${collection} result 길이 : ${result.length}`);
+      //console.log(`In getData3_div ${collection} result 길이 : ${result.length}`);
       const endTime = performance.now();
       console.log(`getData ${collection}에서의 걸린 시간 ${endTime - startTime}ms`);
 

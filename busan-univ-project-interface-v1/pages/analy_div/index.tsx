@@ -84,6 +84,38 @@ export default function Home() {
     };
   }, [bpmData, stepData, calorieData]);
 
+  const [dbStartDate, setDbStartDate] = useState<Date | null>(null);
+  const [dbEndDate, setDbEndDate] = useState<Date | null>(null);
+
+  const fetchDataRanges = async (user: string) => {
+    try {
+      const collections = ['bpm_div', 'step_div', 'calorie_div'];
+      const ranges = await Promise.all(collections.map(async (collection) => {
+        const response = await axios.get('/api/getDataRange', {
+          params: { collection, user_email: user }
+        });
+        return response.data;
+      }));
+
+      const allStartDates = ranges.map(r => new Date(r.startDate).getTime());
+      const allEndDates = ranges.map(r => new Date(r.endDate).getTime());
+
+      //console.log(`in index.tsx - response allStartDates : ${allStartDates}`)
+      //console.log(`in index.tsx - response allEndDates : ${allEndDates}`)
+
+      setDbStartDate(startOfWeek(new Date(Math.min(...allStartDates)), { weekStartsOn: 1 }));
+      setDbEndDate(endOfWeek(new Date(Math.max(...allEndDates)), {weekStartsOn: 1 }));
+    } catch (error) {
+      console.error('Error fetching data ranges:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedUser) {
+      fetchDataRanges(selectedUser);
+    }
+  }, [selectedUser]);
+
   // console.log(`all---dates--- ${globalStartDate}`)
 
   // const fetchData = async (collection: string, user: string, date: string) => {
@@ -131,12 +163,12 @@ export default function Home() {
           endDate: format(endDate, 'yyyy-MM-dd')
         }
       });
-      if (collection === 'calorie_div') {
-        console.log('123123123')
-        console.log(response)
-      }
+      // if (collection === 'calorie_div') {
+      //   console.log('123123123')
+      //   console.log(response)
+      // }
       const fetchEnd = performance.now()
-      console.log(`2024-09-19 --- fetchData length --- ${fetchData.length} ---- `)
+      //console.log(`2024-09-19 --- fetchData length --- ${fetchData.length} ---- `)
       console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
       return response.data;
     } catch (error) {
@@ -252,6 +284,41 @@ export default function Home() {
   //   }
   // };
 
+  // const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+  //   const date = e.target.value;
+  //   setSelectedDate(date);
+  //   if (date) {
+  //     setIsLoading(true);
+  //     setError(null);
+  //     try {
+  //       const selectedDate = new Date(date);
+  //       const { start: fetchStartDate, end: fetchEndDate } = getWeekRange(selectedDate);
+        
+
+  //       const responseDay = await axios.get(`${API_URL}/feature_day_div/${selectedUser}`);
+  //       setHrvDayData(responseDay.data.day_hrv);
+
+  //       const data = await fetchAdditionalData(fetchStartDate, fetchEndDate);
+        
+  //       setBpmData(data.bpmData);
+  //       setStepData(data.stepData);
+  //       setCalorieData(data.calorieData);
+  //       setSleepData(data.sleepData);
+  //       setHrvHourData(data.hrvData);
+  
+  //       // Prediction 데이터 가져오기 (필요한 경우)
+  //       await fetchPredictionData(selectedUser);
+  
+  //       setShowGraphs(true);
+  //     } catch (error) {
+  //       console.error('Error in handleDateSelect:', error);
+  //       setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`);
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   }
+  // };
+
   const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const date = e.target.value;
     setSelectedDate(date);
@@ -265,10 +332,17 @@ export default function Home() {
         const selectedDate = new Date(date);
         const { start: fetchStartDate, end: fetchEndDate } = getWeekRange(selectedDate);
         
+        const calendarStartTime = performance.now();
         const responseDay = await axios.get(`${API_URL}/feature_day_div/${selectedUser}`);
         setHrvDayData(responseDay.data.day_hrv);
-  
+        const calendarendTime = performance.now();
+        console.log(`히트맵 일일 HRV 전체 데이터 가져오는데 걸리는 시간 : ${calendarendTime - calendarStartTime} ms`);
+
+
+        const firstFetchStartTime = performance.now();
         const data = await fetchAdditionalData(fetchStartDate, fetchEndDate);
+        const firstFetchEndTime = performance.now();
+        console.log(`handleDateSelect에서 첫 fetch 데이터 걸린 시간 (약 2주) ${firstFetchEndTime - firstFetchStartTime} ms`);
         
         setBpmData(data.bpmData);
         setStepData(data.stepData);
@@ -277,7 +351,10 @@ export default function Home() {
         setHrvHourData(data.hrvData);
   
         // Prediction 데이터 가져오기 (필요한 경우)
+        const predictStartTime = performance.now();
         await fetchPredictionData(selectedUser);
+        const predictEndTime = performance.now();
+        console.log(`예측 데이터 가져오는데 걸리는 시간 : ${predictEndTime - predictStartTime} ms`);
   
         setShowGraphs(true);  // 모든 데이터 로딩이 완료되면 그래프를 표시합니다.
       } catch (error) {
@@ -307,14 +384,17 @@ export default function Home() {
 
   const fetchHrvData = useCallback(async (user: string, start: Date, end: Date) => {
     try {
-      console.log(`in fetchHrvData in index.tsx - - - - - - - - - - -`)
-      console.log(`in fetchHrvData2 start : ${start} ------ > end : ${end}`)
+      // console.log(`in fetchHrvData in index.tsx - - - - - - - - - - -`)
+      // console.log(`in fetchHrvData2 start : ${start} ------ > end : ${end}`)
+      const featureHourStartTime = performance.now()
       const response = await axios.get(`${API_URL}/feature_hour_div/${user}/${start.getTime()}/${end.getTime()}`);
-      console.log(response.data.hour_hrv)
-      console.log('123124124234dasdvxvxvxvxcvxcvx')
-      console.log('123124124234dasdvxvxvxvxcvxcvx : ', response.data)
-      console.log('#############@@@@@@@@@@@@@@############')
-      console.log(`in fetchHrvData2 start : ${start} ------ > end : ${end} -------> data : ${response.data}`)
+      const featureHourEndTime = performance.now()
+      console.log(`HRV 시간 단위 데이터 계산 걸린 시간 : ${featureHourEndTime - featureHourStartTime} ms`)
+      // console.log(response.data.hour_hrv)
+      // console.log('123124124234dasdvxvxvxvxcvxcvx')
+      // console.log('123124124234dasdvxvxvxvxcvxcvx : ', response.data)
+      // console.log('#############@@@@@@@@@@@@@@############')
+      // console.log(`in fetchHrvData2 start : ${start} ------ > end : ${end} -------> data : ${response.data}`)
       return response.data.hour_hrv;
     } catch (error) {
       console.error('Error in fetchHrvData: ', error);
@@ -328,6 +408,7 @@ export default function Home() {
     console.log(`in fetchAdditionalData --- startDate : ${startDate} <------> endDate : ${endDate}`)
 
     try {
+      const additionalStartTime = performance.now()
       const [bpm, step, calorie, sleep, hrv] = await Promise.all([
         fetchData('bpm_div', selectedUser, startDate, endDate),
         fetchData('step_div', selectedUser, startDate, endDate),
@@ -335,10 +416,12 @@ export default function Home() {
         fetchData('sleep_div', selectedUser, startDate, endDate),
         fetchHrvData(selectedUser, startDate, endDate),  // HRV 데이터 fetch 추가
       ]);
+      const additionalEndTime = performance.now()
+      console.log(`In FetchAdditionalData 에서 bpm, step, calorie, sleep fetch + hrv 계산 전체 걸린 시간 : ${additionalEndTime - additionalStartTime} ms`)
 
-      console.log('@@@@@@@@@@@@@@@hrv@@@@@@@@@@')
-      console.log(hrv)
-      console.log('@@@@@@@@@@@@@@@hrv@@@@@@@@@@')
+      // console.log('@@@@@@@@@@@@@@@hrv@@@@@@@@@@')
+      // console.log(hrv)
+      // console.log('@@@@@@@@@@@@@@@hrv@@@@@@@@@@')
 
       return { 
         bpmData: bpm || [], 
@@ -388,13 +471,13 @@ export default function Home() {
       const startTimeCheckDB = performance.now();
       await checkDb(user)
       const endTimeCheckDB = performance.now();
-      console.log(`checkDB 걸린 시간 (1) : ${endTimeCheckDB - startTimeCheckDB} ms`);
+      console.log(`In Index.tsx ---> checkDB 걸린 시간 (1) : ${endTimeCheckDB - startTimeCheckDB} ms`);
 
       // 서버 저장 시간 가져오기 걸린 시간
       const startTimeFetchSaveDates = performance.now();
       await fetchSaveDates(user)
       const endTimeFetchSaveDates = performance.now();
-      console.log(`fetchSaveDates 걸린 시간 (저장 시간 가져오기) : ${endTimeFetchSaveDates - startTimeFetchSaveDates} ms`);
+      console.log(`fetchSaveDates 걸린 시간 (저장 시간 가져오기 (2)) : ${endTimeFetchSaveDates - startTimeFetchSaveDates} ms`);
       
       setIsLoadingUser(false)
     }
@@ -542,6 +625,8 @@ export default function Home() {
               fetchHrvData={fetchHrvData}
               initialDateWindow={initialDateWindow}
               selectedDate={selectedDate}
+              dbStartDate={dbStartDate}
+              dbEndDate={dbEndDate}
               //timeUnit={timeUnit}
             />
             )}
@@ -558,7 +643,10 @@ export default function Home() {
           )}
           </>
         ) : null}
-        {showGraphs && processedData.bpmData.length === 0 && processedData.stepData.length === 0 && processedData.calorieData.length === 0 && processedData.predictMinuteData.length === 0 && (
+        {/* {showGraphs && processedData.bpmData.length === 0 && processedData.stepData.length === 0 && processedData.calorieData.length === 0 && processedData.predictMinuteData.length === 0 && (
+          <div className="text-center text-red-500">No data available for the charts.</div>
+        )} */}
+        {showGraphs && bpmData.length === 0 && stepData.length === 0 && calorieData.length === 0 && predictMinuteData.length === 0 && (
           <div className="text-center text-red-500">No data available for the charts.</div>
         )}
       </div>

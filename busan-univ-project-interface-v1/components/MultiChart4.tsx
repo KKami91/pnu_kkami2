@@ -19,6 +19,8 @@ interface MultiChartProps {
   initialDateWindow: { start: Date; end: Date; } | null;
   selectedDate: string;
   fetchHrvData: (user: string, start: Date, end: Date) => Promise<any[]>;
+  dbStartDate: Date | null;
+  dbEndDate: Date | null;
 }
 
 interface SleepData {
@@ -51,6 +53,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
   initialDateWindow,
   selectedDate,
   fetchHrvData,
+  dbStartDate,
+  dbEndDate,
 }) => {
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('hour');
   const [dateRange, setDateRange] = useState<DateRange>('7');
@@ -64,11 +68,26 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [dataCache, setDataCache] = useState<{
+    bpm: { [key: string]: any[] },
+    step: { [key: string]: any[] },
+    calorie: { [key: string]: any[] },
+    sleep: { [key: string]: any[] },
+    hrv: { [key: string]: any[] },
+  }>({
+    bpm: {},
+    step: {},
+    calorie: {},
+    sleep: {},
+    hrv: {},
+  });
   
+  //console.log(`dbStartDate 넘어온 값 : ${dbStartDate}`)
+  //console.log(`dbEndDate 넘어온 값 : ${dbEndDate}`)
 
   const [localHrvData, setLocalHrvData] = useState(hrvHourData);
 
-  console.log('최상단, ', bpmData)
+  //console.log('최상단, ', bpmData)
 
   useEffect(() => {
     setLocalHrvData(hrvHourData);
@@ -77,7 +96,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
   useEffect(() => {
     if (dateWindow && (!localHrvData || localHrvData.length === 0)) {
       fetchAdditionalData(dateWindow.start, dateWindow.end).then((newData) => {
-        console.log(`in multichart4.tsx - newData.hrvData : ${newData}`)
+        //console.log(`in multichart4.tsx - newData.hrvData : ${newData}`)
         if (newData.hrvData) {
           setLocalHrvData(newData.hrvData);
         }
@@ -343,12 +362,12 @@ const MultiChart: React.FC<MultiChartProps> = ({
         start = startOfDay(end);
         break;
       case '7':
-        console.log(`In calculateDateWindow`)
-        console.log(`In calculateDateWindow before end : ${dataRange.end}`)
+        //console.log(`In calculateDateWindow`)
+        //console.log(`In calculateDateWindow before end : ${dataRange.end}`)
         end = min([endOfWeek(referenceDate, { weekStartsOn: 1 }), dataRange.end]);
-        console.log(`In calculateDateWindow after end : ${end}`)
+        //console.log(`In calculateDateWindow after end : ${end}`)
         start = startOfWeek(end, { weekStartsOn: 1 });
-        console.log(`In calculateDateWindow after start : ${start}`)
+        //console.log(`In calculateDateWindow after start : ${start}`)
         break;
       case '15':
         end = min([endOfDay(addDays(startOfMonth(referenceDate), 14)), dataRange.end]);
@@ -384,17 +403,17 @@ const MultiChart: React.FC<MultiChartProps> = ({
   // }, [initialDateWindow, calculateDateWindow, dateRange, dataRange]);
 
   useEffect(() => {
-    console.log(`-----???---------???-----`)
-    console.log(`-----???----${selectedDate}---???-----`)
-    console.log(`-----???---------???-----`)
+    //console.log(`-----???---------???-----`)
+    //console.log(`-----???----${selectedDate}---???-----`)
+    //console.log(`-----???---------???-----`)
     if (selectedDate) {
       const selectedDateObj = new Date(selectedDate);
       const startOfWeekDate = startOfWeek(selectedDateObj, { weekStartsOn: 1 }); // 월요일 시작
       const endOfWeekDate = endOfWeek(selectedDateObj, { weekStartsOn: 1 }); // 일요일 끝
 
-      console.log(`In useEffect ${selectedDate}`)
-      console.log(`In useEffect ${startOfWeekDate} ~ ${endOfWeekDate}`)
-      console.log(`In useEffect ${startOfDay(startOfWeekDate)} ~ ${endOfDay(endOfWeekDate)}`)
+      //console.log(`In useEffect ${selectedDate}`)
+      //console.log(`In useEffect ${startOfWeekDate} ~ ${endOfWeekDate}`)
+      //console.log(`In useEffect ${startOfDay(startOfWeekDate)} ~ ${endOfDay(endOfWeekDate)}`)
       
       setDateWindow({
         start: startOfDay(startOfWeekDate),
@@ -488,72 +507,72 @@ const MultiChart: React.FC<MultiChartProps> = ({
   // };
 
 
-  const handleDateNavigation = async (direction: 'forward' | 'backward') => {
-    if (!dateWindow) return;
+  // const handleDateNavigation = async (direction: 'forward' | 'backward') => {
+  //   if (!dateWindow) return;
 
-    let newStart: Date, newEnd: Date;
-    console.log(`--- In Navi before switch ---`)
-    console.log(`--- dateWindow.start : ${dateWindow.start} ---`)
-    console.log(`--- dateWindow.start : ${dateWindow.end} ---`)
-    console.log(`--- ----------------- ---`)
+  //   let newStart: Date, newEnd: Date;
+  //   console.log(`--- In Navi before switch ---`)
+  //   console.log(`--- dateWindow.start : ${dateWindow.start} ---`)
+  //   console.log(`--- dateWindow.start : ${dateWindow.end} ---`)
+  //   console.log(`--- ----------------- ---`)
 
-    switch (dateRange) {
-      case '7':
-        newStart = direction === 'forward' ? addDays(dateWindow.start, 7) : subDays(dateWindow.start, 7);
-        console.log(`--- In Navi In switch ---`)
-        console.log(`--- newStart : ${newStart} ---`)
-        console.log(`--- ----------------- ---`)
-        newEnd = endOfWeek(newStart, { weekStartsOn: 1 });
-        newStart = startOfWeek(newStart, { weekStartsOn: 1 });
-        console.log(`--- In Navi In switch After startOfWeek ---`)
-        console.log(`--- newEnd : ${newEnd} ---`)
-        console.log(`--- newStart : ${newStart} ---`)
-        console.log(`--- ----------------- ---`)
-        break;
-      // ... (other cases remain the same)
-      default:
-        return;
-    }
+  //   switch (dateRange) {
+  //     case '7':
+  //       newStart = direction === 'forward' ? addDays(dateWindow.start, 7) : subDays(dateWindow.start, 7);
+  //       console.log(`--- In Navi In switch ---`)
+  //       console.log(`--- newStart : ${newStart} ---`)
+  //       console.log(`--- ----------------- ---`)
+  //       newEnd = endOfWeek(newStart, { weekStartsOn: 1 });
+  //       newStart = startOfWeek(newStart, { weekStartsOn: 1 });
+  //       console.log(`--- In Navi In switch After startOfWeek ---`)
+  //       console.log(`--- newEnd : ${newEnd} ---`)
+  //       console.log(`--- newStart : ${newStart} ---`)
+  //       console.log(`--- ----------------- ---`)
+  //       break;
+  //     // ... (other cases remain the same)
+  //     default:
+  //       return;
+  //   }
 
-    console.log(`------ End Switch ------`)
-    console.log(`Before IF newStart : ${newStart}`)
-    console.log(`Before IF dataRange.start : ${dataRange.start}`)
+  //   console.log(`------ End Switch ------`)
+  //   console.log(`Before IF newStart : ${newStart}`)
+  //   console.log(`Before IF dataRange.start : ${dataRange.start}`)
 
-    if (direction === 'backward' && newStart <= addDays(dataRange.start, 1)) {
-      const fetchStart = startOfDay(subDays(newStart, 7));
-      const fetchEnd = subDays(newStart, 1);
+  //   if (direction === 'backward' && newStart <= addDays(dataRange.start, 1)) {
+  //     const fetchStart = startOfDay(subDays(newStart, 7));
+  //     const fetchEnd = subDays(newStart, 1);
 
-      console.log(`In IF fetchStart : ${fetchStart}`)
-      console.log(`In IF fetchStart : ${fetchEnd}`)
+  //     console.log(`In IF fetchStart : ${fetchStart}`)
+  //     console.log(`In IF fetchStart : ${fetchEnd}`)
       
-      try {
-        const newData = await fetchAdditionalData(fetchStart, fetchEnd);
+  //     try {
+  //       const newData = await fetchAdditionalData(fetchStart, fetchEnd);
         
-        if (newData && newData.bpmData) {
-          setBpmData(prevData => [...newData.bpmData, ...prevData]);
-          setStepData(prevData => [...(newData.stepData || []), ...prevData]);
-          setCalorieData(prevData => [...(newData.calorieData || []), ...prevData]);
-          setSleepData(prevData => [...(newData.sleepData || []), ...prevData]);
+  //       if (newData && newData.bpmData) {
+  //         setBpmData(prevData => [...newData.bpmData, ...prevData]);
+  //         setStepData(prevData => [...(newData.stepData || []), ...prevData]);
+  //         setCalorieData(prevData => [...(newData.calorieData || []), ...prevData]);
+  //         setSleepData(prevData => [...(newData.sleepData || []), ...prevData]);
 
-          setDataRange(prevRange => ({
-            ...prevRange,
-            start: min([prevRange.start, fetchStart])
-          }));
-        } else {
-          console.warn("Received empty or invalid data from fetchAdditionalData");
-          setError("No additional data available");
-        }
-      } catch (error) {
-        console.error("Error fetching additional data:", error);
-        setError("Failed to fetch additional data. Please try again.");
-      }
-    }
+  //         setDataRange(prevRange => ({
+  //           ...prevRange,
+  //           start: min([prevRange.start, fetchStart])
+  //         }));
+  //       } else {
+  //         console.warn("Received empty or invalid data from fetchAdditionalData");
+  //         setError("No additional data available");
+  //       }
+  //     } catch (error) {
+  //       console.error("Error fetching additional data:", error);
+  //       setError("Failed to fetch additional data. Please try again.");
+  //     }
+  //   }
 
-    newStart = max([newStart, dataRange.start]);
-    newEnd = min([newEnd, dataRange.end]);
+  //   newStart = max([newStart, dataRange.start]);
+  //   newEnd = min([newEnd, dataRange.end]);
     
-    setDateWindow({ start: newStart, end: newEnd });
-  };
+  //   setDateWindow({ start: newStart, end: newEnd });
+  // };
 
 
   const processHourlyData = useCallback((data: any[], valueKey: string) => {
@@ -663,64 +682,64 @@ const MultiChart: React.FC<MultiChartProps> = ({
       }));
   }, [bpmData, stepData, calorieData, sleepData, predictMinuteData, dataRange.lastActualDataDate]);
 
-  const processedData = useMemo(() => {
-    if (timeUnit === 'hour') {
-      const hourlyData = new Map<number, any>();
+  // const processedData = useMemo(() => {
+  //   if (timeUnit === 'hour') {
+  //     const hourlyData = new Map<number, any>();
 
-      const processHourlyData = (data: any[], key: string) => {
-        data.forEach(item => {
-          const hourTimestamp = startOfHour(new Date(item.timestamp)).getTime();
-          if (!hourlyData.has(hourTimestamp)) {
-            hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
-          }
-          const hourData = hourlyData.get(hourTimestamp);
+  //     const processHourlyData = (data: any[], key: string) => {
+  //       data.forEach(item => {
+  //         const hourTimestamp = startOfHour(new Date(item.timestamp)).getTime();
+  //         if (!hourlyData.has(hourTimestamp)) {
+  //           hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
+  //         }
+  //         const hourData = hourlyData.get(hourTimestamp);
           
-          if (key === 'bpm' || key === 'min_pred_bpm') {
-            if (!hourData[key]) {
-              hourData[key] = { sum: 0, count: 0 };
-            }
-            hourData[key].sum += item[key];
-            hourData[key].count++;
-          } else {
-            hourData[key] = (hourData[key] || 0) + item[key];
-          }
-        });
-      };
+  //         if (key === 'bpm' || key === 'min_pred_bpm') {
+  //           if (!hourData[key]) {
+  //             hourData[key] = { sum: 0, count: 0 };
+  //           }
+  //           hourData[key].sum += item[key];
+  //           hourData[key].count++;
+  //         } else {
+  //           hourData[key] = (hourData[key] || 0) + item[key];
+  //         }
+  //       });
+  //     };
 
-      processHourlyData(combinedData, 'bpm');
-      processHourlyData(combinedData, 'step');
-      processHourlyData(combinedData, 'calorie');
-      processHourlyData(combinedData, 'min_pred_bpm');
+  //     processHourlyData(combinedData, 'bpm');
+  //     processHourlyData(combinedData, 'step');
+  //     processHourlyData(combinedData, 'calorie');
+  //     processHourlyData(combinedData, 'min_pred_bpm');
 
-      hrvHourData.forEach(item => {
-        const hourTimestamp = startOfHour(new Date(item.ds)).getTime();
-        if (!hourlyData.has(hourTimestamp)) {
-          hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
-        }
-        const hourData = hourlyData.get(hourTimestamp);
-        hourData.hour_rmssd = item.hour_rmssd;
-        hourData.hour_sdnn = item.hour_sdnn;
-      });
+  //     hrvHourData.forEach(item => {
+  //       const hourTimestamp = startOfHour(new Date(item.ds)).getTime();
+  //       if (!hourlyData.has(hourTimestamp)) {
+  //         hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
+  //       }
+  //       const hourData = hourlyData.get(hourTimestamp);
+  //       hourData.hour_rmssd = item.hour_rmssd;
+  //       hourData.hour_sdnn = item.hour_sdnn;
+  //     });
       
 
-      predictHourData.forEach(item => {
-        const hourTimestamp = startOfHour(new Date(item.ds)).getTime();
-        if (!hourlyData.has(hourTimestamp)) {
-          hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
-        }
-        const hourData = hourlyData.get(hourTimestamp);
-        hourData.hour_pred_bpm = item.hour_pred_bpm;
-      });
+  //     predictHourData.forEach(item => {
+  //       const hourTimestamp = startOfHour(new Date(item.ds)).getTime();
+  //       if (!hourlyData.has(hourTimestamp)) {
+  //         hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
+  //       }
+  //       const hourData = hourlyData.get(hourTimestamp);
+  //       hourData.hour_pred_bpm = item.hour_pred_bpm;
+  //     });
 
-      return Array.from(hourlyData.values()).map(hourData => ({
-        ...hourData,
-        bpm: hourData.bpm ? hourData.bpm.sum / hourData.bpm.count : null,
-        min_pred_bpm: hourData.min_pred_bpm ? hourData.min_pred_bpm.sum / hourData.min_pred_bpm.count : null,
-        isActual: new Date(hourData.timestamp) <= dataRange.lastActualDataDate
-      }));
-    }
-    return combinedData;
-  }, [combinedData, timeUnit, hrvHourData, predictHourData, dataRange.lastActualDataDate]);
+  //     return Array.from(hourlyData.values()).map(hourData => ({
+  //       ...hourData,
+  //       bpm: hourData.bpm ? hourData.bpm.sum / hourData.bpm.count : null,
+  //       min_pred_bpm: hourData.min_pred_bpm ? hourData.min_pred_bpm.sum / hourData.min_pred_bpm.count : null,
+  //       isActual: new Date(hourData.timestamp) <= dataRange.lastActualDataDate
+  //     }));
+  //   }
+  //   return combinedData;
+  // }, [combinedData, timeUnit, hrvHourData, predictHourData, dataRange.lastActualDataDate]);
 
   // const displayData = useMemo(() => {
   //   if (!dateWindow) return combinedData;
@@ -730,10 +749,12 @@ const MultiChart: React.FC<MultiChartProps> = ({
   //   );
   // }, [combinedData, dateWindow]);
 
+  
+
   const fetchPreviousWeekData = async (newStart: Date, earliestDataDate: Date) => {
     try {
       const newData = await fetchAdditionalData(newStart, earliestDataDate);
-      console.log('123213123123-123-12312', newData)
+      //console.log('123213123123-123-12312', newData)
       if (newData) {
         setBpmData(prevData => [...newData.bpmData, ...prevData]);
         setStepData(prevData => [...newData.stepData, ...prevData]);
@@ -768,12 +789,54 @@ const MultiChart: React.FC<MultiChartProps> = ({
     }
   };
 
+  // const moveWeek = async (direction: 'forward' | 'backward') => {
+  //   setDateWindow(prevWindow => {
+  //     if (!prevWindow) return prevWindow;
+  //     const days = direction === 'forward' ? 7 : -7;
+  //     const newStart = addDays(prevWindow.start, days);
+  //     const newEnd = addDays(prevWindow.end, days);
+  
+  //     // 다음 주의 시작일 계산
+  //     const nextWeekStart = direction === 'backward' ? subDays(newStart, 7) : addDays(newEnd, 1);
+  
+  //     // 현재 데이터의 범위 확인
+  //     const earliestDataDate = new Date(Math.min(...combinedData.map(item => new Date(item.timestamp).getTime())));
+  //     const latestDataDate = new Date(Math.max(...combinedData.map(item => new Date(item.timestamp).getTime())));
+  
+  //     // 다음 주의 데이터가 없는 경우 fetch
+  //     if (direction === 'backward' && nextWeekStart < earliestDataDate) {
+  //       fetchPreviousWeekData(nextWeekStart, earliestDataDate);
+  //     } else if (direction === 'forward' && nextWeekStart > latestDataDate) {
+  //       fetchNextWeekData(latestDataDate, nextWeekStart);
+  //     }
+  
+  //     return { 
+  //       start: startOfDay(newStart), 
+  //       end: endOfDay(newEnd) 
+  //     };
+  //   });
+  // };
+
   const moveWeek = async (direction: 'forward' | 'backward') => {
     setDateWindow(prevWindow => {
-      if (!prevWindow) return prevWindow;
+      if (!prevWindow || !dbStartDate || !dbEndDate) return prevWindow;
+
+      //console.log(`in moveWeek - dbStartDate : ${dbStartDate}`)
+      //console.log(`in moveWeek - dbEndDate : ${dbEndDate}`)
+      //if (!prevWindow) return prevWindow;
+      //console.log(`in moveWeek prevWindow.start --> ${prevWindow.start}`)
+      //console.log(`in moveWeek prevWindow.end --> ${prevWindow.end}`)
       const days = direction === 'forward' ? 7 : -7;
       const newStart = addDays(prevWindow.start, days);
       const newEnd = addDays(prevWindow.end, days);
+
+      //console.log(`in moveWeek - newStart : ${newStart}`)
+      //console.log(`in moveWeek - newEnd : ${newEnd}`)
+  
+      // 데이터베이스의 범위를 벗어나지 않도록 체크
+      if (newStart < dbStartDate || newEnd > dbEndDate) {
+        return prevWindow;
+      }
   
       // 다음 주의 시작일 계산
       const nextWeekStart = direction === 'backward' ? subDays(newStart, 7) : addDays(newEnd, 1);
@@ -783,8 +846,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
       const latestDataDate = new Date(Math.max(...combinedData.map(item => new Date(item.timestamp).getTime())));
   
       // 다음 주의 데이터가 없는 경우 fetch
-      if (direction === 'backward' && nextWeekStart < earliestDataDate) {
-        fetchPreviousWeekData(nextWeekStart, earliestDataDate);
+      if (direction === 'backward' && newStart < earliestDataDate) {
+        fetchPreviousWeekData(newStart, earliestDataDate);
       } else if (direction === 'forward' && nextWeekStart > latestDataDate) {
         fetchNextWeekData(latestDataDate, nextWeekStart);
       }
@@ -795,6 +858,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
       };
     });
   };
+  
 
   const displayData = useMemo(() => {
     if (!dateWindow) return [];
@@ -806,7 +870,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
       const filledCalorieData = fillEmptyHours(hourlyCalorieData, dateWindow.start, dateWindow.end, ['calorie']);
       const filledHrvData = fillEmptyHours(hourlyHrvData, dateWindow.start, dateWindow.end, ['hour_rmssd', 'hour_sdnn']);
 
-      console.log('Filled HRV data:', filledHrvData);
+      //console.log('Filled HRV data:', filledHrvData);
 
       filteredData = filledBpmData.map((item, index) => ({
         ...item,
@@ -831,7 +895,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
     });
   }, [timeUnit, dateWindow, hourlyBpmData, hourlyStepData, hourlyCalorieData, hourlyHrvData, bpmData, stepData, calorieData, sleepData, fillEmptyHours]);
   
-  console.log(displayData)
+  //console.log(displayData)
 
   const filteredData = useMemo(() => {
     if (!brushDomain) return displayData;
@@ -996,6 +1060,7 @@ const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartTy
           <button 
             onClick={() => moveWeek('backward')}
             className="px-2 py-1 bg-blue-500 text-white rounded mr-2"
+            disabled={!dateWindow || !dbStartDate || dateWindow.start <= dbStartDate}
           >
             ←
           </button>
@@ -1026,6 +1091,7 @@ const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartTy
           <button 
             onClick={() => moveWeek('forward')}
             className="px-2 py-1 bg-blue-500 text-white rounded ml-2"
+            disabled={!dateWindow || !dbEndDate || dateWindow.end >= dbEndDate}
           >
             →
           </button>
