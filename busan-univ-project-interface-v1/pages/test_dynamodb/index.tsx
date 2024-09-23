@@ -89,7 +89,8 @@ export default function Home() {
 
   const fetchDataRanges = async (user: string) => {
     try {
-      const collections = ['bpm_div', 'step_div', 'calorie_div'];
+      // const collections = ['bpm_div', 'step_div', 'calorie_div'];
+      const collections = ['bpm_test2', 'step_test2', 'calorie_test2'];
       const ranges = await Promise.all(collections.map(async (collection) => {
         const response = await axios.get('/api/getDataRange', {
           params: { collection, user_email: user }
@@ -402,39 +403,74 @@ export default function Home() {
     }
   }, [API_URL]);
 
-  const fetchAdditionalData = useCallback(async (startDate: Date, endDate: Date): Promise<AdditionalData> => {
-    if (!selectedUser) return { bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] };
+  // const fetchAdditionalData = useCallback(async (startDate: Date, endDate: Date): Promise<AdditionalData> => {
+  //   if (!selectedUser) return { bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] };
 
-    console.log(`in fetchAdditionalData --- startDate : ${startDate} <------> endDate : ${endDate}`)
+  //   console.log(`in fetchAdditionalData --- startDate : ${startDate} <------> endDate : ${endDate}`)
 
-    try {
-      const additionalStartTime = performance.now()
-      const [bpm, step, calorie, sleep, hrv] = await Promise.all([
-        fetchData('bpm_div', selectedUser, startDate, endDate),
-        fetchData('step_div', selectedUser, startDate, endDate),
-        fetchData('calorie_div', selectedUser, startDate, endDate),
-        fetchData('sleep_div', selectedUser, startDate, endDate),
-        fetchHrvData(selectedUser, startDate, endDate),  // HRV 데이터 fetch 추가
-      ]);
-      console.log('@@@@@-@@@@@ : hrv', hrv)
-      const additionalEndTime = performance.now()
-      console.log(`In FetchAdditionalData 에서 bpm, step, calorie, sleep fetch + hrv 계산 전체 걸린 시간 : ${additionalEndTime - additionalStartTime} ms`)
+  //   try {
+  //     const additionalStartTime = performance.now()
+      
+  //     const [bpm, step, calorie, sleep, hrv] = await Promise.all([
+  //       fetchData('bpm_div', selectedUser, startDate, endDate),
+  //       fetchData('step_div', selectedUser, startDate, endDate),
+  //       fetchData('calorie_div', selectedUser, startDate, endDate),
+  //       fetchData('sleep_div', selectedUser, startDate, endDate),
+  //       fetchHrvData(selectedUser, startDate, endDate),  // HRV 데이터 fetch 추가
+  //     ]);
+  //     console.log('@@@@@-@@@@@ : hrv', hrv)
+  //     const additionalEndTime = performance.now()
+  //     console.log(`In FetchAdditionalData 에서 bpm, step, calorie, sleep fetch + hrv 계산 전체 걸린 시간 : ${additionalEndTime - additionalStartTime} ms`)
 
-      // console.log('@@@@@@@@@@@@@@@hrv@@@@@@@@@@')
-      // console.log(hrv)
-      // console.log('@@@@@@@@@@@@@@@hrv@@@@@@@@@@')
+  //     // console.log('@@@@@@@@@@@@@@@hrv@@@@@@@@@@')
+  //     // console.log(hrv)
+  //     // console.log('@@@@@@@@@@@@@@@hrv@@@@@@@@@@')
 
-      return { 
-        bpmData: bpm || [], 
-        stepData: step || [], 
-        calorieData: calorie || [], 
-        sleepData: sleep || [],
-        hrvData: hrv || [],  // HRV 데이터 추가
-      };
-    } catch (error) {
-      console.error('Error fetching additional data:', error);
-      return { bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] };
-    }
+  //     return { 
+  //       bpmData: bpm || [], 
+  //       stepData: step || [], 
+  //       calorieData: calorie || [], 
+  //       sleepData: sleep || [],
+  //       hrvData: hrv || [],  // HRV 데이터 추가
+  //     };
+  //   } catch (error) {
+  //     console.error('Error fetching additional data:', error);
+  //     return { bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] };
+  //   }
+  // }, [selectedUser, fetchData, fetchHrvData]);
+
+  const fetchAdditionalData = useCallback((startDate: Date, endDate: Date): Promise<AdditionalData> => {
+    if (!selectedUser) return Promise.resolve({ bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] });
+  
+    console.log(`in fetchAdditionalData --- startDate : ${startDate} <------> endDate : ${endDate}`);
+  
+    const additionalStartTime = performance.now();
+  
+  
+    return Promise.all([
+      fetchData('bpm_test2', selectedUser, startDate, endDate),
+      fetchData('step_test2', selectedUser, startDate, endDate),
+      fetchData('calorie_test2', selectedUser, startDate, endDate),
+      fetchData('sleep_test2', selectedUser, startDate, endDate),
+      fetchHrvData(selectedUser, startDate, endDate),
+    ])
+      .then(([bpm, step, calorie, sleep, hrv]) => {
+        //console.log('@@@@@-@@@@@ : hrv', hrv);
+        const additionalEndTime = performance.now();
+        console.log(`In FetchAdditionalData 에서 bpm, step, calorie, sleep fetch + hrv 계산 전체 걸린 시간 : ${additionalEndTime - additionalStartTime} ms`);
+  
+        return {
+          bpmData: bpm || [],
+          stepData: step || [],
+          calorieData: calorie || [],
+          sleepData: sleep || [],
+          hrvData: hrv || [],  // HRV 데이터 추가
+        };
+      })
+      .catch((error) => {
+        console.error('Error fetching additional data:', error);
+        return { bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] };
+      });
   }, [selectedUser, fetchData, fetchHrvData]);
   
 
@@ -474,11 +510,11 @@ export default function Home() {
       const endTimeCheckDB = performance.now();
       console.log(`In Index.tsx ---> checkDB 걸린 시간 (1) : ${endTimeCheckDB - startTimeCheckDB} ms`);
 
-    //   // 서버 저장 시간 가져오기 걸린 시간
-    //   const startTimeFetchSaveDates = performance.now();
-    //   await fetchSaveDates(user)
-    //   const endTimeFetchSaveDates = performance.now();
-    //   console.log(`fetchSaveDates 걸린 시간 (저장 시간 가져오기 (2)) : ${endTimeFetchSaveDates - startTimeFetchSaveDates} ms`);
+      // 서버 저장 시간 가져오기 걸린 시간
+      const startTimeFetchSaveDates = performance.now();
+      await fetchSaveDates(user)
+      const endTimeFetchSaveDates = performance.now();
+      console.log(`fetchSaveDates 걸린 시간 (저장 시간 가져오기 (2)) : ${endTimeFetchSaveDates - startTimeFetchSaveDates} ms`);
       
       setIsLoadingUser(false)
     }
@@ -486,7 +522,9 @@ export default function Home() {
   
   const checkDb = async (user: string) => {
     try {
+      // await axios.post(`${API_URL}/check_db3_div`, { user_email: user })
       await axios.post(`${API_URL}/check_db3_dynamodb`, { user_email: user })
+      
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
     }
