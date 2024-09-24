@@ -68,26 +68,57 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const [dataCache, setDataCache] = useState<{
-    bpm: { [key: string]: any[] },
-    step: { [key: string]: any[] },
-    calorie: { [key: string]: any[] },
-    sleep: { [key: string]: any[] },
-    hrv: { [key: string]: any[] },
-  }>({
-    bpm: {},
-    step: {},
-    calorie: {},
-    sleep: {},
-    hrv: {},
-  });
+  // const [dataCache, setDataCache] = useState<{
+  //   bpm: { [key: string]: any[] },
+  //   step: { [key: string]: any[] },
+  //   calorie: { [key: string]: any[] },
+  //   sleep: { [key: string]: any[] },
+  //   hrv: { [key: string]: any[] },
+  // }>({
+  //   bpm: {},
+  //   step: {},
+  //   calorie: {},
+  //   sleep: {},
+  //   hrv: {},
+  // });
   
+  const [cachedData, setCachedData] = useState<{
+    [key: string]: AdditionalData
+  }>({});
+
+
   //console.log(`dbStartDate 넘어온 값 : ${dbStartDate}`)
   //console.log(`dbEndDate 넘어온 값 : ${dbEndDate}`)
 
   const [localHrvData, setLocalHrvData] = useState(hrvHourData);
 
   //console.log('최상단, ', bpmData)
+
+  const fetchWeekData = useCallback(async (start: Date, end: Date) => {
+    const weekKey = format(start, 'yyyy-MM-dd');
+    if (!cachedData[weekKey]) {
+      const newData = await fetchAdditionalData(start, end);
+      setCachedData(prev => ({ ...prev, [weekKey]: newData }));
+    }
+  }, [fetchAdditionalData, cachedData]);
+
+  const prefetchAdjacentWeeks = useCallback(async (currentStart: Date, currentEnd: Date) => {
+    const prevWeekStart = subDays(currentStart, 7);
+    const prevWeekEnd = subDays(currentStart, 1);
+    const nextWeekStart = addDays(currentEnd, 1);
+    const nextWeekEnd = addDays(currentEnd, 7);
+
+    await Promise.all([
+      fetchWeekData(prevWeekStart, prevWeekEnd),
+      fetchWeekData(nextWeekStart, nextWeekEnd)
+    ]);
+  }, [fetchWeekData]);
+
+  useEffect(() => {
+    if (dateWindow) {
+      prefetchAdjacentWeeks(dateWindow.start, dateWindow.end);
+    }
+  }, [dateWindow, prefetchAdjacentWeeks]);
 
   useEffect(() => {
     setLocalHrvData(hrvHourData);
@@ -821,37 +852,32 @@ const MultiChart: React.FC<MultiChartProps> = ({
     setDateWindow(prevWindow => {
       if (!prevWindow || !dbStartDate || !dbEndDate) return prevWindow;
 
-      //console.log(`in moveWeek - dbStartDate : ${dbStartDate}`)
-      //console.log(`in moveWeek - dbEndDate : ${dbEndDate}`)
-      //if (!prevWindow) return prevWindow;
-      //console.log(`in moveWeek prevWindow.start --> ${prevWindow.start}`)
-      //console.log(`in moveWeek prevWindow.end --> ${prevWindow.end}`)
       const days = direction === 'forward' ? 7 : -7;
       const newStart = addDays(prevWindow.start, days);
       const newEnd = addDays(prevWindow.end, days);
 
-      //console.log(`in moveWeek - newStart : ${newStart}`)
-      //console.log(`in moveWeek - newEnd : ${newEnd}`)
-  
-      // 데이터베이스의 범위를 벗어나지 않도록 체크
       if (newStart < dbStartDate || newEnd > dbEndDate) {
         return prevWindow;
       }
-  
-      // 다음 주의 시작일 계산
-      const nextWeekStart = direction === 'backward' ? subDays(newStart, 7) : addDays(newEnd, 1);
-  
-      // 현재 데이터의 범위 확인
-      const earliestDataDate = new Date(Math.min(...combinedData.map(item => new Date(item.timestamp).getTime())));
-      const latestDataDate = new Date(Math.max(...combinedData.map(item => new Date(item.timestamp).getTime())));
-  
-      // 다음 주의 데이터가 없는 경우 fetch
-      if (direction === 'backward' && newStart < earliestDataDate) {
-        fetchPreviousWeekData(newStart, earliestDataDate);
-      } else if (direction === 'forward' && nextWeekStart > latestDataDate) {
-        fetchNextWeekData(latestDataDate, nextWeekStart);
+
+      const weekKey = format(newStart, 'yyyy-MM-dd');
+      if (cachedData[weekKey]) {
+        // 이미 캐시된 데이터가 있으면 즉시 상태 업데이트
+        setBpmData(cachedData[weekKey].bpmData);
+        setStepData(cachedData[weekKey].stepData);
+        setCalorieData(cachedData[weekKey].calorieData);
+        setSleepData(cachedData[weekKey].sleepData);
+        setLocalHrvData(cachedData[weekKey].hrvData || []);
+      } else {
+        // 캐시된 데이터가 없으면 가져오기
+        fetchWeekData(newStart, newEnd);
       }
-  
+
+      // 다음/이전 주 데이터 미리 가져오기
+      const adjacentStart = direction === 'forward' ? addDays(newEnd, 1) : subDays(newStart, 7);
+      const adjacentEnd = direction === 'forward' ? addDays(newEnd, 7) : subDays(newStart, 1);
+      fetchWeekData(adjacentStart, adjacentEnd);
+
       return { 
         start: startOfDay(newStart), 
         end: endOfDay(newEnd) 
