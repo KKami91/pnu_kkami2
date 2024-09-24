@@ -1,5 +1,5 @@
-import React from 'react';
-import CalendarHeatmap from 'react-calendar-heatmap';
+import React, { useState } from 'react';
+import CalendarHeatmap, { ReactCalendarHeatmapValue, Props as CalendarProps } from 'react-calendar-heatmap';
 import 'react-calendar-heatmap/dist/styles.css';
 import { startOfYear, endOfYear, format, parseISO } from 'date-fns';
 
@@ -15,11 +15,12 @@ interface SdnnCalendarProps {
 
 const SdnnCalendar: React.FC<SdnnCalendarProps> = ({ hrvDayData }) => {
     // Assuming the data is for the current year. Adjust if needed.
+    const [selectedData, setSelectedData] = useState<{ date: string; sdnn: number } | null>(null);
     const currentYear = new Date().getFullYear();
     const startDate = startOfYear(new Date(currentYear, 0, 1));
     const endDate = endOfYear(new Date(currentYear, 11, 31));
 
-    const calendarData = hrvDayData.map(item => ({
+    const calendarData: ReactCalendarHeatmapValue<string>[] = hrvDayData.map(item => ({
         date: item.ds.slice(0, 10),
         count: item.day_sdnn
     }));
@@ -33,13 +34,15 @@ const SdnnCalendar: React.FC<SdnnCalendarProps> = ({ hrvDayData }) => {
         return 'color-empty';
     };
 
-    // console.log('Calendar Data:', calendarData);
-    // console.log('Start Date:', startDate);
-    // console.log('End Date:', endDate);
+    const handleClick: CalendarProps<string>['onClick'] = (value) => {
+        if (value) {
+            setSelectedData({ date: value.date, sdnn: value.count });
+        }
+    };
 
     return (
         <div className="p-4 bg-gray-900 text-white">
-            <h2 className="text-xl font-bold mb-4">SDNN Calendar Heatmap ({currentYear})</h2>
+            <h2 className="text-xl font-bold mb-4">Sdnn Calendar Heatmap ({currentYear})</h2>
             <CalendarHeatmap
                 startDate={startDate}
                 endDate={endDate}
@@ -48,15 +51,16 @@ const SdnnCalendar: React.FC<SdnnCalendarProps> = ({ hrvDayData }) => {
                     if (!value) {
                         return 'color-empty';
                     }
-                    //console.log(`Date: ${value.date}, SDNN: ${value.count}, Class: ${getColorClass(value.count)}`);
+                    // console.log(`Date: ${value.date}, Sdnn: ${value.count}, Class: ${getColorClass(value.count)}`);
                     return getColorClass(value.count);
                 }}
                 titleForValue={(value) => {
                     if (!value) {
                         return 'No data';
                     }
-                    return `Date: ${value.date}, SDNN: ${value.count.toFixed(2)}`;
+                    return `Date: ${value.date}, Sdnn: ${value.count.toFixed(2)}`;
                 }}
+                onClick={handleClick}
                 showWeekdayLabels={true}
                 gutterSize={1}
             />
@@ -82,6 +86,21 @@ const SdnnCalendar: React.FC<SdnnCalendarProps> = ({ hrvDayData }) => {
                     <span>데이터 없음</span>
                 </div>
             </div>
+            {selectedData && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div className="bg-white text-black p-4 rounded-lg">
+                        <h3 className="text-lg font-bold mb-2">SDNN 정보</h3>
+                        <p>날짜: {selectedData.date}</p>
+                        <p>SDNN: {selectedData.sdnn.toFixed(2)}</p>
+                        <button
+                            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+                            onClick={() => setSelectedData(null)}
+                        >
+                            닫기
+                        </button>
+                    </div>
+                </div>
+            )}
             <style jsx global>{`
                 .react-calendar-heatmap .color-empty { fill: #e5e7eb; }
                 .react-calendar-heatmap .color-blue-400 { fill: #60a5fa; }
