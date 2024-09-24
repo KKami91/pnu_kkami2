@@ -485,7 +485,7 @@ export default function Home() {
   
   const checkDb = async (user: string) => {
     try {
-      await axios.post(`${API_URL}/check_db3_div`, { user_email: user })
+      await axios.post(`${API_URL}/check_db3_dynamodb`, { user_email: user })
     } catch (error) {
       setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
     }
