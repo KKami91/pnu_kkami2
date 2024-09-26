@@ -8,9 +8,6 @@ import { parseISO, format, startOfHour, endOfHour, startOfWeek, endOfWeek, addDa
 import RmssdCalendar from '../../components/RmssdCalendar';
 import SdnnCalendar from '../../components/SdnnCalendar';
 
-// 테스트
-import EChartsMinuteChart from '../../components/Echarts';
-
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'Psy.suh.hq@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
 
