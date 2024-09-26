@@ -11,7 +11,7 @@ import SdnnCalendar from '../../components/SdnnCalendar';
 // 테스트
 import EChartsMinuteChart from '../../components/Echarts';
 
-const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com']
+const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'Psy.suh.hq@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
 
 const LoadingSpinner = () => (
@@ -134,6 +134,8 @@ export default function Home() {
         }
       });
 
+      //console.log(`in fetchData -- : ${JSON.stringify(response)}`)
+
       const fetchEnd = performance.now()
       //console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
       return response.data;
@@ -197,6 +199,8 @@ export default function Home() {
         const firstFetchEndTime = performance.now();
         //console.log(`handleDateSelect에서 첫 fetch 데이터 걸린 시간 (약 2주) ${firstFetchEndTime - firstFetchStartTime} ms`);
         
+        // console.log(`in handleDateSelect ${JSON.stringify(data)}`)
+
         setBpmData(data.bpmData);
         setStepData(data.stepData);
         setCalorieData(data.calorieData);
@@ -224,8 +228,15 @@ export default function Home() {
       const featureHourStartTime = performance.now()
       const response = await axios.get(`${API_URL}/feature_hour_div/${user}/${start.getTime()}/${end.getTime()}`);
       const featureHourEndTime = performance.now()
-      //console.log(`HRV 시간 단위 데이터 계산 걸린 시간 : ${featureHourEndTime - featureHourStartTime} ms`)
-      return response.data.hour_hrv;
+      console.log(`HRV 시간 단위 데이터 계산 걸린 시간 : ${featureHourEndTime - featureHourStartTime} ms`)
+      
+      // 응답 데이터 확인 및 처리
+      if (response.data && response.data.hour_hrv) {
+        return response.data.hour_hrv;
+      } else {
+        console.warn('HRV data is missing or invalid');
+        return [];
+      }
     } catch (error) {
       console.error('Error in fetchHrvData: ', error);
       return [];
@@ -234,8 +245,7 @@ export default function Home() {
 
   const fetchAdditionalData = useCallback((startDate: Date, endDate: Date): Promise<AdditionalData> => {
     if (!selectedUser) return Promise.resolve({ bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] });
-    const additionalStartTime = performance.now();
-
+  
     return Promise.all([
       fetchData('bpm_test2', selectedUser, startDate, endDate),
       fetchData('step_test2', selectedUser, startDate, endDate),
@@ -244,15 +254,21 @@ export default function Home() {
       fetchHrvData(selectedUser, startDate, endDate),
     ])
       .then(([bpm, step, calorie, sleep, hrv]) => {
-        const additionalEndTime = performance.now();
-        //console.log(`In FetchAdditionalData 에서 bpm, step, calorie, sleep fetch + hrv 계산 전체 걸린 시간 : ${additionalEndTime - additionalStartTime} ms`);
+        // console.log('Fetched BPM Data:', bpm);
+        // console.log('Fetched Step Data:', step);
+        // console.log('Fetched Calorie Data:', calorie);
+        // console.log('Fetched Sleep Data:', sleep);
+        // console.log('Fetched HRV Data:', hrv);
+  
+        // BPM 데이터가 비어있으면 HRV 데이터도 빈 배열로 설정
+        const hrvData = bpm.length === 0 ? [] : hrv;
   
         return {
           bpmData: bpm || [],
           stepData: step || [],
           calorieData: calorie || [],
           sleepData: sleep || [],
-          hrvData: hrv || [],  // HRV 데이터 추가
+          hrvData: hrvData,
         };
       })
       .catch((error) => {
@@ -424,7 +440,7 @@ export default function Home() {
                 globalEndDate={globalEndDate}
                 onBrushChange={handleBrushChange}
               /> 
-            ) : viewMode === 'multi' ? (
+            ) : (
               <MultiChart
               bpmData={bpmData}
               stepData={stepData}
@@ -442,41 +458,39 @@ export default function Home() {
               selectedDate={selectedDate}
               dbStartDate={dbStartDate}
               dbEndDate={dbEndDate}
-              //timeUnit={timeUnit}
-            />
-          ) : (
-            <EChartsMinuteChart
-              bpmData={bpmData}
-              stepData={stepData}
-              calorieData={calorieData}
-              sleepData={sleepData}
-              predictMinuteData={predictMinuteData}
-              globalStartDate={globalStartDate}
-              globalEndDate={globalEndDate}
-              onBrushChange={handleBrushChange}
-              fetchAdditionalData={fetchAdditionalData}
-              initialDateWindow={initialDateWindow}
-              selectedDate={selectedDate}
-              dbStartDate={dbStartDate}
-              dbEndDate={dbEndDate}
+              checkDataExistence={async (startDate: Date, endDate: Date) => {
+                try {
+                  const response = await axios.get('/api/checkDataExistence', {
+                    params: {
+                      startDate: format(startDate, 'yyyy-MM-dd'),
+                      endDate: format(endDate, 'yyyy-MM-dd'),
+                      user_email: selectedUser
+                    }
+                  });
+                  return response.data;
+                } catch (error) {
+                  console.error('Error checking data existence:', error);
+                  return { bpm_test2: false, step_test2: false, calorie_test2: false, sleep_test2: false };
+                }
+              }}
             />
           )}
-            {renderTime !== null && (
-              <div className="mt-4 text-center text-gray-600">
-                Total render time: {renderTime.toFixed(2)} ms
-              </div>
-            )}
-          {hrvDayData.length > 0 && (
-            <div className="mt-8">
-              <RmssdCalendar hrvDayData={hrvDayData} />
-              <SdnnCalendar hrvDayData={hrvDayData} />
+          {renderTime !== null && (
+            <div className="mt-4 text-center text-gray-600">
+              Total render time: {renderTime.toFixed(2)} ms
             </div>
           )}
-          </>
-        ) : null}
-        {showGraphs && bpmData.length === 0 && stepData.length === 0 && calorieData.length === 0 && predictMinuteData.length === 0 && (
-          <div className="text-center text-red-500">No data available for the charts.</div>
+        {hrvDayData.length > 0 && (
+          <div className="mt-8">
+            <RmssdCalendar hrvDayData={hrvDayData} />
+            <SdnnCalendar hrvDayData={hrvDayData} />
+          </div>
         )}
+        </>
+      ) : null}
+      {showGraphs && bpmData.length === 0 && stepData.length === 0 && calorieData.length === 0 && predictMinuteData.length === 0 && (
+        <div className="text-center text-red-500">No data available for the charts.</div>
+      )}
       </div>
     </div>
   );

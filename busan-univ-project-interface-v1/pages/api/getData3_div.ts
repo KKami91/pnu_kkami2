@@ -7,7 +7,10 @@ let client: MongoClient | null = null;
 
 async function connectToDatabase() {
   if (!client) {
-    client = new MongoClient(uri as string);
+    client = new MongoClient(uri, {
+      maxPoolSize: 10, // 연결 풀 크기 제한
+      minPoolSize: 5,  // 최소 연결 유지
+    });
     await client.connect();
   }
   return client;
@@ -53,6 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const result = await dataCollection.find(query).toArray();
       
       console.log(`${collection} result 길이 : ${result.length} & 시간대 : ${startDate} ~ ${endDate}`);
+
       const endTime = performance.now();
 
       if (result) {

@@ -21,7 +21,7 @@ const navigation = [
         id: "000",
         icon: PresentationChartLineIcon,
         name: "HRV Analysis",
-        href: "/analy",
+        href: "/analy_div",
         tag: "",
       },
       {
