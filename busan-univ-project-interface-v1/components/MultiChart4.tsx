@@ -1,8 +1,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine, TooltipProps } from 'recharts';
-import { format, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours, max, min, startOfMonth, endOfMonth, addMinutes, startOfMinute, isBefore, startOfWeek, endOfWeek, isAfter, addHours, previousMonday, nextSunday, eachHourOfInterval } from 'date-fns';
+import { format, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours, max, min, isSameDay, endOfMonth, addMinutes, startOfMinute, isBefore, startOfWeek, endOfWeek, isAfter, addHours, previousMonday, nextSunday, eachHourOfInterval, eachMinuteOfInterval } from 'date-fns';
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
-import { filter } from 'd3';
 
 interface MultiChartProps {
   bpmData: any[];
@@ -37,7 +36,7 @@ interface AdditionalData {
   hrvData: any[];
 }
 
-type DateRange = '1' | '7' | '15' | '30' | 'all';
+type DateRange = '1' | '7';
 
 
 const MultiChart: React.FC<MultiChartProps> = ({
@@ -68,37 +67,20 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // const [dataCache, setDataCache] = useState<{
-  //   bpm: { [key: string]: any[] },
-  //   step: { [key: string]: any[] },
-  //   calorie: { [key: string]: any[] },
-  //   sleep: { [key: string]: any[] },
-  //   hrv: { [key: string]: any[] },
-  // }>({
-  //   bpm: {},
-  //   step: {},
-  //   calorie: {},
-  //   sleep: {},
-  //   hrv: {},
-  // });
-  
   const [cachedData, setCachedData] = useState<{
     [key: string]: AdditionalData
   }>({});
 
-
-  //console.log(`dbStartDate 넘어온 값 : ${dbStartDate}`)
-  //console.log(`dbEndDate 넘어온 값 : ${dbEndDate}`)
-
   const [localHrvData, setLocalHrvData] = useState(hrvHourData);
-
-  //console.log('최상단, ', bpmData)
 
   const fetchWeekData = useCallback(async (start: Date, end: Date) => {
     const weekKey = format(start, 'yyyy-MM-dd');
     if (!cachedData[weekKey]) {
+      //console.log(`Fetching data for week: ${weekKey}`);
       const newData = await fetchAdditionalData(start, end);
       setCachedData(prev => ({ ...prev, [weekKey]: newData }));
+    } else {
+      //console.log(`Using cached data for week: ${weekKey}`);
     }
   }, [fetchAdditionalData, cachedData]);
 
@@ -116,18 +98,21 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
   useEffect(() => {
     if (dateWindow) {
-      prefetchAdjacentWeeks(dateWindow.start, dateWindow.end);
+      const weekStart = startOfWeek(dateWindow.start, { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(dateWindow.start, { weekStartsOn: 1 });
+      fetchWeekData(weekStart, weekEnd);
+      prefetchAdjacentWeeks(weekStart, weekEnd);
     }
-  }, [dateWindow, prefetchAdjacentWeeks]);
+  }, [dateWindow, fetchWeekData, prefetchAdjacentWeeks]);
 
   useEffect(() => {
     setLocalHrvData(hrvHourData);
   }, [hrvHourData]);
 
   useEffect(() => {
+    
     if (dateWindow && (!localHrvData || localHrvData.length === 0)) {
       fetchAdditionalData(dateWindow.start, dateWindow.end).then((newData) => {
-        //console.log(`in multichart4.tsx - newData.hrvData : ${newData}`)
         if (newData.hrvData) {
           setLocalHrvData(newData.hrvData);
         }
@@ -135,8 +120,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
       
     }
   }, [dateWindow, localHrvData, fetchAdditionalData]);
-
-  
 
   const [dataRange, setDataRange] = useState<{ start: Date; end: Date; lastActualDataDate: Date }>({ 
     start: new Date(), 
@@ -147,8 +130,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const adjustTimeZone = (date: Date) => {
     return subHours(date, 9);
   };
-
-
 
   const mapSleepStage = (stage: number | null): number => {
     switch(stage) {
@@ -247,364 +228,17 @@ const MultiChart: React.FC<MultiChartProps> = ({
     return processedData;
   };
 
-  // const dataRange = useMemo(() => {
-
-  //   const parseTimestamp = (item: any) => {
-  //       const timestamp = new Date(item.timestamp).getTime();
-  //       // console.log('Parsing timestamp:', item.timestamp, '->', timestamp);
-  //       return timestamp;
-  //     };
-
-  //   // const allDates = [
-  //   //   ...bpmData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
-  //   //   ...stepData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
-  //   //   ...calorieData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
-  //   // ];
-
-  //   const allDates = [
-  //       ...bpmData.map(parseTimestamp),
-  //       ...stepData.map(parseTimestamp),
-  //       ...calorieData.map(parseTimestamp),
-  //     ];
-
-  //   // const allDates = [
-  //   //   ...bpmData.map(item => new Date(item.timestamp).getTime()),
-  //   //   ...stepData.map(item => new Date(item.timestamp).getTime()),
-  //   //   ...calorieData.map(item => new Date(item.timestamp).getTime()),
-  //   // ];
-
-  
-
-  //   // console.log('Sample data:',
-  //   //     { 
-  //   //       bpm: bpmData.slice(0, 3),
-  //   //       step: stepData.slice(0, 3),
-  //   //       calorie: calorieData.slice(0, 3)
-  //   //     }
-  //   //   );
-
-  //   // console.log('???')
-  //   // console.log(stepData)
-  //   // console.log('???')
-
-  //   const start = startOfDay(new Date(Math.min(...allDates)));
-  //   const end = endOfDay(new Date(Math.max(...allDates)));
-  //   const minuteEnd = endOfDay(new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))));
-  //   const hourEnd = endOfDay(new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime()))));
-  //   //const predictEnd = endOfDay(new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))))
-
-  //   // console.log('Data Range:', { 
-  //   //     start: start.toISOString(), 
-  //   //     end: end.toISOString(),
-  //   //     minuteEnd: minuteEnd.toISOString(),
-  //   //     hourEnd: hourEnd.toISOString()
-  //   //   });
-
-  //   return { start, end, minuteEnd, hourEnd };
-  // }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
-
-  // const [dataRange, setDataRange] = useState(() => {
-  //   const allDates = [
-  //     ...bpmData.map(item => new Date(item.timestamp).getTime()),
-  //     ...stepData.map(item => new Date(item.timestamp).getTime()),
-  //     ...calorieData.map(item => new Date(item.timestamp).getTime()),
-  //   ];
-
-  //   const start = startOfDay(new Date(Math.min(...allDates)));
-  //   const end = endOfDay(new Date(Math.max(...allDates)));
-  //   const minuteEnd = endOfDay(new Date(Math.max(...predictMinuteData.map(item => new Date(item.ds).getTime()))));
-  //   const hourEnd = endOfDay(new Date(Math.max(...predictHourData.map(item => new Date(item.ds).getTime()))));
-
-  //   return { start, end, minuteEnd, hourEnd };
-  // });
-
-  // useEffect(() => {
-
-  //   // const parseTimestamp = (item: any) => {
-  //   //   const timestamp = new Date(item.timestamp).getTime();
-  //   //   return timestamp;
-  //   // };
-
-  //       // const allDates = [
-  //   //   ...bpmData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
-  //   //   ...stepData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
-  //   //   ...calorieData.map(item => adjustTimeZone(new Date(item.ds)).getTime()),
-  //   // ];
-
-  // //   const allDates = [
-  // //       ...bpmData.map(parseTimestamp),
-  // //       ...stepData.map(parseTimestamp),
-  // //       ...calorieData.map(parseTimestamp),
-  // //     ];
-
-
-  //   const allDates = [
-  //     ...bpmData.map(item => adjustTimeZone(new Date(item.timestamp)).getTime()),
-  //     ...stepData.map(item => adjustTimeZone(new Date(item.timestamp)).getTime()),
-  //     ...calorieData.map(item => adjustTimeZone(new Date(item.timestamp)).getTime()),
-  //     ...predictMinuteData.map(item => new Date(item.ds).getTime()),
-  //     ...predictHourData.map(item => new Date(item.ds).getTime()),
-  //   ];
-
-  //   // const allDates = [
-  //   //   ...bpmData.map(parseTimestamp),
-  //   //   ...stepData.map(parseTimestamp),
-  //   //   ...calorieData.map(parseTimestamp),
-  //   //   ...predictMinuteData.map(parseTimestamp),
-  //   //   //...predictHourData.map(item => new Date(item.ds).getTime()),
-  //   // ];
-
-  //   // const bpmDataTime = [...bpmData.map(item => adjustTimeZone(new Date(item.timestamp)).getTime())]
-  //   // console.log(`In UseEffect2 - bpmDataTime : ${bpmDataTime}`)
-
-
-  //   //console.log(`In useEffect allDates : ${allDates}`)
-
-  //   const actualDates = [
-  //     ...bpmData.map(item => new Date(item.timestamp).getTime()),
-  //     ...stepData.map(item => new Date(item.timestamp).getTime()),
-  //     ...calorieData.map(item => new Date(item.timestamp).getTime()),
-  //   ];
-
-  //   //console.log(`In useEffect actualDates : ${actualDates}`)
-
-  //   console.log(`befrestartOfWeek - ${new Date(Math.min(...allDates))}`)
-
-  //   const start = new Date(Math.min(...allDates))
-  //   const end = endOfWeek(new Date(Math.max(...allDates)), { weekStartsOn: 1 });
-  //   const lastActualDataDate = new Date(Math.max(...actualDates));
-
-  //   console.log(`In useEffect start : ${start}`)
-  //   console.log(`In useEffect end : ${end}`)
-  //   console.log(`In useEffect lastActualDataDate : ${lastActualDataDate}`)
-
-  //   setDataRange({ start, end, lastActualDataDate });
-  // }, [bpmData, stepData, calorieData, predictMinuteData, predictHourData]);
-
-
-  
-
-  const calculateDateWindow = useCallback((range: DateRange, referenceDate: Date) => {
-    let start: Date, end: Date;
-
-    switch (range) {
-      case '1':
-        end = min([endOfDay(referenceDate), dataRange.end]);
-        start = startOfDay(end);
-        break;
-      case '7':
-        //console.log(`In calculateDateWindow`)
-        //console.log(`In calculateDateWindow before end : ${dataRange.end}`)
-        end = min([endOfWeek(referenceDate, { weekStartsOn: 1 }), dataRange.end]);
-        //console.log(`In calculateDateWindow after end : ${end}`)
-        start = startOfWeek(end, { weekStartsOn: 1 });
-        //console.log(`In calculateDateWindow after start : ${start}`)
-        break;
-      case '15':
-        end = min([endOfDay(addDays(startOfMonth(referenceDate), 14)), dataRange.end]);
-        start = startOfMonth(end);
-        break;
-      case '30':
-        end = min([endOfMonth(referenceDate), dataRange.end]);
-        start = startOfMonth(end);
-        break;
-      case 'all':
-        start = dataRange.start;
-        end = dataRange.end;
-        break;
-      default:
-        start = startOfDay(referenceDate);
-        end = endOfDay(referenceDate);
-    }
-
-    start = max([start, dataRange.start]);
-    end = min([end, dataRange.end]);
-
-    return { start, end };
-  }, [dataRange]);
-  
-  // useEffect(() => {
-  //   if (initialDateWindow) {
-  //     setDateWindow(initialDateWindow);
-  //   } else {
-  //     const lastWeekEnd = endOfWeek(dataRange.lastActualDataDate, { weekStartsOn: 1 });
-  //     const initialWindow = calculateDateWindow(dateRange, lastWeekEnd);
-  //     setDateWindow(initialWindow);
-  //   }
-  // }, [initialDateWindow, calculateDateWindow, dateRange, dataRange]);
-
   useEffect(() => {
-    //console.log(`-----???---------???-----`)
-    //console.log(`-----???----${selectedDate}---???-----`)
-    //console.log(`-----???---------???-----`)
     if (selectedDate) {
       const selectedDateObj = new Date(selectedDate);
       const startOfWeekDate = startOfWeek(selectedDateObj, { weekStartsOn: 1 }); // 월요일 시작
       const endOfWeekDate = endOfWeek(selectedDateObj, { weekStartsOn: 1 }); // 일요일 끝
-
-      //console.log(`In useEffect ${selectedDate}`)
-      //console.log(`In useEffect ${startOfWeekDate} ~ ${endOfWeekDate}`)
-      //console.log(`In useEffect ${startOfDay(startOfWeekDate)} ~ ${endOfDay(endOfWeekDate)}`)
-      
       setDateWindow({
         start: startOfDay(startOfWeekDate),
         end: endOfDay(endOfWeekDate)
       });
     }
   }, [selectedDate]);
-  
-  //const [dateWindow, setDateWindow] = useState(() => calculateDateWindow(dateRange, dataRange.minuteEnd));
-
-  // useEffect(() => {
-  //   setDateWindow(calculateDateWindow(dateRange, timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd));
-  // }, [dateRange, dataRange, calculateDateWindow, timeUnit]);
-
-  // const handleDateNavigation = (direction: 'forward' | 'backward') => {
-  //   setBrushDomain(null);
-  //   setDateWindow(prev => {
-  //     let newReferenceDate: Date;
-  //     switch (dateRange) {
-  //       case '1':
-  //         newReferenceDate = direction === 'forward' ? addDays(prev.start, 1) : subDays(prev.start, 1);
-  //         break;
-  //       case '7':
-  //         newReferenceDate = direction === 'forward' ? addDays(prev.start, 7) : subDays(prev.start, 7);
-  //         break;
-  //       case '15':
-  //         if (prev.start.getDate() === 1) {
-  //           newReferenceDate = direction === 'forward' ? addDays(prev.start, 15) : subDays(prev.start, 15);
-  //         } else {
-  //           newReferenceDate = direction === 'forward' ? addDays(prev.start, 15) : startOfMonth(prev.start);
-  //         }
-  //         break;
-  //       case '30':
-  //         newReferenceDate = direction === 'forward' ? addDays(prev.start, 30) : subDays(prev.start, 30);
-  //         break;
-  //       default:
-  //         return prev;
-  //     }
-  //     const newWindow = calculateDateWindow(dateRange, newReferenceDate);
-      
-  //     if (newWindow.start < dataRange.start || newWindow.end > (timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd)) {
-  //       return prev;
-  //     }    
-  //     return newWindow;
-  //   });
-  // };
-
-  // const handleDateNavigation = (direction: 'forward' | 'backward') => {
-  //   setBrushDomain(null);
-  //   setDateWindow(prev => {
-  //     let newReferenceDate: Date;
-  //     switch (dateRange) {
-  //       case '1':
-  //         newReferenceDate = direction === 'forward' ? addDays(prev.start, 1) : subDays(prev.start, 1);
-  //         break;
-  //       case '7':
-  //         newReferenceDate = direction === 'forward' ? addDays(prev.start, 7) : subDays(prev.start, 7);
-  //         break;
-  //       case '15':
-  //         newReferenceDate = direction === 'forward' ? addDays(prev.start, 14) : subDays(prev.start, 14);
-  //         break;
-  //       case '30':
-  //         newReferenceDate = direction === 'forward' ? addDays(prev.start, 30) : subDays(prev.start, 30);
-  //         break;
-  //       default:
-  //         return prev;
-  //     }
-  //     const newWindow = calculateDateWindow(dateRange, newReferenceDate);
-      
-  //     if (newWindow.start < dataRange.start || newWindow.end > (timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd)) {
-  //       return prev;
-  //     }    
-  //     return newWindow;
-  //   });
-  // };
-
-  // const handleDateNavigation = async (direction: 'forward' | 'backward') => {
-  //   setBrushDomain(null);
-  //   setDateWindow(prev => {
-  //     if (!prev) return null;
-  //     const newStart = direction === 'forward' ? addDays(prev.start, 7) : subDays(prev.start, 7);
-  //     const newEnd = direction === 'forward' ? addDays(prev.end, 7) : subDays(prev.end, 7);
-
-  //     if (direction === 'backward') {
-  //       const additionalStart = subDays(newStart, 7);
-  //       fetchAdditionalData(additionalStart, newStart);
-  //     }
-
-  //     return { start: newStart, end: newEnd };
-  //   });
-  // };
-
-
-  // const handleDateNavigation = async (direction: 'forward' | 'backward') => {
-  //   if (!dateWindow) return;
-
-  //   let newStart: Date, newEnd: Date;
-  //   console.log(`--- In Navi before switch ---`)
-  //   console.log(`--- dateWindow.start : ${dateWindow.start} ---`)
-  //   console.log(`--- dateWindow.start : ${dateWindow.end} ---`)
-  //   console.log(`--- ----------------- ---`)
-
-  //   switch (dateRange) {
-  //     case '7':
-  //       newStart = direction === 'forward' ? addDays(dateWindow.start, 7) : subDays(dateWindow.start, 7);
-  //       console.log(`--- In Navi In switch ---`)
-  //       console.log(`--- newStart : ${newStart} ---`)
-  //       console.log(`--- ----------------- ---`)
-  //       newEnd = endOfWeek(newStart, { weekStartsOn: 1 });
-  //       newStart = startOfWeek(newStart, { weekStartsOn: 1 });
-  //       console.log(`--- In Navi In switch After startOfWeek ---`)
-  //       console.log(`--- newEnd : ${newEnd} ---`)
-  //       console.log(`--- newStart : ${newStart} ---`)
-  //       console.log(`--- ----------------- ---`)
-  //       break;
-  //     // ... (other cases remain the same)
-  //     default:
-  //       return;
-  //   }
-
-  //   console.log(`------ End Switch ------`)
-  //   console.log(`Before IF newStart : ${newStart}`)
-  //   console.log(`Before IF dataRange.start : ${dataRange.start}`)
-
-  //   if (direction === 'backward' && newStart <= addDays(dataRange.start, 1)) {
-  //     const fetchStart = startOfDay(subDays(newStart, 7));
-  //     const fetchEnd = subDays(newStart, 1);
-
-  //     console.log(`In IF fetchStart : ${fetchStart}`)
-  //     console.log(`In IF fetchStart : ${fetchEnd}`)
-      
-  //     try {
-  //       const newData = await fetchAdditionalData(fetchStart, fetchEnd);
-        
-  //       if (newData && newData.bpmData) {
-  //         setBpmData(prevData => [...newData.bpmData, ...prevData]);
-  //         setStepData(prevData => [...(newData.stepData || []), ...prevData]);
-  //         setCalorieData(prevData => [...(newData.calorieData || []), ...prevData]);
-  //         setSleepData(prevData => [...(newData.sleepData || []), ...prevData]);
-
-  //         setDataRange(prevRange => ({
-  //           ...prevRange,
-  //           start: min([prevRange.start, fetchStart])
-  //         }));
-  //       } else {
-  //         console.warn("Received empty or invalid data from fetchAdditionalData");
-  //         setError("No additional data available");
-  //       }
-  //     } catch (error) {
-  //       console.error("Error fetching additional data:", error);
-  //       setError("Failed to fetch additional data. Please try again.");
-  //     }
-  //   }
-
-  //   newStart = max([newStart, dataRange.start]);
-  //   newEnd = min([newEnd, dataRange.end]);
-    
-  //   setDateWindow({ start: newStart, end: newEnd });
-  // };
-
 
   const processHourlyData = useCallback((data: any[], valueKey: string) => {
     const hourlyData = data.reduce((acc: any, item: any) => {
@@ -713,221 +347,154 @@ const MultiChart: React.FC<MultiChartProps> = ({
       }));
   }, [bpmData, stepData, calorieData, sleepData, predictMinuteData, dataRange.lastActualDataDate]);
 
-  // const processedData = useMemo(() => {
-  //   if (timeUnit === 'hour') {
-  //     const hourlyData = new Map<number, any>();
-
-  //     const processHourlyData = (data: any[], key: string) => {
-  //       data.forEach(item => {
-  //         const hourTimestamp = startOfHour(new Date(item.timestamp)).getTime();
-  //         if (!hourlyData.has(hourTimestamp)) {
-  //           hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
-  //         }
-  //         const hourData = hourlyData.get(hourTimestamp);
-          
-  //         if (key === 'bpm' || key === 'min_pred_bpm') {
-  //           if (!hourData[key]) {
-  //             hourData[key] = { sum: 0, count: 0 };
-  //           }
-  //           hourData[key].sum += item[key];
-  //           hourData[key].count++;
-  //         } else {
-  //           hourData[key] = (hourData[key] || 0) + item[key];
-  //         }
-  //       });
-  //     };
-
-  //     processHourlyData(combinedData, 'bpm');
-  //     processHourlyData(combinedData, 'step');
-  //     processHourlyData(combinedData, 'calorie');
-  //     processHourlyData(combinedData, 'min_pred_bpm');
-
-  //     hrvHourData.forEach(item => {
-  //       const hourTimestamp = startOfHour(new Date(item.ds)).getTime();
-  //       if (!hourlyData.has(hourTimestamp)) {
-  //         hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
-  //       }
-  //       const hourData = hourlyData.get(hourTimestamp);
-  //       hourData.hour_rmssd = item.hour_rmssd;
-  //       hourData.hour_sdnn = item.hour_sdnn;
-  //     });
-      
-
-  //     predictHourData.forEach(item => {
-  //       const hourTimestamp = startOfHour(new Date(item.ds)).getTime();
-  //       if (!hourlyData.has(hourTimestamp)) {
-  //         hourlyData.set(hourTimestamp, { timestamp: hourTimestamp });
-  //       }
-  //       const hourData = hourlyData.get(hourTimestamp);
-  //       hourData.hour_pred_bpm = item.hour_pred_bpm;
-  //     });
-
-  //     return Array.from(hourlyData.values()).map(hourData => ({
-  //       ...hourData,
-  //       bpm: hourData.bpm ? hourData.bpm.sum / hourData.bpm.count : null,
-  //       min_pred_bpm: hourData.min_pred_bpm ? hourData.min_pred_bpm.sum / hourData.min_pred_bpm.count : null,
-  //       isActual: new Date(hourData.timestamp) <= dataRange.lastActualDataDate
-  //     }));
-  //   }
-  //   return combinedData;
-  // }, [combinedData, timeUnit, hrvHourData, predictHourData, dataRange.lastActualDataDate]);
-
-  // const displayData = useMemo(() => {
-  //   if (!dateWindow) return combinedData;
-  //   return combinedData.filter(item => 
-  //     item.timestamp >= dateWindow.start.getTime() && 
-  //     item.timestamp <= dateWindow.end.getTime()
-  //   );
-  // }, [combinedData, dateWindow]);
-
-  
-
-  const fetchPreviousWeekData = async (newStart: Date, earliestDataDate: Date) => {
-    try {
-      const newData = await fetchAdditionalData(newStart, earliestDataDate);
-      //console.log('123213123123-123-12312', newData)
-      if (newData) {
-        setBpmData(prevData => [...newData.bpmData, ...prevData]);
-        setStepData(prevData => [...newData.stepData, ...prevData]);
-        setCalorieData(prevData => [...newData.calorieData, ...prevData]);
-        setSleepData(prevData => [...newData.sleepData, ...prevData]);
-        setLocalHrvData(prevData => [...(newData.hrvData || []), ...prevData]);
-
-        setDataRange(prevRange => ({
-          ...prevRange,
-          start: min([prevRange.start, newStart])
-        }));
-      }
-    } catch (error) {
-      console.error("Error fetching previous week data:", error);
-      setError("Failed to fetch previous week data. Please try again.");
-    }
-  };
-  
-  const fetchNextWeekData = async (latestDataDate: Date, newEnd: Date) => {
-    try {
-      const newData = await fetchAdditionalData(latestDataDate, newEnd);
-      if (newData) {
-        setBpmData(prevData => [...prevData, ...newData.bpmData]);
-        setStepData(prevData => [...prevData, ...newData.stepData]);
-        setCalorieData(prevData => [...prevData, ...newData.calorieData]);
-        setSleepData(prevData => [...prevData, ...newData.sleepData]);
-        setLocalHrvData(prevData => [...prevData, ...(newData.hrvData || [])]);
-      }
-    } catch (error) {
-      console.error("Error fetching next week data:", error);
-      setError("Failed to fetch next week data. Please try again.");
-    }
-  };
-
-  // const moveWeek = async (direction: 'forward' | 'backward') => {
-  //   setDateWindow(prevWindow => {
-  //     if (!prevWindow) return prevWindow;
-  //     const days = direction === 'forward' ? 7 : -7;
-  //     const newStart = addDays(prevWindow.start, days);
-  //     const newEnd = addDays(prevWindow.end, days);
-  
-  //     // 다음 주의 시작일 계산
-  //     const nextWeekStart = direction === 'backward' ? subDays(newStart, 7) : addDays(newEnd, 1);
-  
-  //     // 현재 데이터의 범위 확인
-  //     const earliestDataDate = new Date(Math.min(...combinedData.map(item => new Date(item.timestamp).getTime())));
-  //     const latestDataDate = new Date(Math.max(...combinedData.map(item => new Date(item.timestamp).getTime())));
-  
-  //     // 다음 주의 데이터가 없는 경우 fetch
-  //     if (direction === 'backward' && nextWeekStart < earliestDataDate) {
-  //       fetchPreviousWeekData(nextWeekStart, earliestDataDate);
-  //     } else if (direction === 'forward' && nextWeekStart > latestDataDate) {
-  //       fetchNextWeekData(latestDataDate, nextWeekStart);
-  //     }
-  
-  //     return { 
-  //       start: startOfDay(newStart), 
-  //       end: endOfDay(newEnd) 
-  //     };
-  //   });
-  // };
-
-  const moveWeek = async (direction: 'forward' | 'backward') => {
+  const moveDate = useCallback((direction: 'forward' | 'backward') => {
     setDateWindow(prevWindow => {
       if (!prevWindow || !dbStartDate || !dbEndDate) return prevWindow;
 
-      const days = direction === 'forward' ? 7 : -7;
-      const newStart = addDays(prevWindow.start, days);
-      const newEnd = addDays(prevWindow.end, days);
+      const days = dateRange === '7' ? 7 : 1;
+      let newStart, newEnd;
+
+      if (dateRange === '7') {
+        newStart = direction === 'forward' 
+          ? addDays(prevWindow.start, days) 
+          : subDays(prevWindow.start, days);
+        newEnd = endOfWeek(newStart, { weekStartsOn: 1 });
+      } else {
+        newEnd = direction === 'forward' 
+          ? addDays(prevWindow.end, days) 
+          : subDays(prevWindow.end, days);
+        newStart = startOfDay(newEnd);
+      }
 
       if (newStart < dbStartDate || newEnd > dbEndDate) {
         return prevWindow;
       }
 
-      const weekKey = format(newStart, 'yyyy-MM-dd');
+      const adjustedStart = dateRange === '7' ? startOfWeek(newStart, { weekStartsOn: 1 }) : newStart;
+      const adjustedEnd = dateRange === '7' ? endOfWeek(adjustedStart, { weekStartsOn: 1 }) : newEnd;
+
+      const weekKey = format(startOfWeek(adjustedStart, { weekStartsOn: 1 }), 'yyyy-MM-dd');
       if (cachedData[weekKey]) {
-        // 이미 캐시된 데이터가 있으면 즉시 상태 업데이트
-        setBpmData(cachedData[weekKey].bpmData);
-        setStepData(cachedData[weekKey].stepData);
-        setCalorieData(cachedData[weekKey].calorieData);
-        setSleepData(cachedData[weekKey].sleepData);
-        setLocalHrvData(cachedData[weekKey].hrvData || []);
-      } else {
-        // 캐시된 데이터가 없으면 가져오기
-        fetchWeekData(newStart, newEnd);
+        const weekData = cachedData[weekKey];
+        setBpmData(weekData.bpmData);
+        setStepData(weekData.stepData);
+        setCalorieData(weekData.calorieData);
+        setSleepData(weekData.sleepData);
+        setLocalHrvData(weekData.hrvData || []);
       }
 
-      // 다음/이전 주 데이터 미리 가져오기
-      const adjacentStart = direction === 'forward' ? addDays(newEnd, 1) : subDays(newStart, 7);
-      const adjacentEnd = direction === 'forward' ? addDays(newEnd, 7) : subDays(newStart, 1);
-      fetchWeekData(adjacentStart, adjacentEnd);
-
       return { 
-        start: startOfDay(newStart), 
-        end: endOfDay(newEnd) 
+        start: startOfDay(adjustedStart), 
+        end: endOfDay(adjustedEnd) 
       };
     });
-  };
+  }, [dateRange, dbStartDate, dbEndDate, cachedData]);
+
+  const indexData = useCallback((data: any[]) => {
+    return data.reduce((acc: { [key: number]: any }, item) => {
+      const timestamp = adjustTimeZone(new Date(item.timestamp)).getTime();
+      acc[timestamp] = item;
+      return acc;
+    }, {});
+  }, []);
+
+  const indexedBpmData = useMemo(() => indexData(bpmData), [bpmData, indexData]);
+  const indexedStepData = useMemo(() => indexData(stepData), [stepData, indexData]);
+  const indexedCalorieData = useMemo(() => indexData(calorieData), [calorieData, indexData]);
+
+  const indexedSleepData = useMemo(() => {
+    return sleepData.map(item => ({
+      start: new Date(item.timestamp_start).getTime(),
+      end: new Date(item.timestamp_end).getTime(),
+      value: item.value
+    }));
+  }, [sleepData]);
+
   
+
+  const indexedPredictData = useMemo(() => {
+    return predictMinuteData.reduce((acc: { [key: number]: any }, item) => {
+      const timestamp = new Date(item.ds).getTime();
+      acc[timestamp] = item;
+      return acc;
+    }, {});
+  }, [predictMinuteData]);
 
   const displayData = useMemo(() => {
     if (!dateWindow) return [];
     
-    let filteredData;
-    if (timeUnit === 'hour') {
-      const filledBpmData = fillEmptyHours(hourlyBpmData, dateWindow.start, dateWindow.end, ['bpm']);
-      const filledStepData = fillEmptyHours(hourlyStepData, dateWindow.start, dateWindow.end, ['step']);
-      const filledCalorieData = fillEmptyHours(hourlyCalorieData, dateWindow.start, dateWindow.end, ['calorie']);
-      const filledHrvData = fillEmptyHours(hourlyHrvData, dateWindow.start, dateWindow.end, ['hour_rmssd', 'hour_sdnn']);
+    //console.log(`in displayData -> dateWindow.start : ${dateWindow.start} /// dateWindow.end : ${dateWindow.end}`)
 
-      //console.log('Filled HRV data:', filledHrvData);
+    let startDate, endDate;
+    if (dateRange === '7') {
+      startDate = startOfWeek(dateWindow.start, { weekStartsOn: 1 });
+      endDate = endOfWeek(dateWindow.start, { weekStartsOn: 1 });
+    } else {
+      startDate = startOfDay(dateWindow.end);
+      endDate = endOfDay(dateWindow.end);
+    }
+    
+    //console.log(`Calculating display data for ${dateRange} day(s):`, format(startDate, 'yyyy-MM-dd'), 'to', format(endDate, 'yyyy-MM-dd'));
+
+    let filteredData;
+    //console.log(`in displayData --- timeunit : ${timeUnit}`)
+    if (timeUnit === 'hour') {
+      const filledBpmData = fillEmptyHours(hourlyBpmData, startDate, endDate, ['bpm']);
+      const filledStepData = fillEmptyHours(hourlyStepData, startDate, endDate, ['step']);
+      const filledCalorieData = fillEmptyHours(hourlyCalorieData, startDate, endDate, ['calorie']);
+      const filledHrvData = fillEmptyHours(hourlyHrvData, startDate, endDate, ['hour_rmssd', 'hour_sdnn']);
 
       filteredData = filledBpmData.map((item, index) => ({
         ...item,
         step: filledStepData[index]?.step ?? null,
         calorie: filledCalorieData[index]?.calorie ?? null,
         hour_rmssd: filledHrvData[index]?.hour_rmssd ?? null,
-        hour_sdnn: filledHrvData[index]?.hour_sdnn ?? null
+        hour_sdnn: filledHrvData[index]?.hour_sdnn ?? null,
+        hour_pred_bpm: predictHourData.find(p => new Date(p.ds).getTime() === item.timestamp)?.hour_pred_bpm ?? null
       }));
     } else {
-      filteredData = bpmData.map(item => ({
-        timestamp: item.timestamp,
-        bpm: item.value,
-        step: stepData.find(s => s.timestamp === item.timestamp)?.value || null,
-        calorie: calorieData.find(c => c.timestamp === item.timestamp)?.value || null,
-        sleep_stage: sleepData.find(s => new Date(s.timestamp_start).getTime() === item.timestamp)?.value || null
-      }));
+      const allMinutes = eachMinuteOfInterval({ start: startDate, end: endDate });
+      
+      filteredData = allMinutes.map(minute => {
+        const timestamp = minute.getTime();
+        const bpmItem = indexedBpmData[timestamp];
+        const stepItem = indexedStepData[timestamp];
+        const calorieItem = indexedCalorieData[timestamp];
+        const sleepItem = indexedSleepData.find(s => timestamp >= s.start && timestamp < s.end);
+        const predItem = indexedPredictData[timestamp];
+
+        return {
+          timestamp,
+          bpm: bpmItem ? bpmItem.value : null,
+          step: stepItem ? stepItem.value : null,
+          calorie: calorieItem ? calorieItem.value : null,
+          sleep_stage: sleepItem ? mapSleepStage(sleepItem.value) : null,
+          min_pred_bpm: predItem ? predItem.min_pred_bpm : null
+        };
+      });
     }
 
-    return filteredData.filter(item => {
-      const itemDate = new Date(item.timestamp);
-      return itemDate >= dateWindow.start && itemDate <= dateWindow.end;
-    });
-  }, [timeUnit, dateWindow, hourlyBpmData, hourlyStepData, hourlyCalorieData, hourlyHrvData, bpmData, stepData, calorieData, sleepData, fillEmptyHours]);
-  
-  //console.log(displayData)
+    return filteredData;
+  }, [timeUnit, dateRange, dateWindow, hourlyBpmData, hourlyStepData, hourlyCalorieData, hourlyHrvData, 
+      indexedBpmData, indexedStepData, indexedCalorieData, indexedSleepData, indexedPredictData, 
+      predictHourData, fillEmptyHours]);
 
   const filteredData = useMemo(() => {
+    // displayData가 undefined이거나 배열이 아닌 경우 빈 배열 반환
+    if (!Array.isArray(displayData)) return [];
+
+    // brushDomain이 없으면 전체 displayData 반환
     if (!brushDomain) return displayData;
-    return displayData.filter(
-      item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
-    );
+
+    // brushDomain이 유효한 경우에만 필터링 적용
+    if (Array.isArray(brushDomain) && brushDomain.length === 2) {
+      return displayData.filter(
+        item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
+      );
+    }
+
+    // 기본적으로 전체 displayData 반환
+    return displayData;
   }, [displayData, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
@@ -942,7 +509,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
   const formatDateForDisplay = (time: number) => {
     const date = new Date(time);
-    //console.log(`in formatdate -- , ${date}`)
     return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
@@ -987,12 +553,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
     return null;
   };
 
-//   useEffect(() => {
-//     console.log('Filtered Data Update : ', filteredData);
-//   }, [filteredData])
-//console.log(displayData);
-
 const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartType: typeof LineChart | typeof BarChart = LineChart, additionalProps = {}) => {
+  console.log(`@@@@@@@@@@@@@@@@@@@@@@@@@@ : ${dataKey}`)
   return (
     <div className="w-full h-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -1010,7 +572,6 @@ const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartTy
             tickFormatter={(value) => value.toFixed(1)}
             domain={dataKey === 'sleep_stage' ? [-3.5, 0.5] : ['auto', 'auto']}
             ticks={dataKey === 'sleep_stage' ? [-3, -2.5, -2, -1.5, -1] : undefined}
-            //scale={ChartType === BarChart ? 'log' : 'auto'}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend />
@@ -1024,13 +585,13 @@ const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartTy
           ) : (
             <Bar dataKey={dataKey} fill={color} name={dataKey.toUpperCase()} {...additionalProps} />
           )}
-          {dataKey === 'bpm' && timeUnit === 'hour' && (
+          {dataKey === 'bpm' && (
             <Line 
               type="monotone" 
-              dataKey="hour_pred_bpm" 
+              dataKey={timeUnit === 'hour' ? "hour_pred_bpm" : "min_pred_bpm"} 
               stroke="#82ca9d" 
               dot={false} 
-              name="Predicted BPM (Hour)" 
+              name={`Predicted BPM (${timeUnit === 'hour' ? 'Hour' : 'Minute'})`} 
               connectNulls
             />
           )}
@@ -1078,13 +639,8 @@ const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartTy
           ))}
         </div>
         <div className="flex items-center">
-          {/* <button 
-            onClick={() => handleDateNavigation('backward')}
-            className="px-2 py-1 bg-blue-500 text-white rounded mr-2"
-            disabled={!dateWindow || dateWindow.start <= dataRange.start}
-          > */}
           <button 
-            onClick={() => moveWeek('backward')}
+            onClick={() => moveDate('backward')}
             className="px-2 py-1 bg-blue-500 text-white rounded mr-2"
             disabled={!dateWindow || !dbStartDate || dateWindow.start <= dbStartDate}
           >
@@ -1105,17 +661,9 @@ const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartTy
           >
             <option value="1">1 Day</option>
             <option value="7">7 Days</option>
-            <option value="15">15 Days</option>
-            <option value="30">30 Days</option>
-            <option value="all">All Data</option>
           </select>
-          {/* <button 
-            onClick={() => handleDateNavigation('forward')}
-            className="px-2 py-1 bg-blue-500 text-white rounded ml-2"
-            disabled={!dateWindow || isAfter(dateWindow.end, dataRange.end)}
-          > */}
           <button 
-            onClick={() => moveWeek('forward')}
+            onClick={() => moveDate('forward')}
             className="px-2 py-1 bg-blue-500 text-white rounded ml-2"
             disabled={!dateWindow || !dbEndDate || dateWindow.end >= dbEndDate}
           >
@@ -1161,92 +709,3 @@ const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartTy
 };
 
 export default MultiChart;
-  
-//   return (
-//     <div className='bg-white p-4 rounded-lg shadow'>
-//       <div className="mb-4 flex items-center justify-between">
-//         <div>
-//           {[1, 2, 3].map(count => (
-//             <button
-//               key={count}
-//               onClick={() => setColumnCount(count)}
-//               className={`px-4 py-2 rounded ml-2 ${columnCount === count ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
-//             >
-//               {count} Column{count !== 1 ? 's' : ''}
-//             </button>
-//           ))}
-//         </div>
-//         <div className="flex items-center">
-//           <button 
-//             onClick={() => handleDateNavigation('backward')}
-//             className="px-2 py-1 bg-blue-500 text-white rounded mr-2"
-//             disabled={dateRange === 'all' || dateWindow.start <= dataRange.start}
-//           >
-//             ←
-//           </button>
-//           <select
-//             value={timeUnit}
-//             onChange={(e) => setTimeUnit(e.target.value as 'minute' | 'hour')}
-//             className="mr-2 p-2 border rounded"
-//           >
-//             <option value="minute">Minute</option>
-//             <option value="hour">Hour</option>
-//           </select>
-//           <select
-//             value={dateRange}
-//             onChange={(e) => setDateRange(e.target.value as DateRange)}
-//             className="p-2 border rounded"
-//           >
-//             <option value="1">1 Day</option>
-//             <option value="7">7 Days</option>
-//             <option value="15">15 Days</option>
-//             <option value="30">30 Days</option>
-//             <option value="all">All Data</option>
-//           </select>
-//           <button 
-//             onClick={() => handleDateNavigation('forward')}
-//             className="px-2 py-1 bg-blue-500 text-white rounded ml-2"
-//             disabled={dateRange === 'all' || dateWindow.end >= (timeUnit === 'minute' ? dataRange.minuteEnd : dataRange.hourEnd)}
-//           >
-//             →
-//           </button>
-//         </div>
-//       </div>
-//       <div style={{ height: '100px', marginBottom: '20px' }}>
-//         <ResponsiveContainer width="100%" height="100%">
-//           <LineChart data={filteredData} syncId="healthMetrics">
-//             <XAxis 
-//               dataKey="timestamp" 
-//               type="number" 
-//               scale="time" 
-//               domain={['dataMin', 'dataMax']}
-//               tickFormatter={formatDateForDisplay}
-//             />
-//             <Brush 
-//               dataKey="timestamp" 
-//               height={30} 
-//               stroke="#8884d8" 
-//               onChange={handleBrushChange}
-//               tickFormatter={formatDateForDisplay}
-//             />
-//           </LineChart>
-//         </ResponsiveContainer>
-//       </div>
-//       <div 
-//         className={`grid gap-4`} 
-//         style={{ 
-//           gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-//           gridAutoRows: `calc((100vh - 300px) / ${Math.ceil(charts.length / columnCount)})`
-//         }}
-//       >
-//         {charts.map(chart => (
-//           <div key={chart.key} className="w-full h-full">
-//             {chart.key === 'sleep_stage' ? renderSleepStageChart() : renderChart(chart.key, chart.color, chart.label, chart.type)}
-//           </div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default MultiChart;

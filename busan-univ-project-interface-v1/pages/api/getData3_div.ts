@@ -43,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         timestamp: { $gte: start, $lte: end }
       };
 
-      if (collection === 'sleep_div') {
+      if (collection === 'sleep_test2') {
         query = {
           user_email,
           timestamp_start: { $gte: start, $lte: end }
@@ -52,9 +52,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const result = await dataCollection.find(query).toArray();
       
-      //console.log(`In getData3_div ${collection} result 길이 : ${result.length}`);
+      console.log(`${collection} result 길이 : ${result.length} & 시간대 : ${startDate} ~ ${endDate}`);
       const endTime = performance.now();
-      console.log(`getData ${collection}에서의 걸린 시간 ${endTime - startTime}ms`);
 
       if (result) {
         res.status(200).json(result);
@@ -70,11 +69,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
-
-
-
-
-
 
 
 
