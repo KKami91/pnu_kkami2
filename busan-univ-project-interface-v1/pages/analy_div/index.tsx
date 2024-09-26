@@ -455,21 +455,21 @@ export default function Home() {
               selectedDate={selectedDate}
               dbStartDate={dbStartDate}
               dbEndDate={dbEndDate}
-              checkDataExistence={async (startDate: Date, endDate: Date) => {
-                try {
-                  const response = await axios.get('/api/checkDataExistence', {
-                    params: {
-                      startDate: format(startDate, 'yyyy-MM-dd'),
-                      endDate: format(endDate, 'yyyy-MM-dd'),
-                      user_email: selectedUser
-                    }
-                  });
-                  return response.data;
-                } catch (error) {
-                  console.error('Error checking data existence:', error);
-                  return { bpm_test2: false, step_test2: false, calorie_test2: false, sleep_test2: false };
-                }
-              }}
+              // checkDataExistence={async (startDate: Date, endDate: Date) => {
+              //   try {
+              //     const response = await axios.get('/api/checkDataExistence', {
+              //       params: {
+              //         startDate: format(startDate, 'yyyy-MM-dd'),
+              //         endDate: format(endDate, 'yyyy-MM-dd'),
+              //         user_email: selectedUser
+              //       }
+              //     });
+              //     return response.data;
+              //   } catch (error) {
+              //     console.error('Error checking data existence:', error);
+              //     return { bpm_test2: false, step_test2: false, calorie_test2: false, sleep_test2: false };
+              //   }
+              // }}
             />
           )}
           {renderTime !== null && (

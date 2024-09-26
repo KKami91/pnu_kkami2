@@ -21,7 +21,7 @@ interface MultiChartProps {
   fetchHrvData: (user: string, start: Date, end: Date) => Promise<any[]>;
   dbStartDate: Date | null;
   dbEndDate: Date | null;
-  checkDataExistence: (startDate: Date, endDate: Date) => Promise<boolean>;
+  //checkDataExistence: (startDate: Date, endDate: Date) => Promise<boolean>;
 }
 
 interface AdditionalData {
@@ -49,7 +49,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
   fetchHrvData,
   dbStartDate,
   dbEndDate,
-  checkDataExistence: checkDataExistenceFromServer
+  //checkDataExistence: checkDataExistenceFromServer
 }) => {
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
   const [dateRange, setDateRange] = useState<DateRange>('1');
