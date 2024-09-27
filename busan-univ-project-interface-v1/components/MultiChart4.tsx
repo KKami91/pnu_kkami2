@@ -51,8 +51,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
   dbEndDate,
   //checkDataExistence: checkDataExistenceFromServer
 }) => {
-  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
-  const [dateRange, setDateRange] = useState<DateRange>('1');
+  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('hour');
+  const [dateRange, setDateRange] = useState<DateRange>('7');
   const [columnCount, setColumnCount] = useState(2);
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
   const [dateWindow, setDateWindow] = useState(initialDateWindow);
