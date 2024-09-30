@@ -666,7 +666,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
     // console.log('------------------')
     // console.log(normalStartDate)
     // console.log(normalEndDate)
-    // console.log('------------------')
+    // console.log('------------------')22
 
     let filteredData;
     //console.log(`in displayData --- timeunit : ${timeUnit}`)
