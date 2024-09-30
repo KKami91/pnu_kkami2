@@ -8,6 +8,7 @@ import { parseISO, format, startOfHour, endOfHour, startOfWeek, endOfWeek, addDa
 import RmssdCalendar from '../../components/RmssdCalendar';
 import SdnnCalendar from '../../components/SdnnCalendar';
 
+
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'Psy.suh.hq@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
 
@@ -242,6 +243,9 @@ export default function Home() {
 
   const fetchAdditionalData = useCallback((startDate: Date, endDate: Date): Promise<AdditionalData> => {
     if (!selectedUser) return Promise.resolve({ bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] });
+
+    console.log(`---- ${startDate}`)
+    console.log(`---- ${endDate}`)
   
     return Promise.all([
       fetchData('bpm_test2', selectedUser, startDate, endDate),
@@ -439,6 +443,7 @@ export default function Home() {
               /> 
             ) : (
               <MultiChart
+              selectedUser={selectedUser}
               bpmData={bpmData}
               stepData={stepData}
               calorieData={calorieData}
@@ -455,21 +460,6 @@ export default function Home() {
               selectedDate={selectedDate}
               dbStartDate={dbStartDate}
               dbEndDate={dbEndDate}
-              // checkDataExistence={async (startDate: Date, endDate: Date) => {
-              //   try {
-              //     const response = await axios.get('/api/checkDataExistence', {
-              //       params: {
-              //         startDate: format(startDate, 'yyyy-MM-dd'),
-              //         endDate: format(endDate, 'yyyy-MM-dd'),
-              //         user_email: selectedUser
-              //       }
-              //     });
-              //     return response.data;
-              //   } catch (error) {
-              //     console.error('Error checking data existence:', error);
-              //     return { bpm_test2: false, step_test2: false, calorie_test2: false, sleep_test2: false };
-              //   }
-              // }}
             />
           )}
           {renderTime !== null && (
@@ -492,3 +482,7 @@ export default function Home() {
     </div>
   );
 }
+
+
+
+

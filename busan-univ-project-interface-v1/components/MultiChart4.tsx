@@ -1,10 +1,15 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine, TooltipProps } from 'recharts';
+import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine, TooltipProps, Dot } from 'recharts';
+import { Props as LineProps } from 'recharts/types/cartesian/Line';
+import { Props as BarProps } from 'recharts/types/cartesian/Bar';
 import { format, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours, max, min, isSameDay, endOfMonth, addMinutes, startOfMinute, isBefore, startOfWeek, endOfWeek, isAfter, addHours, previousMonday, nextSunday, eachHourOfInterval, eachMinuteOfInterval } from 'date-fns';
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
+import MemoModal from './MemoModal';
+import axios from 'axios'
 import { filter } from 'd3';
 
 interface MultiChartProps {
+  selectedUser: string;
   bpmData: any[];
   stepData: any[];
   calorieData: any[];
@@ -35,6 +40,7 @@ interface AdditionalData {
 type DateRange = '1' | '7';
 
 const MultiChart: React.FC<MultiChartProps> = ({
+  selectedUser,
   bpmData: initialBpmData,
   stepData: initialStepData,
   calorieData: initialCalorieData,
@@ -51,8 +57,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
   dbEndDate,
   //checkDataExistence: checkDataExistenceFromServer
 }) => {
-  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('hour');
-  const [dateRange, setDateRange] = useState<DateRange>('7');
+  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
+  const [dateRange, setDateRange] = useState<DateRange>('1');
   const [columnCount, setColumnCount] = useState(2);
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
   const [dateWindow, setDateWindow] = useState(initialDateWindow);
@@ -60,6 +66,13 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const [stepData, setStepData] = useState(initialStepData);
   const [calorieData, setCalorieData] = useState(initialCalorieData);
   const [sleepData, setSleepData] = useState(initialSleepData);
+
+
+
+  // Memo
+  const [memoModalOpen, setMemoModalOpen] = useState(false);
+  const [selectedData, setSelectedData] = useState<any>(null);
+  const [memos, setMemos] = useState<{ [key: string]: string }>({});
 
   // useEffect(() => {
   //   console.log('Updated BPM Data:', bpmData);
@@ -75,6 +88,114 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const [localHrvData, setLocalHrvData] = useState(hrvHourData);
 
 
+  useEffect(() => {
+    if (dateWindow && selectedUser) {
+      fetchMemos();
+    }
+  }, [dateWindow, selectedUser]);
+
+  const fetchMemos = async () => {
+    console.log(`in fetchMemos`)
+    if (!selectedUser || !dateWindow) return;
+    try {
+      console.log(`in fetchMemos : dateWindow.start : ${dateWindow.start} // dateWindow.end : ${dateWindow.end}`)
+      const response = await axios.get('/api/getMemos', {
+        // params: {
+        //   user_email: selectedUser,
+        //   startDate: dateWindow.start.toISOString(),
+        //   endDate: dateWindow.end.toISOString(),
+        // },
+        params: {
+          user_email: selectedUser,
+          startDate: adjustTimeZoneAddNine(dateWindow.start),
+          endDate: adjustTimeZoneAddNine(dateWindow.end),
+        },
+      });
+      const memoData = response.data.reduce((acc: { [key: string]: string }, memo: any) => {
+        acc[`${memo.dataType}_${memo.timestamp}`] = memo.memo;
+        return acc;
+      }, {});
+
+      console.log(`fetchMemos --- memoData ${JSON.stringify(response.data)}`)
+
+      setMemos(memoData);
+    } catch (error) {
+      console.error('Error fetching memos:', error);
+    }
+  };
+
+  const saveMemo = async (memo: string) => {
+    console.log(`selectedData : ${selectedData} <---> selectedUser : ${selectedUser}`)
+    if (selectedData && selectedUser) {
+      const memoKey = `${selectedData.type}_${selectedData.timestamp}`;
+      try {
+        await axios.post('/api/saveMemo', {
+          user_email: selectedUser,
+          dataType: selectedData.type,
+          timestamp: adjustTimeZoneAddNine(selectedData.timestamp),
+          memo,
+        });
+        setMemos(prev => ({ ...prev, [memoKey]: memo }));
+      } catch (error) {
+        console.error('Error saving memo:', error);
+      }
+    }
+    setMemoModalOpen(false);
+  };
+
+  // const handleChartClick = useCallback((data: any, dataKey: string) => {
+  //   if (timeUnit === 'minute') {
+  //     setSelectedData({ ...data, type: dataKey });
+  //     setMemoModalOpen(true);
+  //   }
+  // }, [timeUnit]);
+
+  const handleChartClick = (data: any, dataKey: string) => {
+    if (timeUnit === 'minute') {
+      setSelectedData({ ...data, type: dataKey });
+      setMemoModalOpen(true);
+    }
+  };
+
+  // const saveMemo = useCallback(async (memo: string) => {
+  //   if (selectedData) {
+  //     const memoKey = `${selectedData.type}_${selectedData.timestamp}`;
+  //     // API 호출을 통해 DB에 메모 저장
+  //     // await saveMemoToDatabase(memoKey, memo);
+  //     setMemos(prev => ({ ...prev, [memoKey]: memo }));
+  //   }
+  // }, [selectedData]);
+
+  // const saveMemo = async (memo: string) => {
+  //   if (selectedData && selectedUser) {
+  //     const memoKey = `${selectedData.type}_${selectedData.timestamp}`;
+  //     try {
+  //       await axios.post('/api/saveMemo', {
+  //         user_email: selectedUser,
+  //         dataType: selectedData.type,
+  //         timestamp: selectedData.timestamp,
+  //         memo,
+  //       });
+  //       setMemos(prev => ({ ...prev, [memoKey]: memo }));
+  //     } catch (error) {
+  //       console.error('Error saving memo:', error);
+  //     }
+  //   }
+  //   setMemoModalOpen(false);
+  // };
+
+
+
+  
+  // useEffect(() => {
+  //   console.log('-123---');
+  //   console.log('cachedData keys:', Object.keys(cachedData));
+  //   console.log('cachedData size:', Object.keys(cachedData).length);
+  //   console.log('cachedData content:', cachedData);
+  //   console.log('-123---');
+  // }, [cachedData]);
+
+
   // useEffect(() => {
   //  // 초기 6/2개 생성 및 화살표 누를 때 마다 2/2번 호출 & 무한루프 X
   //   if (dateWindow) {
@@ -84,6 +205,53 @@ const MultiChart: React.FC<MultiChartProps> = ({
   //     prefetchAdjacentWeeks(weekStart, weekEnd);
   //   }
   // }, [dateWindow, fetchWeekData, prefetchAdjacentWeeks]);
+
+  const fetchWeekData = useCallback(async (start: Date, end: Date) => {
+    const weekKey = format(start, 'yyyy-MM-dd');
+    if (!cachedData[weekKey]) {
+      //console.log(`Fetching data for week: ${weekKey}`);
+      const newData = await fetchAdditionalData(start, end);
+      setCachedData(prev => ({ ...prev, [weekKey]: newData }));
+    } else {
+      //console.log(`Using cached data for week: ${weekKey}`);
+    }
+  }, [fetchAdditionalData, cachedData]);
+
+  const prefetchAdjacentWeeks = useCallback(async (currentStart: Date, currentEnd: Date) => {
+    const prevWeekStart = subDays(currentStart, 7);
+    const prevWeekEnd = subDays(currentStart, 1);
+    const nextWeekStart = addDays(currentEnd, 1);
+    const nextWeekEnd = addDays(currentEnd, 7);
+  
+    await Promise.all([
+      fetchWeekData(prevWeekStart, prevWeekEnd),
+      fetchWeekData(nextWeekStart, nextWeekEnd)
+    ]);
+  }, [fetchWeekData]);
+
+  useEffect(() => {
+    if (dateWindow) {
+      const loadData = async () => {
+        const weekStart = startOfWeek(dateWindow.start, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(dateWindow.start, { weekStartsOn: 1 });
+        
+        await fetchWeekData(weekStart, weekEnd);
+        await prefetchAdjacentWeeks(weekStart, weekEnd);
+  
+        const weekKey = format(weekStart, 'yyyy-MM-dd');
+        if (cachedData[weekKey]) {
+          setBpmData(cachedData[weekKey].bpmData);
+          setStepData(cachedData[weekKey].stepData);
+          setCalorieData(cachedData[weekKey].calorieData);
+          setSleepData(cachedData[weekKey].sleepData);
+          setLocalHrvData(cachedData[weekKey].hrvData);
+        }
+      };
+  
+      loadData();
+    }
+  }, [dateWindow, fetchWeekData, prefetchAdjacentWeeks, cachedData]);
+
 
   useEffect(() => {
     if (dateWindow) {
@@ -357,39 +525,73 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
 
 
+  // const moveDate = useCallback(async (direction: 'forward' | 'backward') => {
+  //   setDateWindow(prevWindow => {
+  //     if (!prevWindow || !dbStartDate || !dbEndDate) return prevWindow;
+  
+  //     const days = dateRange === '7' ? 7 : 1;
+  //     let newStart, newEnd;
+  
+  //     if (dateRange === '7') {
+  //       newStart = direction === 'forward' 
+  //         ? addDays(prevWindow.start, days) 
+  //         : subDays(prevWindow.start, days);
+  //       newEnd = endOfWeek(newStart, { weekStartsOn: 1 });
+  //     } else {
+  //       newEnd = direction === 'forward' 
+  //         ? addDays(prevWindow.end, days) 
+  //         : subDays(prevWindow.end, days);
+  //       newStart = startOfDay(newEnd);
+  //     }
+  
+  //     if (newStart < dbStartDate || newEnd > dbEndDate) {
+  //       return prevWindow;
+  //     }
+  
+  //     const adjustedStart = dateRange === '7' ? startOfWeek(newStart, { weekStartsOn: 1 }) : newStart;
+  //     const adjustedEnd = dateRange === '7' ? endOfWeek(adjustedStart, { weekStartsOn: 1 }) : newEnd;
+  
+  //     // 여기서 loadData를 호출하는 대신, 새로운 날짜 범위만 반환
+  //     return { 
+  //       start: startOfDay(adjustedStart), 
+  //       end: endOfDay(adjustedEnd) 
+  //     };
+  //   });
+  // }, [dateRange, dbStartDate, dbEndDate]);
+
+
   const moveDate = useCallback(async (direction: 'forward' | 'backward') => {
     setDateWindow(prevWindow => {
       if (!prevWindow || !dbStartDate || !dbEndDate) return prevWindow;
   
       const days = dateRange === '7' ? 7 : 1;
-      let newStart, newEnd;
+      let newStart = direction === 'forward' 
+        ? addDays(prevWindow.start, days) 
+        : subDays(prevWindow.start, days);
+      let newEnd = dateRange === '7' ? endOfWeek(newStart, { weekStartsOn: 1 }) : endOfDay(newStart);
   
-      if (dateRange === '7') {
-        newStart = direction === 'forward' 
-          ? addDays(prevWindow.start, days) 
-          : subDays(prevWindow.start, days);
-        newEnd = endOfWeek(newStart, { weekStartsOn: 1 });
-      } else {
-        newEnd = direction === 'forward' 
-          ? addDays(prevWindow.end, days) 
-          : subDays(prevWindow.end, days);
-        newStart = startOfDay(newEnd);
-      }
-  
-      if (newStart < dbStartDate || newEnd > dbEndDate) {
-        return prevWindow;
-      }
+      if (newStart < dbStartDate) newStart = dbStartDate;
+      if (newEnd > dbEndDate) newEnd = dbEndDate;
   
       const adjustedStart = dateRange === '7' ? startOfWeek(newStart, { weekStartsOn: 1 }) : newStart;
       const adjustedEnd = dateRange === '7' ? endOfWeek(adjustedStart, { weekStartsOn: 1 }) : newEnd;
   
-      // 여기서 loadData를 호출하는 대신, 새로운 날짜 범위만 반환
+      // 새로운 날짜 범위에 대한 데이터를 즉시 설정
+      const weekKey = format(startOfWeek(adjustedStart, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+      if (cachedData[weekKey]) {
+        setBpmData(cachedData[weekKey].bpmData);
+        setStepData(cachedData[weekKey].stepData);
+        setCalorieData(cachedData[weekKey].calorieData);
+        setSleepData(cachedData[weekKey].sleepData);
+        setLocalHrvData(cachedData[weekKey].hrvData);
+      }
+  
       return { 
         start: startOfDay(adjustedStart), 
         end: endOfDay(adjustedEnd) 
       };
     });
-  }, [dateRange, dbStartDate, dbEndDate]);
+  }, [dateRange, dbStartDate, dbEndDate, cachedData]);
 
 
   //     return { 
@@ -515,6 +717,12 @@ const MultiChart: React.FC<MultiChartProps> = ({
         };
       });
     }
+
+    filteredData = filteredData.filter(item => 
+      Object.values(item).every(value => 
+        value === null || (typeof value === 'number' && !isNaN(value))
+      )
+    );
   
     //console.log(`---- in displayData filteredData`, filteredData);
 
@@ -572,7 +780,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
     if (active && payload && payload.length) {
       const date = new Date(label as number);
       const currentChart = payload[0].dataKey as string;
-
+  
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
@@ -595,75 +803,177 @@ const MultiChart: React.FC<MultiChartProps> = ({
                   </p>
                 );
               }           
-              return (
+              const result = (
                 <p key={`${pld.dataKey}-${index}`} style={{ color: pld.color }}>
                   {`${pld.name}: ${value}`}
                 </p>
               );
-            }
-            return null;
-          })}
-        </div>
-      );
-    }
-    return null;
-  };
+  
+  //             // 메모 표시
+  //             const memoKey = `${pld.dataKey}_${label}`;
+  //             const memo = memos[memoKey];
+  //             console.log(`in customTooltip label-- ${new Date(label)}`)
+  //             console.log(`in customTooltip memoKey-- ${memoKey}`)
+  //             console.log(`in customTooltip memos-- ${JSON.stringify(memos)}`)
+  //             console.log(`in customTooltip memos[memoKey]-- ${JSON.stringify(memos[memoKey])}`)
+  //             if (memo) {
+  //               return (
+  //                 <React.Fragment key={`${pld.dataKey}-${index}`}>
+  //                   {result}
+  //                   <p className="text-gray-600 italic">Memo: {memo}</p>
+  //                 </React.Fragment>
+  //               );
+  //             }
+  
+  //             return result;
+  //           }
+  //           return null;
+  //         })}
+  //       </div>
+  //     );
+  //   }
+  //   return null;
+  // };
 
-const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartType: typeof LineChart | typeof BarChart = LineChart, additionalProps = {}) => {
-  //console.log('중복해서 10/2개 생성',dataKey)
-  return (
-    <div className="w-full h-full">
-      <ResponsiveContainer width="100%" height="100%">
-        <ChartType data={displayData} syncId="healthMetrics">
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="timestamp" 
-            type="number" 
-            scale="time" 
-            domain={['dataMin', 'dataMax']}
-            tickFormatter={formatDateForDisplay}
-          />
-          <YAxis 
-            label={{ value: yAxisLabel, angle: -90, position: 'insideLeft' }} 
-            tickFormatter={(value) => value.toFixed(1)}
-            domain={dataKey === 'sleep_stage' ? [-3.5, 0.5] : ['auto', 'auto']}
-            ticks={dataKey === 'sleep_stage' ? [-3, -2.5, -2, -1.5, -1] : undefined}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          {dataKey === 'hrv' ? (
-            <>
-              <Line type="monotone" dataKey="hour_rmssd" stroke="#8884d8" name="RMSSD" dot={false} connectNulls />
-              <Line type="monotone" dataKey="hour_sdnn" stroke="#82ca9d" name="SDNN" dot={false} connectNulls />
-            </>
-          ) : ChartType === LineChart ? (
-            <Line type="monotone" dataKey={dataKey} stroke={color} name={dataKey.toUpperCase()} dot={false} connectNulls {...additionalProps} />
-          ) : (
-            <Bar dataKey={dataKey} fill={color} name={dataKey.toUpperCase()} {...additionalProps} />
-          )}
-          {dataKey === 'bpm' && (
-            <Line 
-              type="monotone" 
-              dataKey={timeUnit === 'hour' ? "hour_pred_bpm" : "min_pred_bpm"} 
-              stroke="#82ca9d" 
-              dot={false} 
-              name={`Predicted BPM (${timeUnit === 'hour' ? 'Hour' : 'Minute'})`} 
-              connectNulls
-            />
-          )}
-          {dataKey === 'sleep_stage' && (
-            <>
-              <ReferenceLine y={0} stroke='lightgray' strokeDasharray='3 3' />
-              <ReferenceLine y={-1} stroke='lightgray' strokeDasharray='3 3' />
-              <ReferenceLine y={-2} stroke='lightgray' strokeDasharray='3 3' />
-              <ReferenceLine y={-3} stroke='lightgray' strokeDasharray='3 3' />
-            </>
-          )}
-        </ChartType>
-      </ResponsiveContainer>
-    </div>
-  );
+              const memoKey = `${pld.dataKey}_${date.toISOString()}`;
+            const memo = memos[memoKey];
+            console.log(`in customTooltip label-- ${date}`);
+            console.log(`in customTooltip memoKey-- ${memoKey}`);
+            console.log(`in customTooltip memos-- ${JSON.stringify(memos)}`);
+            console.log(`in customTooltip memos[memoKey]-- ${JSON.stringify(memos[memoKey])}`);
+            
+            return (
+              <React.Fragment key={`${pld.dataKey}-${index}`}>
+                <p style={{ color: pld.color }}>
+                  {`${pld.name}: ${value}`}
+                </p>
+                {memo && (
+                  <p className="text-gray-600 italic">Memo: {memo}</p>
+                )}
+              </React.Fragment>
+            );
+          }
+          return null;
+        })}
+      </div>
+    );
+  }
+  return null;
 };
+
+  const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartType: typeof LineChart | typeof BarChart = LineChart, additionalProps = {}) => {
+    return (
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <ChartType 
+            data={displayData} 
+            syncId="healthMetrics"
+            onClick={(data) => {
+              if (data && data.activePayload && timeUnit === 'minute') {
+                handleChartClick(data.activePayload[0].payload, dataKey);
+              }
+            }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis 
+              dataKey="timestamp" 
+              type="number" 
+              scale="time" 
+              domain={['dataMin', 'dataMax']}
+              tickFormatter={formatDateForDisplay}
+            />
+            <YAxis 
+              label={{ value: yAxisLabel, angle: -90, position: 'insideLeft' }} 
+              tickFormatter={(value) => value.toFixed(1)}
+              domain={dataKey === 'sleep_stage' ? [-3.5, 0.5] : ['auto', 'auto']}
+              ticks={dataKey === 'sleep_stage' ? [-3, -2.5, -2, -1.5, -1] : undefined}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            {dataKey === 'hrv' ? (
+              <>
+                <Line type="monotone" dataKey="hour_rmssd" stroke="#8884d8" name="RMSSD" dot={false} connectNulls />
+                <Line type="monotone" dataKey="hour_sdnn" stroke="#82ca9d" name="SDNN" dot={false} connectNulls />
+              </>
+            ) : ChartType === LineChart ? (
+              <Line 
+                type="monotone" 
+                dataKey={dataKey} 
+                stroke={color} 
+                name={dataKey.toUpperCase()} 
+                dot={((props: any) => {
+                  if (props && props.payload && props.payload.timestamp) {
+                    const memoKey = `${dataKey}_${props.payload.timestamp}`;
+                    if (memos[memoKey]) {
+                      return (
+                        <circle 
+                          cx={props.cx} 
+                          cy={props.cy} 
+                          r={4} 
+                          fill={color} 
+                          stroke="none" 
+                        />
+                      );
+                    }
+                  }
+                  return false;  // 기본 dot을 렌더링하지 않음
+                }) as LineProps['dot']}
+                activeDot={{ r: 8 }}
+                connectNulls 
+                {...additionalProps} 
+              />
+            ) : (
+              <Bar 
+                dataKey={dataKey} 
+                fill={color} 
+                name={dataKey.toUpperCase()} 
+                {...additionalProps}
+                shape={(props: any) => {
+                  if (props && props.payload) {
+                    const memoKey = `${dataKey}_${props.payload.timestamp}`;
+                    if (memos[memoKey]) {
+                      return (
+                        <path 
+                          d={`M${props.x},${props.y} h${props.width} v${props.height} h-${props.width}Z`} 
+                          fill={color}
+                          stroke="black"
+                          strokeWidth={2}
+                        />
+                      );
+                    }
+                  }
+                  return (
+                    <path 
+                      d={`M${props.x},${props.y} h${props.width} v${props.height} h-${props.width}Z`} 
+                      fill={color}
+                    />
+                  );
+                }}
+              />
+            )}
+            {dataKey === 'bpm' && (
+              <Line 
+                type="monotone" 
+                dataKey={timeUnit === 'hour' ? "hour_pred_bpm" : "min_pred_bpm"} 
+                stroke="#82ca9d" 
+                dot={false} 
+                name={`Predicted BPM (${timeUnit === 'hour' ? 'Hour' : 'Minute'})`} 
+                connectNulls
+              />
+            )}
+            {dataKey === 'sleep_stage' && (
+              <>
+                <ReferenceLine y={0} stroke='lightgray' strokeDasharray='3 3' />
+                <ReferenceLine y={-1} stroke='lightgray' strokeDasharray='3 3' />
+                <ReferenceLine y={-2} stroke='lightgray' strokeDasharray='3 3' />
+                <ReferenceLine y={-3} stroke='lightgray' strokeDasharray='3 3' />
+              </>
+            )}
+          </ChartType>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
 
   const charts = [
     { key: 'bpm', color: '#ff7300', label: 'BPM', type: LineChart },
@@ -760,6 +1070,13 @@ const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartTy
           </div>
         ))}
       </div>
+      <MemoModal
+        isOpen={memoModalOpen}
+        onClose={() => setMemoModalOpen(false)}
+        onSave={saveMemo}
+        data={selectedData}
+        existingMemo={selectedData ? memos[`${selectedData.type}_${selectedData.timestamp}`] || '' : ''}
+      />
     </div>
   );
 };
