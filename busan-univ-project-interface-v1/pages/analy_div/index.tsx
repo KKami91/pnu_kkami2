@@ -88,7 +88,7 @@ export default function Home() {
 
   const fetchDataRanges = async (user: string) => {
     try {
-      const collections = ['bpm_test2', 'step_test2', 'calorie_test2'];
+      const collections = ['bpm_test', 'step_test', 'calorie_test'];
       const ranges = await Promise.all(collections.map(async (collection) => {
         const response = await axios.get('/api/getDataRange', {
           params: { collection, user_email: user }
@@ -249,10 +249,11 @@ export default function Home() {
     const promiseStartTime = performance.now()
   
     return Promise.all([
-      fetchData('bpm_test2', selectedUser, startDate, endDate),
-      fetchData('step_test2', selectedUser, startDate, endDate),
-      fetchData('calorie_test2', selectedUser, startDate, endDate),
-      fetchData('sleep_test2', selectedUser, startDate, endDate),
+      fetchData('bpm_test', selectedUser, startDate, endDate),
+      fetchData('step_test', selectedUser, startDate, endDate),
+      fetchData('calorie_test', selectedUser, startDate, endDate),
+
+      fetchData('sleep_test', selectedUser, startDate, endDate),
       fetchHrvData(selectedUser, startDate, endDate),
     ])
       .then(([bpm, step, calorie, sleep, hrv]) => {
