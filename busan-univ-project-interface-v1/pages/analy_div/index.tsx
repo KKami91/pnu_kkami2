@@ -8,6 +8,7 @@ import { parseISO, format, startOfHour, endOfHour, startOfWeek, endOfWeek, addDa
 import RmssdCalendar from '../../components/RmssdCalendar';
 import SdnnCalendar from '../../components/SdnnCalendar';
 
+
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'sueun4701@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
 
@@ -88,7 +89,7 @@ export default function Home() {
 
   const fetchDataRanges = async (user: string) => {
     try {
-      const collections = ['bpm_test', 'step_test', 'calorie_test'];
+      const collections = ['bpm_test2', 'step_test2', 'calorie_test2'];
       const ranges = await Promise.all(collections.map(async (collection) => {
         const response = await axios.get('/api/getDataRange', {
           params: { collection, user_email: user }
@@ -131,10 +132,8 @@ export default function Home() {
         }
       });
 
-      //console.log(`in fetchData -- : ${JSON.stringify(response)}`)
-
       const fetchEnd = performance.now()
-      console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
+      //console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
       return response.data;
     } catch (error) {
       console.error(`Error fetching ${collection} data:`, error);
@@ -231,7 +230,7 @@ export default function Home() {
       if (response.data && response.data.hour_hrv) {
         return response.data.hour_hrv;
       } else {
-        console.warn('HRV data is missing or invalid');
+        //console.warn('HRV data is missing or invalid');
         return [];
       }
     } catch (error) {
@@ -243,19 +242,17 @@ export default function Home() {
   const fetchAdditionalData = useCallback((startDate: Date, endDate: Date): Promise<AdditionalData> => {
     if (!selectedUser) return Promise.resolve({ bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] });
 
-    console.log(`---- ${startDate}`)
-    console.log(`---- ${endDate}`)
-
-    const promiseStartTime = performance.now()
+    //console.log(`---- ${startDate}`)
+    //console.log(`---- ${endDate}`)
   
     return Promise.all([
-      fetchData('bpm_test', selectedUser, startDate, endDate),
-      fetchData('step_test', selectedUser, startDate, endDate),
-      fetchData('calorie_test', selectedUser, startDate, endDate),
-
-      fetchData('sleep_test', selectedUser, startDate, endDate),
+      fetchData('bpm_test2', selectedUser, startDate, endDate),
+      fetchData('step_test2', selectedUser, startDate, endDate),
+      fetchData('calorie_test2', selectedUser, startDate, endDate),
+      fetchData('sleep_test2', selectedUser, startDate, endDate),
       fetchHrvData(selectedUser, startDate, endDate),
     ])
+
       .then(([bpm, step, calorie, sleep, hrv]) => {
         // console.log('Fetched BPM Data:', bpm);
         // console.log('Fetched Step Data:', step);
@@ -265,8 +262,6 @@ export default function Home() {
   
         // BPM 데이터가 비어있으면 HRV 데이터도 빈 배열로 설정
         const hrvData = bpm.length === 0 ? [] : hrv;
-        const promiseEndtime = performance.now()
-        console.log(`promise 걸린 시간 .. ${promiseEndtime - promiseStartTime}ms`)
   
         return {
           bpmData: bpm || [],
