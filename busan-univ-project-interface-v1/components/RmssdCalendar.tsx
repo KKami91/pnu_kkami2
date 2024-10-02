@@ -41,6 +41,24 @@ const RmssdCalendar: React.FC<RmssdCalendarProps> = ({ hrvDayData }) => {
         return 'color-empty';
     };
 
+    const getBackgroundColorClass = (value: number | null) => {
+        if (value === null) return 'color-empty';
+        if (value >= 40) return 'bg-blue-400 text-black p-8 rounded-lg';
+        if (value >= 20) return 'bg-green-400 text-black p-8 rounded-lg';
+        if (value >= 10) return 'bg-yellow-400 text-black p-8 rounded-lg';
+        if (value > 0) return 'bg-red-400 text-black p-8 rounded-lg';
+        return 'color-empty'; 
+    };
+
+    const getHealthy = (value: number | null) => {
+        if (value === null) return 'color-empty';
+        if (value >= 40) return '건강';
+        if (value >= 20) return '정상';
+        if (value >= 10) return '관리 필요';
+        if (value > 0) return '전문의 상담';
+        return 'color-empty'; 
+    };
+
     const handleClick: CalendarProps<string>['onClick'] = (value) => {
         if (value) {
             setSelectedData({ date: value.date, rmssd: value.count });
@@ -95,12 +113,14 @@ const RmssdCalendar: React.FC<RmssdCalendarProps> = ({ hrvDayData }) => {
             </div>
             {selectedData && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                    <div className="bg-white text-black p-4 rounded-lg">
+                    {/* <div className="bg-white text-black p-4 rounded-lg"> */}
+                    <div className={getBackgroundColorClass(selectedData.rmssd)}>
                         <h3 className="text-lg font-bold mb-2">RMSSD 정보</h3>
                         <p>날짜: {selectedData.date}</p>
                         <p>RMSSD: {selectedData.rmssd.toFixed(2)}</p>
+                        <p>{getHealthy(selectedData.rmssd)}</p>                        
                         <button
-                            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+                            className="mt-4 bg-black text-white px-4 py-2 rounded"
                             onClick={() => setSelectedData(null)}
                         >
                             닫기
