@@ -43,10 +43,10 @@ const RmssdCalendar: React.FC<RmssdCalendarProps> = ({ hrvDayData }) => {
 
     const getBackgroundColorClass = (value: number | null) => {
         if (value === null) return 'color-empty';
-        if (value >= 40) return 'bg-blue-400 text-black p-8 rounded-lg';
-        if (value >= 20) return 'bg-green-400 text-black p-8 rounded-lg';
-        if (value >= 10) return 'bg-yellow-400 text-black p-8 rounded-lg';
-        if (value > 0) return 'bg-red-400 text-black p-8 rounded-lg';
+        if (value >= 40) return 'bg-blue-400 text-black py-8 px-24 text-xl rounded-lg';
+        if (value >= 20) return 'bg-green-400 text-black py-8 px-24 text-xl rounded-lg';
+        if (value >= 10) return 'bg-yellow-400 text-black py-8 px-24 text-xl rounded-lg';
+        if (value > 0) return 'bg-red-400 text-black py-8 px-24 text-xl rounded-lg';
         return 'color-empty'; 
     };
 
