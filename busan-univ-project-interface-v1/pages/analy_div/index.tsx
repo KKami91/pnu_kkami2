@@ -134,7 +134,7 @@ export default function Home() {
       //console.log(`in fetchData -- : ${JSON.stringify(response).slice(0,100)}`)
 
       const fetchEnd = performance.now()
-      //console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
+      console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
       return response.data;
     } catch (error) {
       console.error(`Error fetching ${collection} data:`, error);
@@ -226,7 +226,7 @@ export default function Home() {
       const featureHourStartTime = performance.now()
       const response = await axios.get(`${API_URL}/feature_hour_div/${user}/${start.getTime()}/${end.getTime()}`);
       const featureHourEndTime = performance.now()
-      //console.log(`HRV 시간 단위 데이터 계산 걸린 시간 : ${featureHourEndTime - featureHourStartTime} ms`)
+      console.log(`HRV 시간 단위 데이터 계산 걸린 시간 : ${featureHourEndTime - featureHourStartTime} ms`)
       
       // 응답 데이터 확인 및 처리
       if (response.data && response.data.hour_hrv) {
