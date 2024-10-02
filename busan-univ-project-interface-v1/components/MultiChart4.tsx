@@ -2,7 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine, TooltipProps, Dot, RectangleProps } from 'recharts';
 import { Props as LineProps } from 'recharts/types/cartesian/Line';
 import { Props as BarProps } from 'recharts/types/cartesian/Bar';
-import { format, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours, max, min, isSameDay, endOfMonth, addMinutes, startOfMinute, isBefore, startOfWeek, endOfWeek, isAfter, addHours, previousMonday, nextSunday, eachHourOfInterval, eachMinuteOfInterval } from 'date-fns';
+import { addWeeks, subWeeks, isWithinInterval, subSeconds, addSeconds, format, subDays, addDays, startOfDay, endOfDay, startOfHour, subHours, subMinutes, addMinutes, startOfWeek, endOfWeek, isAfter, addHours, previousMonday, nextSunday, eachHourOfInterval, eachMinuteOfInterval } from 'date-fns';
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import MemoModal from './MemoModal';
 import axios from 'axios'
@@ -40,6 +40,15 @@ interface AdditionalData {
 
 type DateRange = '1' | '7';
 
+interface CachedDataType {
+  [key: string]: AdditionalData;
+}
+
+interface WeekRange {
+  start: Date;
+  end: Date;
+}
+
 const MultiChart: React.FC<MultiChartProps> = ({
   selectedUser,
   bpmData: initialBpmData,
@@ -68,17 +77,25 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const [calorieData, setCalorieData] = useState(initialCalorieData);
   const [sleepData, setSleepData] = useState(initialSleepData);
 
-
-
   // Memo
   const [memoModalOpen, setMemoModalOpen] = useState(false);
   const [selectedData, setSelectedData] = useState<any>(null);
   const [memos, setMemos] = useState<{ [key: string]: string }>({});
 
 
-  const [cachedData, setCachedData] = useState<{
-    [key: string]: AdditionalData
-  }>({});
+
+  // const [cachedData, setCachedData] = useState<{
+  //   [key: string]: AdditionalData
+  // }>({});
+
+  const [cachedData, setCachedData] = useState<CachedDataType>({});
+
+  useEffect(() => {
+    //console.log(`cachedData in useEffect -> ${Object.keys(cachedData)}`)
+    console.log('Cached Data Keys:', Object.keys(cachedData));
+    console.log('Cached Data:', cachedData);
+    //console.log(`cachedData in useEffect -> ${}`)
+  })
 
   const [localHrvData, setLocalHrvData] = useState(hrvHourData);
 
@@ -160,57 +177,137 @@ const MultiChart: React.FC<MultiChartProps> = ({
   };
 
 
-  const fetchWeekData = useCallback(async (start: Date, end: Date) => {
-    const weekKey = format(start, 'yyyy-MM-dd');
-    if (!cachedData[weekKey]) {
-      //console.log(`Fetching data for week: ${weekKey}`);
-      const newData = await fetchAdditionalData(start, end);
-      setCachedData(prev => ({ ...prev, [weekKey]: newData }));
-    } else {
-      //console.log(`Using cached data for week: ${weekKey}`);
-    }
-  }, [fetchAdditionalData, cachedData]);
+  // const fetchWeekData = useCallback(async (start: Date, end: Date) => {
+  //   console.log(`&&fetchWeekData&&`)
+  //   const weekKey = format(start, 'yyyy-MM-dd');
+  //   if (!cachedData[weekKey]) {
+  //     //console.log(`Fetching data for week: ${weekKey}`);
+  //     const newData = await fetchAdditionalData(start, end);
+  //     setCachedData(prev => ({ ...prev, [weekKey]: newData }));
+  //   } else {
+  //     //console.log(`Using cached data for week: ${weekKey}`);
+  //   }
+  // }, [fetchAdditionalData, cachedData]);
 
-  const prefetchAdjacentWeeks = useCallback(async (currentStart: Date, currentEnd: Date) => {
-    const prevWeekStart = subDays(currentStart, 7);
-    const prevWeekEnd = subDays(currentStart, 1);
-    const nextWeekStart = addDays(currentEnd, 1);
-    const nextWeekEnd = addDays(currentEnd, 7);
+  // const prefetchAdjacentWeeks = useCallback(async (currentStart: Date, currentEnd: Date) => {
+  //   console.log(`&&prefetchAdjacentWeeks&&`)
+  //   const prevWeekStart = subDays(currentStart, 7);
+  //   const prevWeekEnd = subSeconds(currentStart, 1);
+  //   const nextWeekStart = addSeconds(currentEnd, 1);
+  //   const nextWeekEnd = addDays(currentEnd, 7);
+
+  //   // console.log(`in prefetchAdjacentWeeks ------ ${currentStart}, ${currentEnd}`)
+
+  //   // console.log(`in prefetchAdjacentWeeks ------ ${prevWeekStart}, ${prevWeekEnd}`)
+  //   // console.log(`in prefetchAdjacentWeeks ------ ${nextWeekStart}, ${nextWeekEnd}`)
   
-    await Promise.all([
-      fetchWeekData(prevWeekStart, prevWeekEnd),
-      fetchWeekData(nextWeekStart, nextWeekEnd)
-    ]);
-  }, [fetchWeekData]);
+  //   await Promise.all([
+  //     fetchWeekData(prevWeekStart, prevWeekEnd),
+  //     fetchWeekData(nextWeekStart, nextWeekEnd)
+  //   ]);
+  // }, [fetchWeekData]);
+
+  // useEffect(() => {
+  //   console.log(`dateWindow ; ; ; ; ${JSON.stringify(dateWindow)}`)
+  //   if (dateWindow) {
+  //     const loadData = async () => {
+  //       const weekStart = startOfWeek(dateWindow.start, { weekStartsOn: 1 });
+  //       const weekEnd = endOfWeek(dateWindow.start, { weekStartsOn: 1 });
+        
+  //       //await fetchWeekData(weekStart, weekEnd);
+  //       await prefetchAdjacentWeeks(weekStart, weekEnd);
+  
+  //       const weekKey = format(weekStart, 'yyyy-MM-dd');
+  //       if (cachedData[weekKey]) {
+  //         setBpmData(cachedData[weekKey].bpmData);
+  //         setStepData(cachedData[weekKey].stepData);
+  //         setCalorieData(cachedData[weekKey].calorieData);
+  //         setSleepData(cachedData[weekKey].sleepData);
+  //         setLocalHrvData(cachedData[weekKey].hrvData);
+  //       }
+  //     };
+  
+  //     loadData();
+  //   }
+  // }, [dateWindow, fetchWeekData, prefetchAdjacentWeeks, cachedData]);
 
   useEffect(() => {
-    if (dateWindow) {
-      const loadData = async () => {
-        const weekStart = startOfWeek(dateWindow.start, { weekStartsOn: 1 });
-        const weekEnd = endOfWeek(dateWindow.start, { weekStartsOn: 1 });
+    const initializeCache = () => {
+      let startDate: Date;
+      if (initialDateWindow) {
+        startDate = initialDateWindow.start;
+      } else if (initialBpmData.length > 0) {
+        startDate = new Date(initialBpmData[0].timestamp);
+      } else if (dbStartDate) {
+        startDate = dbStartDate;
+      } else {
+        console.error('No valid start date found for initialization');
+        return;
+      }
+
+      const weekStart = startOfWeek(startDate, { weekStartsOn: 1 });
+      const threeWeeksEnd = addWeeks(weekStart, 2);
+      
+      const newCachedData: CachedDataType = {};
+      for (let i = 0; i < 3; i++) {
+        const currentWeekStart = addWeeks(weekStart, i);
+        const weekKey = format(currentWeekStart, 'yyyy-MM-dd');
+        newCachedData[weekKey] = {
+          bpmData: initialBpmData.filter(d => isWithinInterval(new Date(d.timestamp), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
+          stepData: initialStepData.filter(d => isWithinInterval(new Date(d.timestamp), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
+          calorieData: initialCalorieData.filter(d => isWithinInterval(new Date(d.timestamp), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
+          sleepData: initialSleepData.filter(d => isWithinInterval(new Date(d.timestamp_start), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
+          hrvData: hrvHourData.filter(d => isWithinInterval(new Date(d.ds), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
+        };
+      }
+      setCachedData(newCachedData);
+
+      // Set initial data for display
+      const currentWeekKey = format(weekStart, 'yyyy-MM-dd');
+      setBpmData(newCachedData[currentWeekKey].bpmData);
+      setStepData(newCachedData[currentWeekKey].stepData);
+      setCalorieData(newCachedData[currentWeekKey].calorieData);
+      setSleepData(newCachedData[currentWeekKey].sleepData);
+      setLocalHrvData(newCachedData[currentWeekKey].hrvData);
+
+      // console.log('Cached Data Keys:', Object.keys(newCachedData));
+      // console.log('Cached Data:', newCachedData);
+    };
+
+    initializeCache();
+  }, [initialDateWindow, initialBpmData, initialStepData, initialCalorieData, initialSleepData, hrvHourData, dbStartDate]);
+
+
+
+  // useEffect(() => {
+  //   if (dateWindow) {
+  //     const loadData = async () => {
+  //       const weekStart = startOfWeek(dateWindow.start, { weekStartsOn: 1 });
+  //       const weekEnd = endOfWeek(dateWindow.start, { weekStartsOn: 1 });
         
-        await fetchWeekData(weekStart, weekEnd);
-        await prefetchAdjacentWeeks(weekStart, weekEnd);
+  //       const data = await fetchAdditionalData(weekStart, weekEnd);
+        
+  //       const weekKey = format(weekStart, 'yyyy-MM-dd');
+  //       setCachedData(prev => ({ ...prev, [weekKey]: data }));
+        
+  //       setBpmData(data.bpmData);
+  //       setStepData(data.stepData);
+  //       setCalorieData(data.calorieData);
+  //       setSleepData(data.sleepData);
+  //       setLocalHrvData(data.hrvData);
+  //     };
   
-        const weekKey = format(weekStart, 'yyyy-MM-dd');
-        if (cachedData[weekKey]) {
-          setBpmData(cachedData[weekKey].bpmData);
-          setStepData(cachedData[weekKey].stepData);
-          setCalorieData(cachedData[weekKey].calorieData);
-          setSleepData(cachedData[weekKey].sleepData);
-          setLocalHrvData(cachedData[weekKey].hrvData);
-        }
-      };
-  
-      loadData();
-    }
-  }, [dateWindow, fetchWeekData, prefetchAdjacentWeeks, cachedData]);
+  //     loadData();
+  //   }
+  // }, [dateWindow, fetchAdditionalData]);
 
 
   useEffect(() => {
     if (dateWindow) {
       const loadData = async () => {
         const weekKey = format(startOfWeek(dateWindow.start, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+
+        console.log(`weekKey ; ; ; ; ; ${weekKey}`)
         
         //console.log("Attempting to load data for week:", weekKey);
         
@@ -363,6 +460,56 @@ const MultiChart: React.FC<MultiChartProps> = ({
   //   });
   // }, [dateRange, dbStartDate, dbEndDate, cachedData]);
 
+  // const moveDate = useCallback(async (direction: 'forward' | 'backward') => {
+  //   setDateWindow(prevWindow => {
+  //     if (!prevWindow || !dbStartDate || !dbEndDate) return prevWindow;
+  
+  //     const days = dateRange === '7' ? 7 : 1;
+  //     let newStart, newEnd;
+  
+  //     if (dateRange === '7') {
+  //       newStart = direction === 'forward' 
+  //         ? addDays(prevWindow.start, 7) 
+  //         : subDays(prevWindow.start, 7);
+  //       newEnd = endOfWeek(newStart, { weekStartsOn: 1 });
+  //     } else {
+  //       // For 1-day range, move based on the end date
+  //       newEnd = direction === 'forward' 
+  //         ? addDays(prevWindow.end, 1) 
+  //         : subDays(prevWindow.end, 1);
+  //       newStart = startOfDay(newEnd);
+  //     }
+  
+  //     // Ensure we don't go beyond the available data range
+  //     if (newStart < dbStartDate) {
+  //       newStart = dbStartDate;
+  //       newEnd = dateRange === '7' ? endOfWeek(newStart, { weekStartsOn: 1 }) : endOfDay(newStart);
+  //     }
+  //     if (newEnd > dbEndDate) {
+  //       newEnd = dbEndDate;
+  //       newStart = dateRange === '7' ? startOfWeek(newEnd, { weekStartsOn: 1 }) : startOfDay(newEnd);
+  //     }
+  
+  //     // Load data for the new date range
+  //     const weekKey = format(startOfWeek(newStart, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  //     if (cachedData[weekKey]) {
+  //       setBpmData(cachedData[weekKey].bpmData);
+  //       setStepData(cachedData[weekKey].stepData);
+  //       setCalorieData(cachedData[weekKey].calorieData);
+  //       setSleepData(cachedData[weekKey].sleepData);
+  //       setLocalHrvData(cachedData[weekKey].hrvData);
+  //     } else {
+  //       // If data is not cached, you might want to fetch it here
+  //       // This depends on how you've implemented data fetching in your app
+  //     }
+  
+  //     return { 
+  //       start: newStart, 
+  //       end: newEnd 
+  //     };
+  //   });
+  // }, [dateRange, dbStartDate, dbEndDate, cachedData]);
+
   const moveDate = useCallback(async (direction: 'forward' | 'backward') => {
     setDateWindow(prevWindow => {
       if (!prevWindow || !dbStartDate || !dbEndDate) return prevWindow;
@@ -376,14 +523,12 @@ const MultiChart: React.FC<MultiChartProps> = ({
           : subDays(prevWindow.start, 7);
         newEnd = endOfWeek(newStart, { weekStartsOn: 1 });
       } else {
-        // For 1-day range, move based on the end date
         newEnd = direction === 'forward' 
           ? addDays(prevWindow.end, 1) 
           : subDays(prevWindow.end, 1);
         newStart = startOfDay(newEnd);
       }
   
-      // Ensure we don't go beyond the available data range
       if (newStart < dbStartDate) {
         newStart = dbStartDate;
         newEnd = dateRange === '7' ? endOfWeek(newStart, { weekStartsOn: 1 }) : endOfDay(newStart);
@@ -393,17 +538,50 @@ const MultiChart: React.FC<MultiChartProps> = ({
         newStart = dateRange === '7' ? startOfWeek(newEnd, { weekStartsOn: 1 }) : startOfDay(newEnd);
       }
   
-      // Load data for the new date range
-      const weekKey = format(startOfWeek(newStart, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-      if (cachedData[weekKey]) {
-        setBpmData(cachedData[weekKey].bpmData);
-        setStepData(cachedData[weekKey].stepData);
-        setCalorieData(cachedData[weekKey].calorieData);
-        setSleepData(cachedData[weekKey].sleepData);
-        setLocalHrvData(cachedData[weekKey].hrvData);
+      const weekStart = startOfWeek(newStart, { weekStartsOn: 1 });
+      const threeWeeksStart = subWeeks(weekStart, 1);
+      const threeWeeksEnd = addWeeks(weekStart, 1);
+  
+      // Check if we need to fetch new data
+      const weeksToFetch: WeekRange[] = [];
+      for (let i = 0; i < 3; i++) {
+        const currentWeekStart = addWeeks(threeWeeksStart, i);
+        const weekKey = format(currentWeekStart, 'yyyy-MM-dd');
+        if (!cachedData[weekKey]) {
+          weeksToFetch.push({ start: currentWeekStart, end: addWeeks(currentWeekStart, 1) });
+        }
+      }
+  
+      if (weeksToFetch.length > 0) {
+        // Fetch data for missing weeks
+        Promise.all(weeksToFetch.map(week => 
+          fetchAdditionalData(week.start, week.end)
+        )).then(results => {
+          const newCachedData = { ...cachedData };
+          results.forEach((data, index) => {
+            const weekKey = format(weeksToFetch[index].start, 'yyyy-MM-dd');
+            newCachedData[weekKey] = data;
+          });
+          setCachedData(newCachedData);
+  
+          // Set data for the current week
+          const currentWeekKey = format(weekStart, 'yyyy-MM-dd');
+          if (newCachedData[currentWeekKey]) {
+            setBpmData(newCachedData[currentWeekKey].bpmData);
+            setStepData(newCachedData[currentWeekKey].stepData);
+            setCalorieData(newCachedData[currentWeekKey].calorieData);
+            setSleepData(newCachedData[currentWeekKey].sleepData);
+            setLocalHrvData(newCachedData[currentWeekKey].hrvData);
+          }
+        });
       } else {
-        // If data is not cached, you might want to fetch it here
-        // This depends on how you've implemented data fetching in your app
+        // If all data is already cached, just set the current week's data
+        const currentWeekKey = format(weekStart, 'yyyy-MM-dd');
+        setBpmData(cachedData[currentWeekKey].bpmData);
+        setStepData(cachedData[currentWeekKey].stepData);
+        setCalorieData(cachedData[currentWeekKey].calorieData);
+        setSleepData(cachedData[currentWeekKey].sleepData);
+        setLocalHrvData(cachedData[currentWeekKey].hrvData);
       }
   
       return { 
@@ -411,7 +589,45 @@ const MultiChart: React.FC<MultiChartProps> = ({
         end: newEnd 
       };
     });
-  }, [dateRange, dbStartDate, dbEndDate, cachedData]);
+  }, [dateRange, dbStartDate, dbEndDate, cachedData, fetchAdditionalData]);
+
+  
+  // const moveDate = useCallback(async (direction: 'forward' | 'backward') => {
+  //   setDateWindow(prevWindow => {
+  //     if (!prevWindow || !dbStartDate || !dbEndDate) return prevWindow;
+  
+  //     const days = dateRange === '7' ? 7 : 1;
+  //     let newStart, newEnd;
+  
+  //     if (dateRange === '7') {
+  //       newStart = direction === 'forward' 
+  //         ? addDays(prevWindow.start, 7) 
+  //         : subDays(prevWindow.start, 7);
+  //       newEnd = endOfWeek(newStart, { weekStartsOn: 1 });
+  //     } else {
+  //       newEnd = direction === 'forward' 
+  //         ? addDays(prevWindow.end, 1) 
+  //         : subDays(prevWindow.end, 1);
+  //       newStart = startOfDay(newEnd);
+  //     }
+  
+  //     if (newStart < dbStartDate) {
+  //       newStart = dbStartDate;
+  //       newEnd = dateRange === '7' ? endOfWeek(newStart, { weekStartsOn: 1 }) : endOfDay(newStart);
+  //     }
+  //     if (newEnd > dbEndDate) {
+  //       newEnd = dbEndDate;
+  //       newStart = dateRange === '7' ? startOfWeek(newEnd, { weekStartsOn: 1 }) : startOfDay(newEnd);
+  //     }
+  
+  //     return { 
+  //       start: newStart, 
+  //       end: newEnd 
+  //     };
+  //   });
+  // }, [dateRange, dbStartDate, dbEndDate]);
+
+
 
   const indexData = useCallback((data: any[]) => {
     //console.log("Indexing data:", data); // 로그 추가
@@ -544,9 +760,9 @@ const MultiChart: React.FC<MultiChartProps> = ({
       )
     );
 
-    //console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
-    //console.log(filteredData)
-    //console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    // console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
+    // console.log(filteredData)
+    // console.log('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
 
     return filteredData;
   }, [timeUnit, dateRange, dateWindow, hourlyBpmData, hourlyStepData, hourlyCalorieData, hourlyHrvData, 

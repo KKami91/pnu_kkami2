@@ -29,6 +29,8 @@ interface AdditionalData {
 interface DataItem {
   ds: string;
   timestamp: string;
+  timestamp_start: string;
+  timestamp_end: string;
   type: string;
   value?: string;
   bpm?: number;
@@ -38,12 +40,6 @@ interface DataItem {
   sdnn?: number;
   min_pred_bpm: number | null;
   pred_rmssd?: number;
-}
-
-interface SleepData {
-  ds_start: string;
-  ds_end: string;
-  stage: number | null;
 }
 
 export default function Home() {
@@ -59,7 +55,7 @@ export default function Home() {
   const [bpmData, setBpmData] = useState<DataItem[]>([]);
   const [stepData, setStepData] = useState<DataItem[]>([]);
   const [calorieData, setCalorieData] = useState<DataItem[]>([]);
-  const [sleepData, setSleepData] = useState<SleepData[]>([]);
+  const [sleepData, setSleepData] = useState<DataItem[]>([]);
 
   const [predictMinuteData, setPredictMinuteData] = useState<any[]>([]);
   const [predictHourData, setPredictHourData] = useState<any[]>([]);
@@ -73,7 +69,6 @@ export default function Home() {
   const [hrvHourData, setHrvHourData] = useState<any[]>([]);
   const [hrvDayData, setHrvDayData] = useState<any[]>([]);
 
-  const [currentDisplayRange, setCurrentDisplayRange] = useState<{ start: Date; end: Date } | null>(null);
   const [initialDateWindow, setInitialDateWindow] = useState<{ start: Date; end: Date } | null>(null);
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
@@ -86,6 +81,10 @@ export default function Home() {
 
   const [dbStartDate, setDbStartDate] = useState<Date | null>(null);
   const [dbEndDate, setDbEndDate] = useState<Date | null>(null);
+
+  const [cachedData, setCachedData] = useState<{
+    [key: string]: AdditionalData
+  }>({});
 
   const fetchDataRanges = async (user: string) => {
     try {
@@ -132,6 +131,8 @@ export default function Home() {
         }
       });
 
+      //console.log(`in fetchData -- : ${JSON.stringify(response).slice(0,100)}`)
+
       const fetchEnd = performance.now()
       //console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
       return response.data;
@@ -142,29 +143,29 @@ export default function Home() {
   };
 
 
-  const processHourlyData = (data: DataItem[], key: 'bpm' | 'step' | 'calorie') => {
-    const hourlyData: { [hour: string]: number[] } = {};
+  // const processHourlyData = (data: DataItem[], key: 'bpm' | 'step' | 'calorie') => {
+  //   const hourlyData: { [hour: string]: number[] } = {};
     
-    data.forEach(item => {
-      const date = parseISO(item.ds);
-      const hourKey = format(date, 'yyyy-MM-dd HH:00:00');
+  //   data.forEach(item => {
+  //     const date = parseISO(item.ds);
+  //     const hourKey = format(date, 'yyyy-MM-dd HH:00:00');
       
-      if (!hourlyData[hourKey]) {
-        hourlyData[hourKey] = [];
-      }
+  //     if (!hourlyData[hourKey]) {
+  //       hourlyData[hourKey] = [];
+  //     }
       
-      if (item[key] != null) {
-        hourlyData[hourKey].push(Number(item[key]));
-      }
-    });
+  //     if (item[key] != null) {
+  //       hourlyData[hourKey].push(Number(item[key]));
+  //     }
+  //   });
     
-    return Object.entries(hourlyData).map(([hour, values]) => ({
-      ds: hour,
-      [key]: key === 'bpm' ? 
-        values.reduce((sum, value) => sum + value, 0) / values.length :
-        values.reduce((sum, value) => sum + value, 0)
-    }));
-  };
+  //   return Object.entries(hourlyData).map(([hour, values]) => ({
+  //     ds: hour,
+  //     [key]: key === 'bpm' ? 
+  //       values.reduce((sum, value) => sum + value, 0) / values.length :
+  //       values.reduce((sum, value) => sum + value, 0)
+  //   }));
+  // };
 
   const handleBrushChange = (domain: [number, number] | null) => {
     //console.log("Brush domain changed2:", domain);
@@ -177,7 +178,6 @@ export default function Home() {
       setIsLoading(true);
       setError(null);
       setShowGraphs(false);  // 그래프를 숨깁니다.
-      setRenderTime(null);   // 렌더 시간을 초기화합니다.
       startTimeRef.current = performance.now();  // 시작 시간을 기록합니다.
       try {
         const selectedDate = new Date(date);
@@ -189,6 +189,8 @@ export default function Home() {
         const calendarendTime = performance.now();
         console.log(`히트맵 일일 HRV 전체 데이터 가져오는데 걸리는 시간 : ${calendarendTime - calendarStartTime} ms`);
 
+
+        console.log(`in handleDateSelect start : ${fetchStartDate} , end : ${fetchEndDate}`)
 
         const firstFetchStartTime = performance.now();
         const data = await fetchAdditionalData(fetchStartDate, fetchEndDate);
@@ -224,7 +226,7 @@ export default function Home() {
       const featureHourStartTime = performance.now()
       const response = await axios.get(`${API_URL}/feature_hour_div/${user}/${start.getTime()}/${end.getTime()}`);
       const featureHourEndTime = performance.now()
-      console.log(`HRV 시간 단위 데이터 계산 걸린 시간 : ${featureHourEndTime - featureHourStartTime} ms`)
+      //console.log(`HRV 시간 단위 데이터 계산 걸린 시간 : ${featureHourEndTime - featureHourStartTime} ms`)
       
       // 응답 데이터 확인 및 처리
       if (response.data && response.data.hour_hrv) {
@@ -242,8 +244,7 @@ export default function Home() {
   const fetchAdditionalData = useCallback((startDate: Date, endDate: Date): Promise<AdditionalData> => {
     if (!selectedUser) return Promise.resolve({ bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] });
 
-    //console.log(`---- ${startDate}`)
-    //console.log(`---- ${endDate}`)
+    console.log(`@@@@@@@@@@@@@@@@@@**${startDate}**FETCHADDITIONALDATA**${endDate}**@@@@@@@@@@@@@@@@@@@@@@@`)
   
     return Promise.all([
       fetchData('bpm_test2', selectedUser, startDate, endDate),
@@ -252,15 +253,10 @@ export default function Home() {
       fetchData('sleep_test2', selectedUser, startDate, endDate),
       fetchHrvData(selectedUser, startDate, endDate),
     ])
-
       .then(([bpm, step, calorie, sleep, hrv]) => {
-        // console.log('Fetched BPM Data:', bpm);
-        // console.log('Fetched Step Data:', step);
-        // console.log('Fetched Calorie Data:', calorie);
-        // console.log('Fetched Sleep Data:', sleep);
-        // console.log('Fetched HRV Data:', hrv);
-  
-        // BPM 데이터가 비어있으면 HRV 데이터도 빈 배열로 설정
+
+        //console.log(`in fetchAdditionalData bpm length : ${JSON.stringify(bpm)}`)
+
         const hrvData = bpm.length === 0 ? [] : hrv;
   
         return {
@@ -339,32 +335,32 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    if (showGraphs && startTimeRef.current !== null) {
-      const endTime = performance.now();
-      const totalTime = endTime - startTimeRef.current;
-      setRenderTime(totalTime);
-      startTimeRef.current = null;
-    }
-  }, [showGraphs]);
+  // useEffect(() => {
+  //   if (showGraphs && startTimeRef.current !== null) {
+  //     const endTime = performance.now();
+  //     const totalTime = endTime - startTimeRef.current;
+  //     setRenderTime(totalTime);
+  //     startTimeRef.current = null;
+  //   }
+  // }, [showGraphs]);
 
-  const processedData = useMemo(() => {
-    if (timeUnit === 'hour') {
-      return {
-        bpmData: processHourlyData(bpmData, 'bpm'),
-        stepData: processHourlyData(stepData, 'step'),
-        calorieData: processHourlyData(calorieData, 'calorie'),
-        predictMinuteData: predictHourData
-      };
-    } else {
-      return {
-        bpmData,
-        stepData,
-        calorieData,
-        predictMinuteData: []  // 분 단위에서는 예측 데이터를 사용하지 않음
-      };
-    }
-  }, [bpmData, stepData, calorieData, predictHourData, timeUnit]);
+  // const processedData = useMemo(() => {
+  //   if (timeUnit === 'hour') {
+  //     return {
+  //       bpmData: processHourlyData(bpmData, 'bpm'),
+  //       stepData: processHourlyData(stepData, 'step'),
+  //       calorieData: processHourlyData(calorieData, 'calorie'),
+  //       predictMinuteData: predictHourData
+  //     };
+  //   } else {
+  //     return {
+  //       bpmData,
+  //       stepData,
+  //       calorieData,
+  //       predictMinuteData: []  // 분 단위에서는 예측 데이터를 사용하지 않음
+  //     };
+  //   }
+  // }, [bpmData, stepData, calorieData, predictHourData, timeUnit]);
 
   return (
     <div className="container mx-auto p-4">
@@ -461,11 +457,11 @@ export default function Home() {
               dbEndDate={dbEndDate}
             />
           )}
-          {renderTime !== null && (
+          {/* {renderTime !== null && (
             <div className="mt-4 text-center text-gray-600">
               Total render time: {renderTime.toFixed(2)} ms
             </div>
-          )}
+          )} */}
         {hrvDayData.length > 0 && (
           <div className="mt-8">
             <RmssdCalendar hrvDayData={hrvDayData} />
