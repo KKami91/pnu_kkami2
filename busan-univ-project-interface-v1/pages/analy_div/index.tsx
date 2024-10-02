@@ -134,7 +134,7 @@ export default function Home() {
       //console.log(`in fetchData -- : ${JSON.stringify(response).slice(0,100)}`)
 
       const fetchEnd = performance.now()
-      console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
+      console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}, ${response.data.length()}`)
       return response.data;
     } catch (error) {
       console.error(`Error fetching ${collection} data:`, error);
