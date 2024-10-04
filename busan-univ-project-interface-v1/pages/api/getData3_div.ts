@@ -46,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         timestamp: { $gte: start, $lte: end }
       };
 
-      if (collection === 'sleep_test') {
+      if (collection === 'sleep_test3') {
         query = {
           user_email,
           timestamp_start: { $gte: start, $lte: end }

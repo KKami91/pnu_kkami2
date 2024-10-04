@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const client = await MongoClient.connect(uri);
       const db = client.db('heart_rate_db');
-      const collections = ['bpm_test2', 'step_test2', 'calorie_test2'];
+      const collections = ['bpm_test3', 'step_test3', 'calorie_test3'];
 
       const memos = [];
 

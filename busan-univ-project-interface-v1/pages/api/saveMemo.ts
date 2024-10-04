@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const client = await MongoClient.connect(uri);
       const db = client.db('heart_rate_db');
-      const collection = db.collection(`${dataType}_test2`);
+      const collection = db.collection(`${dataType}_test3`);
 
       const result = await collection.updateOne(
         { user_email, timestamp: new Date(timestamp) },
