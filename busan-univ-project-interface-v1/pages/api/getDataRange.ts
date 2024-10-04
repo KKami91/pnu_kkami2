@@ -43,11 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
       ];
 
-      
-
       const result = await dataCollection.aggregate(pipeline).toArray();
-
-      console.log(`in getDataRange.ts - pipeline result2 : ${result[0].startDate}`)
 
       if (result.length > 0) {
         res.status(200).json({
@@ -55,7 +51,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           endDate: adjustTimeZone(result[0].endDate)
         });
       } else {
-        res.status(404).json({ error: 'No data found' });
+        // Instead of sending a 404, we'll send a 200 with null dates
+        res.status(200).json({
+          startDate: null,
+          endDate: null
+        });
       }
     } catch (error) {
       console.error('Database error:', error);
