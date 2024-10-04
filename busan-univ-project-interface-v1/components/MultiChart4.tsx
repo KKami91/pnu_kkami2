@@ -92,8 +92,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
   useEffect(() => {
     //console.log(`cachedData in useEffect -> ${Object.keys(cachedData)}`)
-    console.log('Cached Data Keys:', Object.keys(cachedData));
-    console.log('Cached Data:', cachedData);
+    //console.log('Cached Data Keys:', Object.keys(cachedData));
+    //console.log('Cached Data:', cachedData);
     //console.log(`cachedData in useEffect -> ${}`)
   })
 
@@ -307,7 +307,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
       const loadData = async () => {
         const weekKey = format(startOfWeek(dateWindow.start, { weekStartsOn: 1 }), 'yyyy-MM-dd');
 
-        console.log(`weekKey ; ; ; ; ; ${weekKey}`)
+        //console.log(`weekKey ; ; ; ; ; ${weekKey}`)
         
         //console.log("Attempting to load data for week:", weekKey);
         

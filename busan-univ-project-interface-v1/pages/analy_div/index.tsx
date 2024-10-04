@@ -190,7 +190,7 @@ export default function Home() {
         console.log(`히트맵 일일 HRV 전체 데이터 가져오는데 걸리는 시간 : ${calendarendTime - calendarStartTime} ms`);
 
 
-        console.log(`in handleDateSelect start : ${fetchStartDate} , end : ${fetchEndDate}`)
+        //console.log(`in handleDateSelect start : ${fetchStartDate} , end : ${fetchEndDate}`)
 
         const firstFetchStartTime = performance.now();
         const data = await fetchAdditionalData(fetchStartDate, fetchEndDate);
@@ -244,7 +244,7 @@ export default function Home() {
   const fetchAdditionalData = useCallback((startDate: Date, endDate: Date): Promise<AdditionalData> => {
     if (!selectedUser) return Promise.resolve({ bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] });
 
-    console.log(`@@@@@@@@@@@@@@@@@@**${startDate}**FETCHADDITIONALDATA**${endDate}**@@@@@@@@@@@@@@@@@@@@@@@`)
+    //console.log(`@@@@@@@@@@@@@@@@@@**${startDate}**FETCHADDITIONALDATA**${endDate}**@@@@@@@@@@@@@@@@@@@@@@@`)
   
     return Promise.all([
       fetchData('bpm_test3', selectedUser, startDate, endDate),
