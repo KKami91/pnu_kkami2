@@ -82,7 +82,7 @@ async function connectToDatabase() {
         
         //console.log(`**********${collection} result 길이 : ${result.length} & 시간대 : ${startDate} ~ ${endDate}********`);
         const endTime = performance.now();
-        console.log(`in getData3_agg -> result 걸린 시간 : ${endTime - startTime}`)
+        console.log(`in getData3_agg -> ${collection} result 걸린 시간 : ${endTime - startTime} // ${result.length}`)
   
         if (result) {
           res.status(200).json(result);
