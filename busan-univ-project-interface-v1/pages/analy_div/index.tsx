@@ -86,6 +86,26 @@ export default function Home() {
     [key: string]: AdditionalData
   }>({});
 
+  // const fetchDataRanges = async (user: string) => {
+  //   try {
+  //     const collections = ['bpm_test2', 'step_test2', 'calorie_test2'];
+  //     const ranges = await Promise.all(collections.map(async (collection) => {
+  //       const response = await axios.get('/api/getDataRange', {
+  //         params: { collection, user_email: user }
+  //       });
+  //       return response.data;
+  //     }));
+
+  //     const allStartDates = ranges.map(r => new Date(r.startDate).getTime());
+  //     const allEndDates = ranges.map(r => new Date(r.endDate).getTime());
+
+  //     setDbStartDate(startOfWeek(new Date(Math.min(...allStartDates)), { weekStartsOn: 1 }));
+  //     setDbEndDate(endOfWeek(new Date(Math.max(...allEndDates)), {weekStartsOn: 1 }));
+  //   } catch (error) {
+  //     console.error('Error fetching data ranges:', error);
+  //   }
+  // };
+
   const fetchDataRanges = async (user: string) => {
     try {
       const collections = ['bpm_test3', 'step_test3', 'calorie_test3'];
@@ -132,6 +152,8 @@ export default function Home() {
       });
 
       //console.log(`in fetchData -- : ${JSON.stringify(response).slice(0,100)}`)
+
+      //console.log(`in fetchData -->>>>>${collection} ${JSON.stringify(response.data)}`)
 
       const fetchEnd = performance.now()
       console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
@@ -190,7 +212,7 @@ export default function Home() {
         console.log(`히트맵 일일 HRV 전체 데이터 가져오는데 걸리는 시간 : ${calendarendTime - calendarStartTime} ms`);
 
 
-        //console.log(`in handleDateSelect start : ${fetchStartDate} , end : ${fetchEndDate}`)
+        console.log(`in handleDateSelect start : ${fetchStartDate} , end : ${fetchEndDate}`)
 
         const firstFetchStartTime = performance.now();
         const data = await fetchAdditionalData(fetchStartDate, fetchEndDate);
@@ -226,7 +248,7 @@ export default function Home() {
       const featureHourStartTime = performance.now()
       const response = await axios.get(`${API_URL}/feature_hour_div/${user}/${start.getTime()}/${end.getTime()}`);
       const featureHourEndTime = performance.now()
-      console.log(`HRV 시간 단위 데이터 계산 걸린 시간 : ${featureHourEndTime - featureHourStartTime} ms`)
+      //console.log(`HRV 시간 단위 데이터 계산 걸린 시간 : ${featureHourEndTime - featureHourStartTime} ms`)
       
       // 응답 데이터 확인 및 처리
       if (response.data && response.data.hour_hrv) {
@@ -244,7 +266,7 @@ export default function Home() {
   const fetchAdditionalData = useCallback((startDate: Date, endDate: Date): Promise<AdditionalData> => {
     if (!selectedUser) return Promise.resolve({ bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] });
 
-    //console.log(`@@@@@@@@@@@@@@@@@@**${startDate}**FETCHADDITIONALDATA**${endDate}**@@@@@@@@@@@@@@@@@@@@@@@`)
+    console.log(`@@@@@@@@@@@@@@@@@@**${startDate}**FETCHADDITIONALDATA**${endDate}**@@@@@@@@@@@@@@@@@@@@@@@`)
   
     return Promise.all([
       fetchData('bpm_test3', selectedUser, startDate, endDate),
