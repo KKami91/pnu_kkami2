@@ -46,17 +46,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         timestamp: { $gte: start, $lte: end }
       };
 
-      if (collection === 'sleep_test3') {
+      let projectStage: any = {
+        _id: 0,
+        timestamp: 1,
+        timestamp_start: 1,
+        timestamp_end: 1,
+        value: 1
+      }
+
+      if (collection === 'sleep_test4') {
         matchStage = {
           user_email,
           timestamp_start: { $gte: start, $lte: end }
         };
       }
 
-      const pipeline = [
-        { $match: matchStage },
-      ]
+    //   if (collection === 'sleep_test4') {
+    //     prject = {
+    //       user_email,
+    //       timestamp_start: { $gte: start, $lte: end }
+    //     };
+    //   }
 
+      const pipeline = [
+        { 
+            $match: matchStage 
+        },
+        { 
+            $project: projectStage
+        }
+      ]
       const result = await dataCollection.aggregate(pipeline).toArray();
       
       console.log(`**********${collection} result 길이 : ${result.length} & 시간대 : ${startDate} ~ ${endDate}********`);
