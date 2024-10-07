@@ -108,7 +108,7 @@ export default function Home() {
 
   const fetchDataRanges = async (user: string) => {
     try {
-      const collections = ['bpm_test3', 'step_test3', 'calorie_test3'];
+      const collections = ['bpm_test4', 'step_test4', 'calorie_test4'];
       const ranges = await Promise.all(collections.map(async (collection) => {
         const response = await axios.get('/api/getDataRange', {
           params: { collection, user_email: user }
@@ -142,7 +142,7 @@ export default function Home() {
   const fetchData = async (collection: string, user: string, startDate: Date, endDate: Date) => {
     try {
       const fetchStart = performance.now()
-      const response = await axios.get('/api/getData3_agg', {
+      const response = await axios.get('/api/getData3_div', {
         params: { 
           collection, 
           user_email: user, 
@@ -153,10 +153,10 @@ export default function Home() {
 
       //console.log(`in fetchData -- : ${JSON.stringify(response).slice(0,100)}`)
 
-      //console.log(`in fetchData -->>>>>${collection} ${JSON.stringify(response.data)}`)
+      console.log(`in fetchData -->>>>>${collection} ${Object.keys(response.data)}`)
 
       const fetchEnd = performance.now()
-      console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
+      //console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
       return response.data;
     } catch (error) {
       console.error(`Error fetching ${collection} data:`, error);
@@ -269,10 +269,10 @@ export default function Home() {
     console.log(`@@@@@@@@@@@@@@@@@@**${startDate}**FETCHADDITIONALDATA**${endDate}**@@@@@@@@@@@@@@@@@@@@@@@`)
   
     return Promise.all([
-      fetchData('bpm_test3', selectedUser, startDate, endDate),
-      fetchData('step_test3', selectedUser, startDate, endDate),
-      fetchData('calorie_test3', selectedUser, startDate, endDate),
-      fetchData('sleep_test3', selectedUser, startDate, endDate),
+      fetchData('bpm_test4', selectedUser, startDate, endDate),
+      fetchData('step_test4', selectedUser, startDate, endDate),
+      fetchData('calorie_test4', selectedUser, startDate, endDate),
+      fetchData('sleep_test4', selectedUser, startDate, endDate),
       fetchHrvData(selectedUser, startDate, endDate),
     ])
       .then(([bpm, step, calorie, sleep, hrv]) => {
