@@ -122,7 +122,7 @@ export default function Home() {
   const fetchData = async (collection: string, user: string, startDate: Date, endDate: Date) => {
     try {
       const fetchStart = performance.now()
-      const response = await axios.get('/api/getData3_div', {
+      const response = await axios.get('/api/getData3_agg', {
         params: { 
           collection, 
           user_email: user, 

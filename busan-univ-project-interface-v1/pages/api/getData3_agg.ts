@@ -41,22 +41,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       //console.log(`In getData3_div Date Range : ${start} ~ ${end}`);
 
-      let query: any = {
+      let matchStage: any = {
         user_email,
         timestamp: { $gte: start, $lte: end }
       };
 
       if (collection === 'sleep_test3') {
-        query = {
+        matchStage = {
           user_email,
           timestamp_start: { $gte: start, $lte: end }
         };
       }
 
-      const result = await dataCollection.find(query).toArray();
-      //dataCollection.aggregate()
+      const pipeline = [
+        { $match: matchStage },
+      ]
+
+      const result = await dataCollection.aggregate(pipeline).toArray();
       
-      console.log(`${collection} result 길이 : ${result.length} & 시간대 : ${startDate} ~ ${endDate}`);
+      console.log(`**********${collection} result 길이 : ${result.length} & 시간대 : ${startDate} ~ ${endDate}********`);
 
       const endTime = performance.now();
 
