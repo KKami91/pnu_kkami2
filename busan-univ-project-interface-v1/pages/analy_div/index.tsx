@@ -7,7 +7,8 @@ import { LaptopMinimal, LayoutGrid, BarChart } from 'lucide-react';
 import { parseISO, format, subSeconds, startOfHour, endOfHour, startOfWeek, endOfWeek, addDays, subDays, isSunday, nextSunday, endOfDay, startOfDay, previousSunday, previousMonday, isSaturday, isFriday, isFuture, nextMonday, nextSaturday } from 'date-fns';
 import RmssdCalendar from '../../components/RmssdCalendar';
 import SdnnCalendar from '../../components/SdnnCalendar';
-
+import SdnnCalHeatmap from '../../components/CalHeatMapSdnn'
+import RmssdCalHeatmap from '../../components/CalHeatMapRmssd'
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'sueun4701@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
@@ -486,8 +487,10 @@ export default function Home() {
           )} */}
         {hrvDayData.length > 0 && (
           <div className="mt-8">
-            <RmssdCalendar hrvDayData={hrvDayData} />
-            <SdnnCalendar hrvDayData={hrvDayData} />
+            <RmssdCalHeatmap hrvDayData={hrvDayData} />
+            <SdnnCalHeatmap hrvDayData={hrvDayData} />
+            {/* <RmssdCalendar hrvDayData={hrvDayData} />
+            <SdnnCalendar hrvDayData={hrvDayData} /> */}
           </div>
         )}
         </>

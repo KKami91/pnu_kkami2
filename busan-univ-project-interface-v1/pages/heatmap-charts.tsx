@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import RmssdCalendar from '../components/RmssdCalendar';
 import SdnnCalendar from '../components/SdnnCalendar';
+import SdnnCalHeatmap from '../components/CalHeatMapSdnn'
+import RmssdCalHeatmap from '../components/CalHeatMapRmssd'
 
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
 
@@ -60,10 +62,10 @@ export default function HeatmapCharts() {
       overflow: 'auto'
     }}>
       <div style={{ width: '100%', marginBottom: '20px' }}>
-        <RmssdCalendar hrvDayData={hrvDayData} />
+        <RmssdCalHeatmap hrvDayData={hrvDayData} />
       </div>
       <div style={{ width: '100%' }}>
-        <SdnnCalendar hrvDayData={hrvDayData} />
+        <SdnnCalHeatmap hrvDayData={hrvDayData} />
       </div>
     </div>
   );
