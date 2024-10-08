@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import CalHeatmap from 'cal-heatmap';
 import 'cal-heatmap/cal-heatmap.css';
+import { addDays } from 'date-fns'
 
 interface HrvDayData {
     ds: string;
@@ -62,14 +63,19 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
 
             const newCal = new CalHeatmap() as ICalHeatmap;
 
+            const adjustedData = hrvDayData.map(item => ({
+                ...item,
+                ds: addDays(new Date(item.ds), 1).toISOString().split('T')[0]
+            }));
+
             newCal.paint({
                 data: {
-                    source: hrvDayData,
+                    source: adjustedData,
                     x: 'ds',
                     y: 'day_rmssd',
                 },
                 date: {
-                    start: new Date(hrvDayData[0].ds),
+                    start: new Date(adjustedData[0].ds),
                 },
                 range: range,
                 domain: {
@@ -173,25 +179,30 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
             </div>
             <div className="flex justify-center" ref={calendarEl}></div>
             <div className="mt-4 flex justify-center space-x-4">
-                <div className="flex items-center">
-                    <div className="w-4 h-4 bg-blue-400 mr-2"></div>
+                <div className="flex items-center flex-col mr-2">
                     <span>건강 (40+)</span>
+                    <div className="w-4 h-4 bg-blue-400 mt-2"></div>
+                    
                 </div>
-                <div className="flex items-center">
-                    <div className="w-4 h-4 bg-green-400 mr-2"></div>
+                <div className="flex items-center flex-col mr-2">
                     <span>정상 (20-40)</span>
+                    <div className="w-4 h-4 bg-green-400 mt-2"></div>
+                    
                 </div>
-                <div className="flex items-center">
-                    <div className="w-4 h-4 bg-yellow-400 mr-2"></div>
+                <div className="flex items-center flex-col">
                     <span>관리 필요 (10-20)</span>
+                    <div className="w-4 h-4 bg-yellow-400 mt-2"></div>
+                    
                 </div>
-                <div className="flex items-center">
-                    <div className="w-4 h-4 bg-red-400 mr-2"></div>
+                <div className="flex items-center flex-col">
                     <span>전문의 상담 (0-10)</span>
+                    <div className="w-4 h-4 bg-red-400 mt-2"></div>
+                    
                 </div>
-                <div className="flex items-center">
-                    <div className="w-4 h-4 bg-gray-400 mr-2"></div>
+                <div className="flex items-center flex-col">
                     <span>데이터 없음</span>
+                    <div className="w-4 h-4 bg-gray-400 mt-2"></div>
+                    
                 </div>
             </div>
 

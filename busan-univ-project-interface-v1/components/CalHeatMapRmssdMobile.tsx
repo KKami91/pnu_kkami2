@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import CalHeatmap from 'cal-heatmap';
 import 'cal-heatmap/cal-heatmap.css';
-import { addHours } from 'date-fns'
+import { addDays } from 'date-fns'
 
 interface HrvDayData {
     ds: string;
@@ -24,10 +24,6 @@ interface CalHeatmapData {
     v: number | null;
 }
 
-const adjustTimeZone = (date: Date) => {
-    return addHours(date, 9);
-  };
-
 const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
     const calendarEl = useRef<HTMLDivElement>(null);
     const [cal, setCal] = useState<ICalHeatmap | null>(null);
@@ -38,17 +34,23 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
         if (calendarEl.current && hrvDayData.length > 0) {
             const newCal = new CalHeatmap() as ICalHeatmap;
 
-            console.log(`-=-=-=-=- ${JSON.stringify(hrvDayData)}`)
-            console.log(`------- ${adjustTimeZone(new Date(hrvDayData[0].ds))}`)
+            const adjustedData = hrvDayData.map(item => ({
+                ...item,
+                ds: addDays(new Date(item.ds), 1).toISOString().split('T')[0]
+            }));
+
+            console.log(new Date(adjustedData[0].ds))
+
 
             newCal.paint({
                 data: {
-                    source: hrvDayData,
+                    source: adjustedData,
                     x: 'ds',
                     y: 'day_rmssd',
                 },
                 date: {
-                    start: adjustTimeZone(new Date(hrvDayData[0].ds)),
+                    start: new Date(adjustedData[0].ds),
+                    
                 },
                 range: 1,
                 domain: {
