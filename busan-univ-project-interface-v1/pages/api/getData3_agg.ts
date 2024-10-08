@@ -7,7 +7,10 @@ let client: MongoClient | null = null;
 
 async function connectToDatabase() {
     if (!client) {
-      client = new MongoClient(uri);
+      client = new MongoClient(uri, {
+        maxPoolSize: 10, // 연결 풀 크기 제한
+        minPoolSize: 5,  // 최소 연결 유지
+      });
       await client.connect();
     }
     return client;
