@@ -100,7 +100,7 @@ export default function Home() {
   //     const allEndDates = ranges.map(r => new Date(r.endDate).getTime());
 
   //     setDbStartDate(startOfWeek(new Date(Math.min(...allStartDates)), { weekStartsOn: 1 }));
-  //     setDbEndDate(endOfWeek(new Date(Math.max(...allEndDates)), {weekStartsOn: 1 }));
+  //     setDbEndDate(endOfWeek(new Date2(Math.max(...allEndDates)), {weekStartsOn: 1 }));
   //   } catch (error) {
   //     console.error('Error fetching data ranges:', error);
   //   }
