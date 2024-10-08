@@ -64,9 +64,9 @@ export default function HeatmapCharts() {
       <div style={{ width: '100%', marginBottom: '20px' }}>
         <RmssdCalHeatmap hrvDayData={hrvDayData} />
       </div>
-      <div style={{ width: '100%' }}>
+      {/* <div style={{ width: '100%' }}>
         <SdnnCalHeatmap hrvDayData={hrvDayData} />
-      </div>
+      </div> */}
     </div>
   );
 }

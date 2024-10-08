@@ -16,6 +16,7 @@ interface ICalHeatmap {
     on: (event: string, callback: (event: any) => void) => void;
     previous: () => void;
     next: () => void;
+    destroy: () => void;
 }
 
 interface CalHeatmapData {
@@ -28,9 +29,37 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
     const [cal, setCal] = useState<ICalHeatmap | null>(null);
     const [selectedData, setSelectedData] = useState<{ date: Date; rmssd: number | null } | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [range, setRange] = useState(1);
+
+    const updateRange = () => {
+        //console.log(window)
+        if (window.matchMedia('(min-width: 2160px)').matches) {
+            setRange(5)
+        } else if (window.matchMedia('(min-width: 1536px)').matches) {
+            setRange(4);  // 2xl
+        } else if (window.matchMedia('(min-width: 1280px)').matches) {
+            setRange(3);  // xl
+        } else if (window.matchMedia('(min-width: 1024px)').matches) {
+            setRange(2);  // lg
+        } else {
+            setRange(1);  // md and smaller
+        }
+    };
+
+    useEffect(() => {
+        updateRange();
+        window.addEventListener('resize', updateRange);
+        return () => window.removeEventListener('resize', updateRange);
+    }, []);
+
 
     useEffect(() => {
         if (calendarEl.current && hrvDayData.length > 0) {
+            //const newCal = new CalHeatmap() as ICalHeatmap;
+            if (cal) {
+                cal.destroy();
+            }
+
             const newCal = new CalHeatmap() as ICalHeatmap;
 
             newCal.paint({
@@ -42,7 +71,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
                 date: {
                     start: new Date(hrvDayData[0].ds),
                 },
-                range: 4,
+                range: range,
                 domain: {
                     type: 'month',
                     padding: [10, 10, 10, 10],
@@ -70,11 +99,16 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
             const style = document.createElement('style');
             style.textContent = `
                 .ch-domain-text {
-                    font-size: 16px !important;
+                    font-size: 18px !important;
                     font-weight: bold !important;
                 }
                 .ch-subdomain-text {
                     font-size: 12px !important;
+                }
+                .cal-heatmap-container {
+                    display: flex;
+                    justify-content: center;
+                    margin: 0 auto;
                 }
             `;
             document.head.appendChild(style);
@@ -100,7 +134,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
 
             setCal(newCal);
         }
-    }, [hrvDayData]);
+    }, [hrvDayData, range]);
 
     const handlePrevious = () => {
         cal?.previous();
@@ -137,7 +171,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
                     Next
                 </button>
             </div>
-            <div ref={calendarEl}></div>
+            <div className="flex justify-center" ref={calendarEl}></div>
             <div className="mt-4 flex justify-center space-x-4">
                 <div className="flex items-center">
                     <div className="w-4 h-4 bg-blue-400 mr-2"></div>

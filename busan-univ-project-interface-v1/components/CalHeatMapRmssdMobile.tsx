@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import CalHeatmap from 'cal-heatmap';
 import 'cal-heatmap/cal-heatmap.css';
+import { addHours } from 'date-fns'
 
 interface HrvDayData {
     ds: string;
@@ -23,6 +24,10 @@ interface CalHeatmapData {
     v: number | null;
 }
 
+const adjustTimeZone = (date: Date) => {
+    return addHours(date, 9);
+  };
+
 const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
     const calendarEl = useRef<HTMLDivElement>(null);
     const [cal, setCal] = useState<ICalHeatmap | null>(null);
@@ -33,6 +38,9 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
         if (calendarEl.current && hrvDayData.length > 0) {
             const newCal = new CalHeatmap() as ICalHeatmap;
 
+            console.log(`-=-=-=-=- ${JSON.stringify(hrvDayData)}`)
+            console.log(`------- ${adjustTimeZone(new Date(hrvDayData[0].ds))}`)
+
             newCal.paint({
                 data: {
                     source: hrvDayData,
@@ -40,7 +48,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
                     y: 'day_rmssd',
                 },
                 date: {
-                    start: new Date(hrvDayData[0].ds),
+                    start: adjustTimeZone(new Date(hrvDayData[0].ds)),
                 },
                 range: 1,
                 domain: {
@@ -86,7 +94,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
                     if (data.v !== null) {
                         const date = new Date(data.t);
                         const rmssd = data.v;
-                        
+
                         setSelectedData({ date, rmssd });
                         setShowModal(true);
                     } else {
@@ -128,7 +136,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
 
     return (
         <div className="p-4 bg-gray-900 text-white">
-            <h2 className="text-xl font-bold mb-4">Daily RMSSD</h2>
+            <h2 className="text-xl font-bold mb-4">스트레스 지수</h2>
             <div className="flex justify-between mb-4">
                 <button onClick={handlePrevious} className="px-4 py-2 bg-blue-500 text-white rounded">
                     Previous
@@ -139,21 +147,21 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
             </div>
             <div className="flex justify-center" ref={calendarEl}></div>
             <div className="mt-4 flex justify-center space-x-4">
-                <div className="flex items-center">
-                    <div className="w-4 h-4 bg-blue-400 mr-2"></div>
-                    <span>건강</span>
+                <div className="flex items-center flex-col mr-2">
+                    <span className='text-[18px]'>건강</span>
+                    <div className="w-4 h-4 bg-blue-400 mt-2"></div>
                 </div>
-                <div className="flex items-center">
-                    <div className="w-4 h-4 bg-green-400 mr-2"></div>
-                    <span>정상</span>
+                <div className="flex items-center flex-col mr-2">
+                    <span className='text-[18px]'>정상</span>
+                    <div className="w-4 h-4 bg-green-400 mt-2"></div>
                 </div>
-                <div className="flex items-center">
-                    <div className="w-4 h-4 bg-yellow-400 mr-2"></div>
-                    <span>관리 필요</span>
+                <div className="flex items-center flex-col">
+                    <span className='text-[18px]'>관리 필요</span>
+                    <div className="w-4 h-4 bg-yellow-400 mt-2"></div>
                 </div>
-                <div className="flex items-center">
-                    <div className="w-4 h-4 bg-red-400 mr-2"></div>
-                    <span>전문의 상담</span>
+                <div className="flex items-center flex-col">
+                    <span className='text-[18px]'>전문의 상담</span>
+                    <div className="w-4 h-4 bg-red-400 mt-2"></div>
                 </div>
                 {/* <div className="flex items-center">
                     <div className="w-4 h-4 bg-gray-400 mr-2"></div>
@@ -164,9 +172,9 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
             {showModal && selectedData && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                     <div className={`${getBackgroundColorClass(selectedData.rmssd)} text-black p-8 rounded-lg`}>
-                        <h3 className="text-2xl font-bold mb-4">RMSSD 정보</h3>
+                        <h3 className="text-2xl font-bold mb-4">스트레스 지수</h3>
                         <p className="mb-2">날짜: {selectedData.date.toLocaleDateString()}</p>
-                        <p className="mb-2">RMSSD: {selectedData.rmssd !== null ? selectedData.rmssd.toFixed(2) : '데이터 없음'}</p>
+                        <p className="mb-2">스트레스 지수: {selectedData.rmssd !== null ? selectedData.rmssd.toFixed(2) : '데이터 없음'}</p>
                         <p className="mb-4">{getHealthStatus(selectedData.rmssd)}</p>
                         <button
                             className="mt-4 bg-gray-800 text-white px-4 py-2 rounded"
