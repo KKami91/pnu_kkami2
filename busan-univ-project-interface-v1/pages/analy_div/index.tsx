@@ -4,7 +4,7 @@ import MultiChart from '../../components/MultiChart4';
 import CombinedChart from '../../components/CombinedChart3';
 import { SkeletonLoader } from '../../components/SkeletonLoaders3';
 import { LaptopMinimal, LayoutGrid, BarChart } from 'lucide-react';
-import { parseISO, format, startOfHour, endOfHour, startOfWeek, endOfWeek, addDays, subDays, isSunday, nextSunday, endOfDay, startOfDay, previousSunday, previousMonday, isSaturday, isFriday, isFuture, nextMonday, nextSaturday } from 'date-fns';
+import { parseISO, format, subSeconds, startOfHour, endOfHour, startOfWeek, endOfWeek, addDays, subDays, isSunday, nextSunday, endOfDay, startOfDay, previousSunday, previousMonday, isSaturday, isFriday, isFuture, nextMonday, nextSaturday } from 'date-fns';
 import RmssdCalendar from '../../components/RmssdCalendar';
 import SdnnCalendar from '../../components/SdnnCalendar';
 
@@ -156,7 +156,7 @@ export default function Home() {
       //console.log(`in fetchData -->>>>>${collection} ${JSON.stringify(response.data)}`)
 
       const fetchEnd = performance.now()
-      console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart}`)
+      console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart} // ${startDate} ~ ${endDate}`)
       return response.data;
     } catch (error) {
       console.error(`Error fetching ${collection} data:`, error);
@@ -267,13 +267,13 @@ export default function Home() {
     if (!selectedUser) return Promise.resolve({ bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] });
 
     console.log(`@@@@@@@@@@@@@@@@@@**${startDate}**FETCHADDITIONALDATA**${endDate}**@@@@@@@@@@@@@@@@@@@@@@@`)
-  
+    const subSecondsEndDate = subSeconds(endDate, 1)
     return Promise.all([
-      fetchData('bpm_test3', selectedUser, startDate, endDate),
-      fetchData('step_test3', selectedUser, startDate, endDate),
-      fetchData('calorie_test3', selectedUser, startDate, endDate),
-      fetchData('sleep_test3', selectedUser, startDate, endDate),
-      fetchHrvData(selectedUser, startDate, endDate),
+      fetchData('bpm_test3', selectedUser, startDate, subSecondsEndDate),
+      fetchData('step_test3', selectedUser, startDate, subSecondsEndDate),
+      fetchData('calorie_test3', selectedUser, startDate, subSecondsEndDate),
+      fetchData('sleep_test3', selectedUser, startDate, subSecondsEndDate),
+      fetchHrvData(selectedUser, startDate, subSecondsEndDate),
     ])
       .then(([bpm, step, calorie, sleep, hrv]) => {
 

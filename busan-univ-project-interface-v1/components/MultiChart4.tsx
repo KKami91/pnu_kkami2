@@ -310,16 +310,19 @@ const MultiChart: React.FC<MultiChartProps> = ({
         //console.log(`weekKey ; ; ; ; ; ${weekKey}`)
         
         //console.log("Attempting to load data for week:", weekKey);
+
+        //console.log(cachedData)
+        console.log(`dateWindow .. ${dateWindow.start} ~ ${dateWindow.end}`)
         
         if (cachedData[weekKey]) {
-          //console.log("Using cached data for:", weekKey);
+          console.log("Using cached data for:", weekKey);
           setBpmData(cachedData[weekKey].bpmData);
           setStepData(cachedData[weekKey].stepData);
           setCalorieData(cachedData[weekKey].calorieData);
           setSleepData(cachedData[weekKey].sleepData);
           setLocalHrvData(cachedData[weekKey].hrvData);
         } else {
-          //console.log("Fetching new data for:", weekKey);
+          console.log("Fetching new data for:", weekKey);
           const newData = await fetchAdditionalData(dateWindow.start, dateWindow.end);
           setCachedData(prev => ({ ...prev, [weekKey]: newData }));
           setBpmData(newData.bpmData);
@@ -551,9 +554,10 @@ const MultiChart: React.FC<MultiChartProps> = ({
           weeksToFetch.push({ start: currentWeekStart, end: addWeeks(currentWeekStart, 1) });
         }
       }
-  
+      //console.log(`weeksToFetch.length : ${weeksToFetch.length}`)
       if (weeksToFetch.length > 0) {
         // Fetch data for missing weeks
+        
         Promise.all(weeksToFetch.map(week => 
           fetchAdditionalData(week.start, week.end)
         )).then(results => {
