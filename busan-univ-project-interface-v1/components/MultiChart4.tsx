@@ -252,6 +252,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
           sleepData: initialSleepData.filter(d => isWithinInterval(new Date(d.timestamp_start), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
           hrvData: hrvHourData.filter(d => isWithinInterval(new Date(d.ds), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
         };
+        console.log(`newCachedData[weekKey] -------------^^^^^^ ${JSON.stringify(newCachedData[weekKey])}`)
       }
       setCachedData(newCachedData);
 
