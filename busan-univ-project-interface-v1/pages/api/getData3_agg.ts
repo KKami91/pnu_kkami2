@@ -133,8 +133,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const database = client.db('heart_rate_db');
       const dataCollection = database.collection(collection as string);
 
-      const start = adjustTimeZone(startOfDay(parseISO(startDate as string)));
-      const end = adjustTimeZone(endOfDay(parseISO(endDate as string)));
+      // 로컬 전용
+      //const start = adjustTimeZone(startOfDay(parseISO(startDate as string)));
+      //const end = adjustTimeZone(endOfDay(parseISO(endDate as string)));
+
+      // 배포 전용
+      const start = startOfDay(parseISO(startDate as string));
+      const end = endOfDay(parseISO(endDate as string));
 
       console.log(`%%%%%%%%%%%%%% In getData3_div convert date : ${start} ~ ${end}`);
 
@@ -196,5 +201,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
+
 
 
