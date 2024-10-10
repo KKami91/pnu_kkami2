@@ -69,6 +69,9 @@ const MultiChart: React.FC<MultiChartProps> = ({
   dbEndDate,
   //checkDataExistence: checkDataExistenceFromServer
 }) => {
+
+  console.log(`in multi initialDateWindow ... ${initialDateWindow}`)
+
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('hour');
   const [dateRange, setDateRange] = useState<DateRange>('1');
   const [columnCount, setColumnCount] = useState(2);
@@ -116,8 +119,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
       console.log(`....fetchAdditionalData... ${fetchStartDate} ~ ${fetchEndDate}`)
   
       setDateWindow({ start: moveStartDate, end: moveEndDate });
-      setDateRange('1'); // 1일 보기로 설정
-      setTimeUnit('minute'); // 분 단위로 설정 (필요에 따라 조정)
+      setDateRange('1');
+      setTimeUnit('minute'); 
   
       // 필요한 데이터 불러오기
       fetchAdditionalData(fetchStartDate, fetchEndDate).then((newData) => {
@@ -167,13 +170,16 @@ const MultiChart: React.FC<MultiChartProps> = ({
       const response = await axios.get('/api/getMemos', {
         params: {
           user_email: selectedUser,
-          startDate: adjustTimeZoneAddNine(dateWindow.start),
-          endDate: adjustTimeZoneAddNine(dateWindow.end),
+          //startDate: adjustTimeZoneAddNine(dateWindow.start),
+          //endDate: adjustTimeZoneAddNine(dateWindow.end),
+          startDate: dateWindow.start,
+          endDate: dateWindow.end
         },
       });
 
       const memoData = response.data.reduce((acc: { [key: string]: string }, memo: any) => {
-        const memoTimestamp = adjustTimeZone(new Date(format(memo.timestamp, 'yyyy-MM-dd HH:mm')))
+        //const memoTimestamp = adjustTimeZone(new Date(format(memo.timestamp, 'yyyy-MM-dd HH:mm')))
+        const memoTimestamp = new Date(format(memo.timestamp, 'yyyy-MM-dd HH:mm'))
         acc[`${memo.type}_${memoTimestamp.getTime()}`] = memo.memo;
         return acc;
       }, {});
@@ -190,7 +196,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
         await axios.post('/api/saveMemo', {
           user_email: selectedUser,
           dataType: selectedData.type,
-          timestamp: adjustTimeZoneAddNine(selectedData.timestamp),
+          //timestamp: adjustTimeZoneAddNine(selectedData.timestamp),
+          timestamp: selectedData.timestamp,
           memo,
         });
         setMemos(prev => ({
@@ -221,6 +228,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
       if (initialDateWindow) {
         startDate = initialDateWindow.start;
       } else if (initialBpmData.length > 0) {
+        //startDate = adjustTimeZone(new Date(initialBpmData[0].timestamp));
         startDate = new Date(initialBpmData[0].timestamp);
       } else if (dbStartDate) {
         startDate = dbStartDate;
@@ -356,7 +364,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
   const processHourlyData = useCallback((data: any[], valueKey: string) => {
     const hourlyData = data.reduce((acc: any, item: any) => {
-      const hourKey = startOfHour(adjustTimeZone(new Date(item.timestamp))).getTime();
+      //const hourKey = startOfHour(adjustTimeZone(new Date(item.timestamp))).getTime();
+      const hourKey = startOfHour(new Date(item.timestamp)).getTime();
       if (!acc[hourKey]) {
         acc[hourKey] = { timestamp: hourKey, values: [], sum: 0, count: 0 };
       }
@@ -522,7 +531,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
     data.forEach(item => {
       const itemDate = new Date(item.timestamp);
       const dayStart = startOfDay(itemDate);
-      const minutesSinceStart = Math.floor((adjustTimeZone(itemDate).getTime() - dayStart.getTime()) / (15 * 60 * 1000)) * 15;
+      //const minutesSinceStart = Math.floor((adjustTimeZone(itemDate).getTime() - dayStart.getTime()) / (15 * 60 * 1000)) * 15;
+      const minutesSinceStart = Math.floor((itemDate.getTime() - dayStart.getTime()) / (15 * 60 * 1000)) * 15;
       const intervalStart = addMinutes(dayStart, minutesSinceStart);
       const key = format(intervalStart, "yyyy-MM-dd'T'HH:mm:ss");
   
@@ -579,7 +589,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
       const aggregatedCalorieData = aggregateCalorieData(calorieData);
       
       filteredData = allMinutes.map(minute => {
-        const adjustedAddNineMinute = adjustTimeZoneAddNine(minute);
+        //const adjustedAddNineMinute = adjustTimeZoneAddNine(minute);
+        const adjustedAddNineMinute = minute;
         const timestamp = minute.getTime();
         const adjustTimestamp = adjustedAddNineMinute.getTime();
   
