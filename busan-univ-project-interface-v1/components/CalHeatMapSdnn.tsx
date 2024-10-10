@@ -25,6 +25,8 @@ interface CalHeatmapData {
     v: number | null;
 }
 
+const DATE_SELECT_EVENT = 'dateSelect';
+
 const SdnnCalHeatmap: React.FC<SdnnCalHeatmapProps> = ({ hrvDayData }) => {
     const calendarEl = useRef<HTMLDivElement>(null);
     const [cal, setCal] = useState<ICalHeatmap | null>(null);
@@ -129,6 +131,13 @@ const SdnnCalHeatmap: React.FC<SdnnCalHeatmapProps> = ({ hrvDayData }) => {
                         
                         setSelectedData({ date, sdnn });
                         setShowModal(true);
+
+
+                        const customEvent = new CustomEvent(DATE_SELECT_EVENT, {
+                            detail: { date, sdnn }
+                        });
+                        window.dispatchEvent(customEvent)
+
                     } else {
                         // 데이터가 없는 경우 처리
                         //console.log('No data available for this date');
