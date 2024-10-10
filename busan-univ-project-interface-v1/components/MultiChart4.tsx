@@ -51,6 +51,14 @@ interface WeekRange {
   end: Date;
 }
 
+interface WeekData {
+  bpmData: Array<{ timestamp: string; value: number }>;
+  stepData: Array<{ timestamp: string; value: number }>;
+  calorieData: Array<{ timestamp: string; value: number }>;
+  sleepData: Array<{ timestamp_start: string; timestamp_end: string; value: number }>;
+  hrvData: Array<{ ds: string; hour_rmssd: number; hour_sdnn: number }>;
+}
+
 const MultiChart: React.FC<MultiChartProps> = ({
   selectedUser,
   bpmData: initialBpmData,
@@ -104,41 +112,206 @@ const MultiChart: React.FC<MultiChartProps> = ({
   //   }
   // }, []);
 
-  useEffect(() => {
-    const handleDateSelect = (event: CustomEvent) => {
-      const { date } = event.detail;
-      console.log(`히트맵에서 선택된 날짜: ${date}`);
+  // useEffect(() => {
+  //   const handleDateSelect = (event: CustomEvent) => {
+  //     const { date } = event.detail;
+  //     console.log(`히트맵에서 선택된 날짜: ${date}`);
       
-      const selectedDate = new Date(date);
-      const moveStartDate = startOfDay(selectedDate);
-      const moveEndDate = endOfDay(selectedDate);
+  //     const selectedDate = new Date(date);
+  //     const moveStartDate = startOfDay(selectedDate);
+  //     const moveEndDate = endOfDay(selectedDate);
 
-      const fetchStartDate = startOfWeek(subDays(selectedDate, 7), { weekStartsOn: 1 })
-      const fetchEndDate = endOfWeek(addDays(selectedDate, 7), { weekStartsOn: 1 })
+  //     const fetchStartDate = startOfWeek(subDays(selectedDate, 7), { weekStartsOn: 1 })
+  //     const fetchEndDate = endOfWeek(addDays(selectedDate, 7), { weekStartsOn: 1 })
 
-      console.log(`....fetchAdditionalData... ${fetchStartDate} ~ ${fetchEndDate}`)
+  //     console.log(`....fetchAdditionalData... ${fetchStartDate} ~ ${fetchEndDate}`)
   
-      setDateWindow({ start: moveStartDate, end: moveEndDate });
-      setDateRange('1');
-      setTimeUnit('minute'); 
+  //     setDateWindow({ start: moveStartDate, end: moveEndDate });
+  //     setDateRange('1');
+  //     setTimeUnit('minute'); 
   
-      // 필요한 데이터 불러오기
-      fetchAdditionalData(fetchStartDate, fetchEndDate).then((newData) => {
-        setBpmData(newData.bpmData);
-        setStepData(newData.stepData);
-        setCalorieData(newData.calorieData);
-        setSleepData(newData.sleepData);
-        setLocalHrvData(newData.hrvData);
-      });
-    };
+  //     // 필요한 데이터 불러오기
+  //     fetchAdditionalData(fetchStartDate, fetchEndDate).then((newData) => {
+  //       setBpmData(newData.bpmData);
+  //       setStepData(newData.stepData);
+  //       setCalorieData(newData.calorieData);
+  //       setSleepData(newData.sleepData);
+  //       setLocalHrvData(newData.hrvData);
+  //     });
+  //   };
   
-    window.addEventListener('dateSelect', handleDateSelect as EventListener);
-    return () => {
-      window.removeEventListener('dateSelect', handleDateSelect as EventListener);
-    };
-  }, [fetchAdditionalData]);
+  //   window.addEventListener('dateSelect', handleDateSelect as EventListener);
+  //   return () => {
+  //     window.removeEventListener('dateSelect', handleDateSelect as EventListener);
+  //   };
+  // }, [fetchAdditionalData]);
 
   const [cachedData, setCachedData] = useState<CachedDataType>({});
+
+
+
+
+
+  // const fetchThreeWeeksData = useCallback(async (selectedDate: Date) => {
+  //   const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  //   const previousWeekStart = subWeeks(selectedWeekStart, 1);
+  //   const nextWeekStart = addWeeks(selectedWeekStart, 1);
+
+  //   const weeksToFetch = [previousWeekStart, selectedWeekStart, nextWeekStart];
+  //   const newCachedData = { ...cachedData };
+
+  //   await Promise.all(weeksToFetch.map(async (weekStart) => {
+  //     const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+  //     const weekKey = format(weekStart, 'yyyy-MM-dd');
+
+  //     if (!newCachedData[weekKey]) {
+  //       const weekData = await fetchAdditionalData(weekStart, weekEnd);
+  //       newCachedData[weekKey] = weekData;
+  //     }
+  //   }));
+
+  //   setCachedData(newCachedData);
+
+  //   // 선택된 날짜가 속한 주의 데이터 설정
+  //   const currentWeekKey = format(selectedWeekStart, 'yyyy-MM-dd');
+  //   setBpmData(newCachedData[currentWeekKey].bpmData);
+  //   setStepData(newCachedData[currentWeekKey].stepData);
+  //   setCalorieData(newCachedData[currentWeekKey].calorieData);
+  //   setSleepData(newCachedData[currentWeekKey].sleepData);
+  //   setLocalHrvData(newCachedData[currentWeekKey].hrvData);
+
+  // }, [cachedData, fetchAdditionalData]);
+
+  const fetchThreeWeeksData = useCallback(async (selectedDate: Date) => {
+    const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+    const previousWeekStart = subWeeks(selectedWeekStart, 1);
+    const nextWeekStart = addWeeks(selectedWeekStart, 1);
+
+    const weeksToFetch = [previousWeekStart, selectedWeekStart, nextWeekStart];
+    const newCachedData = { ...cachedData };
+
+    await Promise.all(weeksToFetch.map(async (weekStart) => {
+      const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+      const weekKey = format(weekStart, 'yyyy-MM-dd');
+
+      console.log(`in fetchThreeWeeksData -- ${weekStart} ~ ${weekEnd}`)
+
+      if (!newCachedData[weekKey]) {
+        const weekData = await fetchAdditionalData(weekStart, weekEnd);
+        newCachedData[weekKey] = weekData;
+      }
+    }));
+
+    setCachedData(newCachedData);
+
+    const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+    const currentWeekKey = format(selectedWeekStart, 'yyyy-MM-dd');
+    
+    const filteredBpmData = newCachedData[currentWeekKey].bpmData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr);
+    const filteredStepData = newCachedData[currentWeekKey].stepData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr);
+    const filteredCalorieData = newCachedData[currentWeekKey].calorieData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr);
+    const filteredSleepData = newCachedData[currentWeekKey].sleepData.filter(d => format(new Date(d.timestamp_start), 'yyyy-MM-dd') === selectedDateStr);
+    const filteredHrvData = newCachedData[currentWeekKey].hrvData.filter(d => format(new Date(d.ds), 'yyyy-MM-dd') === selectedDateStr);
+  
+    setBpmData(filteredBpmData);
+    setStepData(filteredStepData);
+    setCalorieData(filteredCalorieData);
+    setSleepData(filteredSleepData);
+    setLocalHrvData(filteredHrvData);
+  
+  }, [cachedData, fetchAdditionalData]);
+
+  // useEffect(() => {
+  //   const handleDateSelect = async (event: Event) => {
+  //     const customEvent = event as CustomEvent<{ date: string }>;
+  //     const { date } = customEvent.detail;
+  //     console.log(`히트맵에서 선택된 날짜: ${date}`);
+      
+  //     const selectedDate = new Date(date);
+  //     const newStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+  //     const newEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+  
+  //     setDateWindow({ start: newStart, end: newEnd });
+  //     setDateRange('1'); // 1주일 보기로 설정
+  //     setTimeUnit('minute'); // 분 단위로 설정 (필요에 따라 조정)
+  
+  //     await fetchThreeWeeksData(selectedDate);
+  //   };
+  
+  //   window.addEventListener('dateSelect', handleDateSelect);
+  //   return () => {
+  //     window.removeEventListener('dateSelect', handleDateSelect);
+  //   };
+  // }, [fetchThreeWeeksData]);
+
+
+/////////////
+const handleDateSelect = useCallback(async (event: Event) => {
+  const customEvent = event as CustomEvent<{ date: string }>;
+  const { date } = customEvent.detail;
+  console.log(`히트맵에서 선택된 날짜: ${date}`);
+  
+  const selectedDate = new Date(date);
+  const newStart = startOfDay(selectedDate);
+  const newEnd = endOfDay(selectedDate);
+
+  setDateWindow({ start: newStart, end: newEnd });
+  setDateRange('1'); // 1주일 보기로 설정
+  setTimeUnit('minute'); // 분 단위로 설정 (필요에 따라 조정)
+
+  await fetchThreeWeeksData(selectedDate);
+}, [fetchThreeWeeksData]);
+
+useEffect(() => {
+  window.addEventListener('dateSelect', handleDateSelect);
+  return () => {
+    window.removeEventListener('dateSelect', handleDateSelect);
+  };
+}, [handleDateSelect]);
+////////////
+
+
+
+//////////////
+  // useEffect(() => {
+  //   const handleDateSelect = (event: CustomEvent) => {
+  //     const { date } = event.detail;
+  //     console.log(`히트맵에서 선택된 날짜: ${date}`);
+      
+  //     const selectedDate = new Date(date);
+  //     const moveStartDate = startOfDay(selectedDate);
+  //     const moveEndDate = endOfDay(selectedDate);
+
+  //     const fetchStartDate = startOfWeek(subDays(selectedDate, 7), { weekStartsOn: 1 })
+  //     const fetchEndDate = endOfWeek(addDays(selectedDate, 7), { weekStartsOn: 1 })
+
+  //     console.log(`....fetchAdditionalData... ${fetchStartDate} ~ ${fetchEndDate}`)
+  
+  //     setDateWindow({ start: moveStartDate, end: moveEndDate });
+  //     setDateRange('1');
+  //     setTimeUnit('minute'); 
+  
+  //     // 필요한 데이터 불러오기
+  //     fetchAdditionalData(fetchStartDate, fetchEndDate).then((newData) => {
+  //       setBpmData(newData.bpmData);
+  //       setStepData(newData.stepData);
+  //       setCalorieData(newData.calorieData);
+  //       setSleepData(newData.sleepData);
+  //       setLocalHrvData(newData.hrvData);
+  //     });
+  //   };
+  
+  //   window.addEventListener('dateSelect', handleDateSelect as EventListener);
+  //   return () => {
+  //     window.removeEventListener('dateSelect', handleDateSelect as EventListener);
+  //   };
+  // }, [fetchAdditionalData]);
+  //////
+
+
+
+
+  
 
   useEffect(() => {
     //console.log(`cachedData in useEffect -> ${Object.keys(cachedData)}`)
@@ -281,40 +454,80 @@ const MultiChart: React.FC<MultiChartProps> = ({
     initializeCache();
   }, [initialDateWindow, initialBpmData, initialStepData, initialCalorieData, initialSleepData, hrvHourData, dbStartDate]);
 
+  // useEffect(() => {
+  //   if (dateWindow) {
+  //     const loadData = async () => {
+  //       const weekKey = format(startOfWeek(dateWindow.start, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+
+  //       console.log(`weekKey ; ; ; ; ; ${weekKey}`)
+        
+  //       //console.log("Attempting to load data for week:", weekKey);
+
+  //       console.log(cachedData)
+  //       console.log(`dateWindow .. ${dateWindow.start} ~ ${dateWindow.end}`)
+        
+  //       if (cachedData[weekKey]) {
+  //         console.log("Using cached data for:", weekKey);
+  //         setBpmData(cachedData[weekKey].bpmData);
+  //         setStepData(cachedData[weekKey].stepData);
+  //         setCalorieData(cachedData[weekKey].calorieData);
+  //         setSleepData(cachedData[weekKey].sleepData);
+  //         setLocalHrvData(cachedData[weekKey].hrvData);
+  //       } else {
+  //         console.log("Fetching new data for:", weekKey);
+  //         console.log(`fetching new data -- ${dateWindow.start}, ${dateWindow.end}`)
+  //         const newData = await fetchAdditionalData(dateWindow.start, dateWindow.end);
+  //         setCachedData(prev => ({ ...prev, [weekKey]: newData }));
+  //         setBpmData(newData.bpmData);
+  //         setStepData(newData.stepData);
+  //         setCalorieData(newData.calorieData);
+  //         setSleepData(newData.sleepData);
+  //         setLocalHrvData(newData.hrvData);
+  //       }
+  //     };
+  
+  //     loadData();
+  //   }
+  // }, [dateWindow, cachedData, fetchAdditionalData]);
+
   useEffect(() => {
     if (dateWindow) {
       const loadData = async () => {
-        const weekKey = format(startOfWeek(dateWindow.start, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-
-        console.log(`weekKey ; ; ; ; ; ${weekKey}`)
-        
-        //console.log("Attempting to load data for week:", weekKey);
+        const selectedDate = dateWindow.start;
+        const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
+        const weekKey = format(weekStart, 'yyyy-MM-dd');
+  
+        console.log(`weekKey: ${weekKey}`);
+        console.log(`dateWindow: ${dateWindow.start} ~ ${dateWindow.end}`);
+  
+        let weekData: WeekData;
+        if (cachedData[weekKey]) {
+          console.log("Using cached data for:", weekKey);
+          weekData = cachedData[weekKey] as WeekData;
+        } else {
+          console.log("Fetching new data for:", weekKey);
+          weekData = await fetchAdditionalData(weekStart, weekEnd) as WeekData;
+          setCachedData(prev => ({ ...prev, [weekKey]: weekData }));
+        }
+  
+        // 선택된 날짜의 데이터만 필터링
+        const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+        setBpmData(weekData.bpmData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr));
+        setStepData(weekData.stepData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr));
+        setCalorieData(weekData.calorieData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr));
+        setSleepData(weekData.sleepData.filter(d => format(new Date(d.timestamp_start), 'yyyy-MM-dd') === selectedDateStr));
+        setLocalHrvData(weekData.hrvData.filter(d => format(new Date(d.ds), 'yyyy-MM-dd') === selectedDateStr));
+      };
 
         console.log(cachedData)
         console.log(`dateWindow .. ${dateWindow.start} ~ ${dateWindow.end}`)
-        
-        if (cachedData[weekKey]) {
-          console.log("Using cached data for:", weekKey);
-          setBpmData(cachedData[weekKey].bpmData);
-          setStepData(cachedData[weekKey].stepData);
-          setCalorieData(cachedData[weekKey].calorieData);
-          setSleepData(cachedData[weekKey].sleepData);
-          setLocalHrvData(cachedData[weekKey].hrvData);
-        } else {
-          console.log("Fetching new data for:", weekKey);
-          const newData = await fetchAdditionalData(dateWindow.start, dateWindow.end);
-          setCachedData(prev => ({ ...prev, [weekKey]: newData }));
-          setBpmData(newData.bpmData);
-          setStepData(newData.stepData);
-          setCalorieData(newData.calorieData);
-          setSleepData(newData.sleepData);
-          setLocalHrvData(newData.hrvData);
-        }
-      };
   
       loadData();
     }
   }, [dateWindow, cachedData, fetchAdditionalData]);
+
+
 
   const mapSleepStage = (stage: number | null): number => {
     switch(stage) {
@@ -560,8 +773,13 @@ const MultiChart: React.FC<MultiChartProps> = ({
       endDate = endOfDay(dateWindow.end);
     }
 
+
+    console.log(`in displayData startDate ~ endDate---> ${startDate} ~ ${endDate}`)
+
     const normalStartDate = startDate;
     const normalEndDate = endDate;
+
+    console.log(`in displayData normalStartDate ~ normalEndDate---> ${normalStartDate} ~ ${normalEndDate}`)
 
     let filteredData;
     //console.log(`in displayData --- timeunit : ${timeUnit}`)

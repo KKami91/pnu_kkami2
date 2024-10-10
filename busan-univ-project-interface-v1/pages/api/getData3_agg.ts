@@ -184,8 +184,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
       //console.log(`**********${collection} result 길이 : ${result.length} & 시간대 : ${startDate} ~ ${endDate}********`);
       const endTime = performance.now();
-      console.log(`in getData3_agg -> result 걸린 시간 : ${endTime - startTime} ------- ${collection} ----- ${result.length} --- ${start} --- ${end}`)
-      console.log(result.slice(0,5), result.slice(result.length - 5, result.length))
+      //console.log(`in getData3_agg -> result 걸린 시간 : ${endTime - startTime} ------- ${collection} ----- ${result.length} --- ${start} --- ${end}`)
+      //console.log(result.slice(0,5), result.slice(result.length - 5, result.length))
 
       if (result) {
         res.status(200).json(result);
