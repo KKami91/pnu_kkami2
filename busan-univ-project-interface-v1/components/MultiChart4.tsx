@@ -307,11 +307,11 @@ const MultiChart: React.FC<MultiChartProps> = ({
       const loadData = async () => {
         const weekKey = format(startOfWeek(dateWindow.start, { weekStartsOn: 1 }), 'yyyy-MM-dd');
 
-        //console.log(`weekKey ; ; ; ; ; ${weekKey}`)
+        console.log(`weekKey ; ; ; ; ; ${weekKey}`)
         
         //console.log("Attempting to load data for week:", weekKey);
 
-        //console.log(cachedData)
+        console.log(cachedData)
         console.log(`dateWindow .. ${dateWindow.start} ~ ${dateWindow.end}`)
         
         if (cachedData[weekKey]) {
