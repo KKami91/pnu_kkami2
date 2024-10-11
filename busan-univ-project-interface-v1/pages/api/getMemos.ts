@@ -15,25 +15,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const client = await MongoClient.connect(uri);
       const db = client.db('heart_rate_db');
-      const collections = ['bpm_test3', 'step_test3', 'calorie_test3'];
+      const collections = ['bpm_test3', 'step_test3', 'calorie_test3', 'sleep_test3'];
 
       const memos = [];
 
       for (const collectionName of collections) {
         const collection = db.collection(collectionName);
-        const collectionMemos = await collection.find({
-          user_email,
-          timestamp: { 
-            $gte: new Date(startDate as string), 
-            $lte: new Date(endDate as string) 
-          },
-          memo: { $exists: true }
-        }).project({
-          timestamp: 1,
-          memo: 1,
-          type: { $substr: [collectionName, 0, { $indexOfBytes: [collectionName, '_'] }] }
-        }).toArray();
+        let query;
+        let project;
 
+        if (collectionName === 'sleep_test3') {
+          query = {
+            user_email,
+            timestamp_start: { 
+              $gte: new Date(startDate as string), 
+              $lte: new Date(endDate as string) 
+            },
+            memo: { $exists: true }
+          };
+          project = {
+            timestamp_start: 1,
+            timestamp_end: 1,
+            memo: 1,
+            type: { $literal: 'sleep' }
+          };
+        } else {
+          query = {
+            user_email,
+            timestamp: { 
+              $gte: new Date(startDate as string), 
+              $lte: new Date(endDate as string) 
+            },
+            memo: { $exists: true }
+          };
+          project = {
+            timestamp: 1,
+            memo: 1,
+            type: { $literal: collectionName.split('_')[0] }
+          };
+        }
+
+        const collectionMemos = await collection.find(query).project(project).toArray();
+        console.log(`in getMemos.ts ---- collectionMemos ----`, collectionMemos)
         memos.push(...collectionMemos);
       }
 
