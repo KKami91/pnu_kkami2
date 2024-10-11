@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine, TooltipProps, Dot, RectangleProps } from 'recharts';
+import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine, TooltipProps, Dot, ReferenceArea } from 'recharts';
 import { Props as LineProps } from 'recharts/types/cartesian/Line';
 import { Props as BarProps } from 'recharts/types/cartesian/Bar';
 import { addWeeks, subWeeks, isWithinInterval, subSeconds, addSeconds, format, subDays, addDays, startOfDay, endOfDay, 
@@ -8,7 +8,7 @@ import { addWeeks, subWeeks, isWithinInterval, subSeconds, addSeconds, format, s
 import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import MemoModal from './MemoModal';
 import axios from 'axios'
-import { filter } from 'd3';
+import { Memo } from './types'
 
 
 interface MultiChartProps {
@@ -50,6 +50,8 @@ interface WeekRange {
   start: Date;
   end: Date;
 }
+
+
 
 interface WeekData {
   bpmData: Array<{ timestamp: string; value: number }>;
@@ -93,7 +95,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
   // Memo
   const [memoModalOpen, setMemoModalOpen] = useState(false);
   const [selectedData, setSelectedData] = useState<any>(null);
-  const [memos, setMemos] = useState<{ [key: string]: string }>({});
+  const [memos, setMemos] = useState<{ [key: string]: Memo }>({});
 
   // heatmap
   const [heatmapSelectedDate, setHeatmapSelectedDate] = useState<Date | null>(null);
@@ -334,8 +336,86 @@ useEffect(() => {
   useEffect(() => {
     if (dateWindow && selectedUser) {
       fetchMemos();
+      //console.log('useEffect memo ------->>>>>',memos, '----', dateWindow.start, '~~~', dateWindow.end)
     }
   }, [dateWindow, selectedUser]);
+
+  // const fetchMemos = async () => {
+  //   if (!selectedUser || !dateWindow) return;
+  //   try {
+  //     const response = await axios.get('/api/getMemos', {
+  //       params: {
+  //         user_email: selectedUser,
+  //         //startDate: adjustTimeZoneAddNine(dateWindow.start),
+  //         //endDate: adjustTimeZoneAddNine(dateWindow.end),
+  //         startDate: dateWindow.start,
+  //         endDate: dateWindow.end
+  //       },
+  //     });
+
+  //     console.log('*******************************************************')
+  //     console.log(dateWindow.start, '~~~', dateWindow.end)
+  //     console.log(response.data)
+  //     console.log('*******************************************************')
+
+  //     const memoData = response.data.reduce((acc: { [key: string]: string }, memo: any) => {
+  //       //const memoTimestamp = adjustTimeZone(new Date(format(memo.timestamp, 'yyyy-MM-dd HH:mm')))
+  //       console.log('memo~~~~~~~~~~~~~ ;;;;;; ', memo)
+  //       const memoTimestamp = new Date(format(memo.timestamp, 'yyyy-MM-dd HH:mm:ss'))
+  //       console.log('memoTimestamp ;;;;;; ', memoTimestamp)
+  //       console.log('memo.memo ;;;;;; ', memo.memo)
+  //       acc[`${memo.type}_${memoTimestamp.getTime()}`] = memo.memo;
+  //       console.log('acc ;;;;;; ', acc)
+  //       return acc;
+  //     }, {});
+
+      
+  
+  //     setMemos(memoData);
+  //     console.log('********%%%%%%%%%%%%%********')
+  //     console.log('----fetchMemos------', memos)
+  //     console.log('********%%%%%%%%%%%%%********')
+  //   } catch (error) {
+  //     console.error('Error fetching memos:', error);
+  //   }
+  // };
+
+  // const fetchMemos = async () => {
+  //   if (!selectedUser || !dateWindow) return;
+  //   try {
+  //     const response = await axios.get('/api/getMemos', {
+  //       params: {
+  //         user_email: selectedUser,
+  //         startDate: dateWindow.start,
+  //         endDate: dateWindow.end
+  //       },
+  //     });
+  
+  //     const memoData = response.data.reduce((acc: { [key: string]: string }, memo: any) => {
+  //       console.log('memo:', memo);
+  //       let memoKey: string;
+        
+  //       if (memo.type === 'sleep') {
+  //         const sleepStart = new Date(memo.timestamp_start);
+  //         memoKey = `sleep_${sleepStart.getTime()}`;
+  //       } else {
+  //         const memoTimestamp = new Date(memo.timestamp);
+  //         memoKey = `${memo.type}_${memoTimestamp.getTime()}`;
+  //       }
+  
+  //       console.log('memoKey:', memoKey);
+  //       console.log('memo.memo:', memo.memo);
+        
+  //       acc[memoKey] = memo.memo;
+  //       return acc;
+  //     }, {});
+  
+  //     console.log('Final memoData:', memoData);
+  //     setMemos(memoData);
+  //   } catch (error) {
+  //     console.error('Error fetching memos:', error);
+  //   }
+  // };
 
   const fetchMemos = async () => {
     if (!selectedUser || !dateWindow) return;
@@ -343,20 +423,30 @@ useEffect(() => {
       const response = await axios.get('/api/getMemos', {
         params: {
           user_email: selectedUser,
-          //startDate: adjustTimeZoneAddNine(dateWindow.start),
-          //endDate: adjustTimeZoneAddNine(dateWindow.end),
-          startDate: dateWindow.start,
-          endDate: dateWindow.end
+          startDate: dateWindow.start.toISOString(),
+          endDate: dateWindow.end.toISOString()
         },
       });
-
-      const memoData = response.data.reduce((acc: { [key: string]: string }, memo: any) => {
-        //const memoTimestamp = adjustTimeZone(new Date(format(memo.timestamp, 'yyyy-MM-dd HH:mm')))
-        const memoTimestamp = new Date(format(memo.timestamp, 'yyyy-MM-dd HH:mm'))
-        acc[`${memo.type}_${memoTimestamp.getTime()}`] = memo.memo;
+  
+      console.log('Raw memo data from server:', response.data);
+  
+      const memoData = response.data.reduce((acc: { [key: string]: Memo }, memo: any) => {
+        if (memo.type === 'sleep') {
+          const key = `sleep_${new Date(memo.timestamp_start).getTime()}`;
+          acc[key] = {
+            content: memo.memo,
+            endTimestamp: new Date(memo.timestamp_end).getTime()
+          };
+          console.log(`Added sleep memo with key: ${key}, value: ${memo.memo}, end: ${memo.timestamp_end}`);
+        } else {
+          const key = `${memo.type}_${new Date(memo.timestamp).getTime()}`;
+          acc[key] = { content: memo.memo };
+          console.log(`Added other memo with key: ${key}, value: ${memo.memo}`);
+        }
         return acc;
       }, {});
   
+      console.log('Processed memo data:', memoData);
       setMemos(memoData);
     } catch (error) {
       console.error('Error fetching memos:', error);
@@ -366,29 +456,59 @@ useEffect(() => {
   const saveMemo = async (memo: string) => {
     if (selectedData && selectedUser) {
       try {
-        await axios.post('/api/saveMemo', {
-          user_email: selectedUser,
-          dataType: selectedData.type,
-          //timestamp: adjustTimeZoneAddNine(selectedData.timestamp),
-          timestamp: selectedData.timestamp,
-          memo,
-        });
+        console.log('zzzzzzzzzzz ',selectedData)
+        if (selectedData.type === 'sleep') {
+          console.log(`ha`)
+          await axios.post('/api/saveMemo', {
+            user_email: selectedUser,
+            dataType: selectedData.type,
+            //timestamp: adjustTimeZoneAddNine(selectedData.timestamp),
+            timestamp: selectedData.timestamp,
+            end: selectedData.end,
+            memo,
+          });
+        } else {
+          await axios.post('/api/saveMemo', {
+            user_email: selectedUser,
+            dataType: selectedData.type,
+            //timestamp: adjustTimeZoneAddNine(selectedData.timestamp),
+            timestamp: selectedData.timestamp,
+            memo,
+          });
+        }
         setMemos(prev => ({
           ...prev,
-          [`${selectedData.type}_${selectedData.timestamp}`]: memo
+          [`${selectedData.type}_${selectedData.timestamp}`]: { content: memo }
         }));
-      } catch (error) {
+      }  catch (error) {
         console.error('Error saving memo:', error);
       }
     }
     setMemoModalOpen(false);
   };
 
+  // const handleChartClick = (data: any, dataKey: string) => {
+  //   if (dataKey === 'calorie') {
+  //     const interval = 15 * 60 * 1000; // 15분을 밀리초로 표현
+  //     const startOfInterval = Math.floor(data.timestamp / interval) * interval;
+  //     setSelectedData({ ...data, type: dataKey, timestamp: startOfInterval });
+  //   } else {
+  //     setSelectedData({ ...data, type: dataKey });
+  //   }
+  //   setMemoModalOpen(true);
+  // };
+
   const handleChartClick = (data: any, dataKey: string) => {
     if (dataKey === 'calorie') {
       const interval = 15 * 60 * 1000; // 15분을 밀리초로 표현
       const startOfInterval = Math.floor(data.timestamp / interval) * interval;
       setSelectedData({ ...data, type: dataKey, timestamp: startOfInterval });
+    } else if (dataKey === 'sleep_stage') {
+      // Sleep 데이터 클릭 처리
+      const sleepItem = indexedSleepData.find(s => data.timestamp >= s.start && data.timestamp < s.end);
+      if (sleepItem) {
+        setSelectedData({ ...data, type: 'sleep', timestamp: sleepItem.start, end: sleepItem.end });
+      }
     } else {
       setSelectedData({ ...data, type: dataKey });
     }
@@ -879,17 +999,96 @@ useEffect(() => {
     return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
   };
 
+  // const CustomTooltip: React.FC<TooltipProps<ValueType, NameType>> = ({ active, payload, label }) => {
+  //   if (active && payload && payload.length) {
+  //     const date = new Date(label as number);
+  //     const currentChart = payload[0].dataKey as string;
+  
+  //     return (
+  //       <div className="bg-white p-2 border border-gray-300 rounded shadow">
+  //         <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
+  //           {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
+  //         </p>
+  //         {payload.map((pld, index) => {
+  //           if (pld.dataKey === currentChart || (currentChart === 'bpm' && (pld.dataKey === 'min_pred_bpm' || pld.dataKey === 'hour_pred_bpm'))) {
+  //             let value = pld.value !== null ? 
+  //               (pld.dataKey === 'step' || pld.dataKey === 'calorie' ? 
+  //                 Number(pld.value).toFixed(0) : 
+  //                 Number(pld.value).toFixed(2)) 
+  //               : 'N/A';
+              
+  //             console.log('in customtooltip &&&&&&&&&&', pld.dataKey)
+  //             if (pld.dataKey === 'sleep_stage') {
+  //               console.log('is in hear? sleep stage???')
+  //               const sleepStage = pld.value as number;
+  //               value = getSleepStageLabel(sleepStage);
+  //               return (
+  //                 <p key={`${pld.dataKey}-${index}`} style={{ color: getSleepStageColor(sleepStage) }}>
+  //                   Sleep Stage: {value}
+  //                 </p>
+  //               );
+  //             }           
+  
+  //             // let memoKey = `${pld.dataKey}_${date.getTime()}`;
+  //             // if (pld.dataKey === 'calorie') {
+  //             //   const interval = 15 * 60 * 1000;
+  //             //   const startOfInterval = Math.floor(date.getTime() / interval) * interval;
+  //             //   memoKey = `${pld.dataKey}_${startOfInterval}`;
+  //             // }
+  //             // const memo = memos[memoKey];
+
+  //             let memoKey = `${pld.dataKey}_${date.getTime()}`;
+  //             console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', memoKey)
+  //             if (pld.dataKey === 'calorie') {
+  //               console.log('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+  //               const interval = 15 * 60 * 1000;
+  //               const startOfInterval = Math.floor(date.getTime() / interval) * interval;
+  //               memoKey = `${pld.dataKey}_${startOfInterval}`;
+  //             } else if (pld.dataKey === 'sleep_stage') {
+  //               console.log('in CUSTOMTOOLTIP MEMOKEY IF ELSE IF )))))))')
+  //               const sleepItem = indexedSleepData.find(s => date.getTime() >= s.start && date.getTime() < s.end);
+  //               console.log('in CUSTOMTOOLTIP MEMOKEY IF ELSE IF ))))))) sleepItem ))))))', sleepItem)
+  //               if (sleepItem) {
+  //                 memoKey = `sleep_${sleepItem.start}`;
+  //               }
+  //             }
+  //             const memo = memos[memoKey];
+  
+  //             return (
+  //               <React.Fragment key={`${pld.dataKey}-${index}`}>
+  //                 <p style={{ color: pld.color }}>
+  //                   {`${pld.name}: ${value}`}
+  //                 </p>
+  //                 {memo && (
+  //                   <p className="text-gray-600 italic">Memo: {memo}</p>
+  //                 )}
+  //               </React.Fragment>
+  //             );
+  //           }
+  //           return null;
+  //         })}
+  //       </div>
+  //     );
+  //   }
+  //   return null;
+  // };
+
   const CustomTooltip: React.FC<TooltipProps<ValueType, NameType>> = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
       const date = new Date(label as number);
       const currentChart = payload[0].dataKey as string;
+  
+      // Remove duplicates from payload
+      const uniquePayload = payload.filter((item, index, self) =>
+        index === self.findIndex((t) => t.dataKey === item.dataKey)
+      );
   
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
           <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
             {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
-          {payload.map((pld, index) => {
+          {uniquePayload.map((pld, index) => {
             if (pld.dataKey === currentChart || (currentChart === 'bpm' && (pld.dataKey === 'min_pred_bpm' || pld.dataKey === 'hour_pred_bpm'))) {
               let value = pld.value !== null ? 
                 (pld.dataKey === 'step' || pld.dataKey === 'calorie' ? 
@@ -897,31 +1096,30 @@ useEffect(() => {
                   Number(pld.value).toFixed(2)) 
                 : 'N/A';
               
+              let memoKey = `${pld.dataKey}_${date.getTime()}`;
+  
               if (pld.dataKey === 'sleep_stage') {
                 const sleepStage = pld.value as number;
                 value = getSleepStageLabel(sleepStage);
-                return (
-                  <p key={`${pld.dataKey}-${index}`} style={{ color: getSleepStageColor(sleepStage) }}>
-                    Sleep Stage: {value}
-                  </p>
-                );
-              }           
-  
-              let memoKey = `${pld.dataKey}_${date.getTime()}`;
-              if (pld.dataKey === 'calorie') {
+                const sleepItem = indexedSleepData.find(s => date.getTime() >= s.start && date.getTime() < s.end);
+                if (sleepItem) {
+                  memoKey = `sleep_${sleepItem.start}`;
+                }
+              } else if (pld.dataKey === 'calorie') {
                 const interval = 15 * 60 * 1000;
                 const startOfInterval = Math.floor(date.getTime() / interval) * interval;
                 memoKey = `${pld.dataKey}_${startOfInterval}`;
               }
+  
               const memo = memos[memoKey];
   
               return (
                 <React.Fragment key={`${pld.dataKey}-${index}`}>
-                  <p style={{ color: pld.color }}>
-                    {`${pld.name}: ${value}`}
+                  <p style={{ color: pld.dataKey === 'sleep_stage' ? getSleepStageColor(pld.value as number) : pld.color }}>
+                    {pld.dataKey === 'sleep_stage' ? `Sleep Stage: ${value}` : `${pld.name}: ${value}`}
                   </p>
                   {memo && (
-                    <p className="text-gray-600 italic">Memo: {memo}</p>
+                    <p className="text-gray-600 italic">Memo: {typeof memo === 'string' ? memo : memo.content}</p>
                   )}
                 </React.Fragment>
               );
@@ -934,8 +1132,64 @@ useEffect(() => {
     return null;
   };
 
+  // 메모의 시작 시간과 종료 시간을 파싱하는 함수
+// 메모의 시간 범위를 파싱하는 함수
+const parseMemoTimeRange = (memoValue: string): [number, number] | null => {
+  const match = memoValue.match(/(\d{4}) (\d{2}:\d{2}) ~ (\d{2}:\d{2})/);
+  console.log('$$$$$$$', memoValue, '&&&&&&&', match)
+  if (match) {
+    const [_, dateStr, startTime, endTime] = match;
+    const month = parseInt(dateStr.substring(0, 2)) - 1; // JavaScript의 월은 0-indexed
+    const day = parseInt(dateStr.substring(2, 4));
+    
+    const startDate = new Date(2024, month, day);
+    const endDate = new Date(2024, month, day);
+    
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+    
+    startDate.setHours(startHour, startMinute, 0, 0);
+    endDate.setHours(endHour, endMinute, 0, 0);
+    
+    console.log(`Parsed memo: Start - ${startDate}, End - ${endDate}`);
+    return [startDate.getTime(), endDate.getTime()];
+  }
+  console.log(`Failed to parse memo: ${memoValue}`);
+  return null;
+};
+
+  useEffect(() => {
+    console.log('Current memos:', memos);
+  }, [memos]);
+
+  const checkSleepMemo = (timestamp: number): { hasMemo: boolean; isCenter: boolean; memo: string } => {
+    for (const [key, memo] of Object.entries(memos)) {
+      if (key.startsWith('sleep_')) {
+        const startTimestamp = parseInt(key.split('_')[1]);
+        const endTimestamp = memo.endTimestamp || startTimestamp + 60000; // 기본값으로 1분 설정
+        
+        if (timestamp >= startTimestamp && timestamp <= endTimestamp) {
+          const centerTimestamp = startTimestamp + (endTimestamp - startTimestamp) / 2;
+          const isCenter = Math.abs(timestamp - centerTimestamp) <= 30000; // 30초 이내면 중앙으로 간주
+          return { hasMemo: true, isCenter, memo: memo.content };
+        }
+      }
+    }
+    return { hasMemo: false, isCenter: false, memo: '' };
+  };
+
+
   const renderChart = (dataKey: string, color: string, yAxisLabel: string, ChartType: typeof LineChart | typeof BarChart = LineChart, additionalProps = {}) => {
   
+    //console.log('Rendering chart for dataKey:', dataKey);
+    //console.log('Display data:', displayData);
+    //console.log('Memos:', memos);
+  
+    // 메모가 있는 sleep 데이터 확인
+    //const sleepMemosCount = Object.keys(memos).filter(key => key.startsWith('sleep_')).length;
+    //console.log('Number of sleep memos:', sleepMemosCount);
+
+
     return (
       <div className="w-full h-full">
         <ResponsiveContainer width="100%" height="100%">
@@ -970,6 +1224,101 @@ useEffect(() => {
               <>
                 <Line type="monotone" dataKey="hour_rmssd" stroke="#8884d8" name="RMSSD" dot={false} connectNulls />
                 <Line type="monotone" dataKey="hour_sdnn" stroke="#82ca9d" name="SDNN" dot={false} connectNulls />
+              </>
+            ) : dataKey === 'sleep_stage' ? (
+              <>
+                {/* Background for sleep stages */}
+                {displayData.map((entry, index) => {
+                  const sleepStart = entry.timestamp;
+                  const sleepEnd = index < displayData.length - 1 ? displayData[index + 1].timestamp : entry.timestamp + 60000;
+                  const hasMemo = memos[`sleep_${sleepStart}`] !== undefined;
+                  return (
+                    <ReferenceArea
+                      key={`sleep-area-${index}`}
+                      x1={sleepStart}
+                      x2={sleepEnd}
+                      y1={-3.5}
+                      y2={0.5}
+                      fill={getSleepStageColor(entry.sleep_stage)}
+                      fillOpacity={hasMemo ? 0.5 : 0.2}
+                    />
+                  );
+                })}
+                {/* Sleep stage line */}
+                <Line
+                  type="stepAfter"
+                  dataKey={dataKey}
+                  stroke={color}
+                  strokeWidth={2}
+                  dot={false}
+                  connectNulls
+                  {...additionalProps}
+                />
+                {/* Highlight areas with memos */}
+                  {displayData.map((entry, index) => {
+                    const hasMemo = memos[`sleep_${entry.timestamp}`] !== undefined;
+                    if (hasMemo) {
+                      const nextEntry = displayData[index + 1];
+                      const endTimestamp = nextEntry ? nextEntry.timestamp : entry.timestamp + 60000;
+                      return (
+                        <ReferenceLine
+                          key={`memo-highlight-${index}`}
+                          x1={entry.timestamp}
+                          x2={endTimestamp}
+                          stroke="#FF4500"
+                          strokeWidth={4}
+                          strokeOpacity={0.5}
+                        />
+                      );
+                    }
+                    return null;
+                  })}
+                {/* Additional line for memo indicators */}
+                <Line
+                type="stepAfter"
+                dataKey={dataKey}
+                stroke={color}
+                strokeWidth={2}
+                dot={((props: any) => {
+                  if (!props.payload || props.payload.timestamp === undefined) {
+                    return null;
+                  }
+                  const { hasMemo, isCenter, memo } = checkSleepMemo(props.payload.timestamp);
+                  if (hasMemo && isCenter) {
+                    return (
+                      <circle
+                        cx={props.cx}
+                        cy={props.cy}
+                        r={6}
+                        fill="#FF4500"
+                        stroke="black"
+                        strokeWidth={2}
+                      />
+                    );
+                  }
+                  return null;
+                }) as LineProps['dot']}
+                label={((props: any) => {
+                  if (!props.payload || props.payload.timestamp === undefined) {
+                    return null;
+                  }
+                  const { hasMemo, isCenter } = checkSleepMemo(props.payload.timestamp);
+                  if (hasMemo && isCenter) {
+                    return (
+                      <text
+                        x={props.x}
+                        y={props.y - 15}
+                        fill="#FF4500"
+                        fontSize={12}
+                        textAnchor="middle"
+                      >
+                        M
+                      </text>
+                    );
+                  }
+                  return null;
+                }) as LineProps['label']}
+              />
               </>
             ) : ChartType === LineChart ? (
               <Line 
@@ -1144,13 +1493,13 @@ useEffect(() => {
           </div>
         ))}
       </div>
-      <MemoModal
-        isOpen={memoModalOpen}
-        onClose={() => setMemoModalOpen(false)}
-        onSave={saveMemo}
-        data={selectedData}
-        existingMemo={selectedData ? memos[`${selectedData.type}_${selectedData.timestamp}`] || '' : ''}
-      />
+        <MemoModal
+          isOpen={memoModalOpen}
+          onClose={() => setMemoModalOpen(false)}
+          onSave={saveMemo}
+          data={selectedData}
+          existingMemo={selectedData ? (memos[`${selectedData.type}_${selectedData.timestamp}`] || '') : ''}
+        />
     </div>
   );
 };

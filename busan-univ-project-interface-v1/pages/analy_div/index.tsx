@@ -578,6 +578,7 @@ export default function Home() {
 
   const [initialDateWindow, setInitialDateWindow] = useState<{ start: Date; end: Date } | null>(null);
 
+
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [...bpmData, ...stepData, ...calorieData].map(item => new Date(item.timestamp).getTime());
     return {
@@ -733,6 +734,10 @@ export default function Home() {
         setCalorieData(data.calorieData);
         setSleepData(data.sleepData);
         setHrvHourData(data.hrvData);
+
+        console.log('in index.tsx -- first fetch Data : ', JSON.stringify(data.stepData))
+        console.log('in index.tsx -- first fetch fetchStartDate : ', fetchStartDate)
+        console.log('in index.tsx -- first fetch fetchEndDate : ', fetchEndDate)
   
         // Prediction 데이터 가져오기 (필요한 경우)
         const predictStartTime = performance.now();
