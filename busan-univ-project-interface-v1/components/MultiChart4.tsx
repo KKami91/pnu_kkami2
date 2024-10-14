@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { LineChart, BarChart, Line, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Brush, ReferenceLine, TooltipProps, Dot, ReferenceArea } from 'recharts';
 import { Props as LineProps } from 'recharts/types/cartesian/Line';
 import { Props as BarProps } from 'recharts/types/cartesian/Bar';
@@ -29,6 +29,7 @@ interface MultiChartProps {
   fetchHrvData: (user: string, start: Date, end: Date) => Promise<any[]>;
   dbStartDate: Date | null;
   dbEndDate: Date | null;
+  scrollToMultiChart: () => void;
   //checkDataExistence: (startDate: Date, endDate: Date) => Promise<boolean>;
 }
 
@@ -77,10 +78,11 @@ const MultiChart: React.FC<MultiChartProps> = ({
   fetchHrvData,
   dbStartDate,
   dbEndDate,
+  scrollToMultiChart,
   //checkDataExistence: checkDataExistenceFromServer
 }) => {
 
-  console.log(`in multi initialDateWindow ... ${initialDateWindow}`)
+  //console.log(`in multi initialDateWindow ... ${initialDateWindow}`)
 
   const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('hour');
   const [dateRange, setDateRange] = useState<DateRange>('1');
@@ -99,6 +101,8 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
   // heatmap
   const [heatmapSelectedDate, setHeatmapSelectedDate] = useState<Date | null>(null);
+
+  
 
 
   // useEffect(() => {
@@ -196,7 +200,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
       const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
       const weekKey = format(weekStart, 'yyyy-MM-dd');
 
-      console.log(`in fetchThreeWeeksData -- ${weekStart} ~ ${weekEnd}`)
+      //console.log(`in fetchThreeWeeksData -- ${weekStart} ~ ${weekEnd}`)
 
       if (!newCachedData[weekKey]) {
         const weekData = await fetchAdditionalData(weekStart, weekEnd);
@@ -257,12 +261,16 @@ const handleDateSelect = useCallback(async (event: Event) => {
   const newStart = startOfDay(selectedDate);
   const newEnd = endOfDay(selectedDate);
 
+  setTimeout(scrollToMultiChart, 10);
+
   setDateWindow({ start: newStart, end: newEnd });
   setDateRange('1'); // 1주일 보기로 설정
   setTimeUnit('minute'); // 분 단위로 설정 (필요에 따라 조정)
 
+  
   await fetchThreeWeeksData(selectedDate);
-}, [fetchThreeWeeksData]);
+  
+}, [fetchThreeWeeksData, scrollToMultiChart]);
 
 useEffect(() => {
   window.addEventListener('dateSelect', handleDateSelect);
@@ -428,7 +436,7 @@ useEffect(() => {
         },
       });
   
-      console.log('Raw memo data from server:', response.data);
+      //console.log('Raw memo data from server:', response.data);
   
       const memoData = response.data.reduce((acc: { [key: string]: Memo }, memo: any) => {
         if (memo.type === 'sleep') {
@@ -437,16 +445,16 @@ useEffect(() => {
             content: memo.memo,
             endTimestamp: new Date(memo.timestamp_end).getTime()
           };
-          console.log(`Added sleep memo with key: ${key}, value: ${memo.memo}, end: ${memo.timestamp_end}`);
+          //console.log(`Added sleep memo with key: ${key}, value: ${memo.memo}, end: ${memo.timestamp_end}`);
         } else {
           const key = `${memo.type}_${new Date(memo.timestamp).getTime()}`;
           acc[key] = { content: memo.memo };
-          console.log(`Added other memo with key: ${key}, value: ${memo.memo}`);
+          //console.log(`Added other memo with key: ${key}, value: ${memo.memo}`);
         }
         return acc;
       }, {});
   
-      console.log('Processed memo data:', memoData);
+      //console.log('Processed memo data:', memoData);
       setMemos(memoData);
     } catch (error) {
       console.error('Error fetching memos:', error);
@@ -456,9 +464,9 @@ useEffect(() => {
   const saveMemo = async (memo: string) => {
     if (selectedData && selectedUser) {
       try {
-        console.log('zzzzzzzzzzz ',selectedData)
+        //console.log('zzzzzzzzzzz ',selectedData)
         if (selectedData.type === 'sleep') {
-          console.log(`ha`)
+          //console.log(`ha`)
           await axios.post('/api/saveMemo', {
             user_email: selectedUser,
             dataType: selectedData.type,
@@ -530,21 +538,21 @@ useEffect(() => {
         return;
       }
 
-      console.log(`^^^^^^^^^^^^^initialDateWindow: ${JSON.stringify(initialDateWindow)} ^^^^^^^^^`)
-      console.log(`^^^^^^^^^^^^^new Date(initialBpmData[0].timestamp): ${new Date(initialBpmData[0].timestamp)} ^^^^^^^^^`)
-      console.log(`^^^^^^^^^^^^^dbStartDate: ${dbStartDate} ^^^^^^^^^`)
-      console.log(`^^^^^^^^^^^^^startDate: ${startDate} ^^^^^^^^^`)
+      //console.log(`^^^^^^^^^^^^^initialDateWindow: ${JSON.stringify(initialDateWindow)} ^^^^^^^^^`)
+      //console.log(`^^^^^^^^^^^^^new Date(initialBpmData[0].timestamp): ${new Date(initialBpmData[0].timestamp)} ^^^^^^^^^`)
+      //console.log(`^^^^^^^^^^^^^dbStartDate: ${dbStartDate} ^^^^^^^^^`)
+      //console.log(`^^^^^^^^^^^^^startDate: ${startDate} ^^^^^^^^^`)
 
       const weekStart = startOfWeek(startDate, { weekStartsOn: 1 });
-      console.log(`^^^^^^^^^^^^^weekStart: ${weekStart} ^^^^^^^^^`)
+      //console.log(`^^^^^^^^^^^^^weekStart: ${weekStart} ^^^^^^^^^`)
       const threeWeeksEnd = addWeeks(weekStart, 2);
       
-      console.log(`in initializeCache ... ------`)
+      //console.log(`in initializeCache ... ------`)
 
       const newCachedData: CachedDataType = {};
       for (let i = 0; i < 3; i++) {
         const currentWeekStart = addWeeks(weekStart, i);
-        console.log(`^^^^^^^^^^^^^currentWeekStart: ${currentWeekStart} ^^^^^^^^^`)
+        //console.log(`^^^^^^^^^^^^^currentWeekStart: ${currentWeekStart} ^^^^^^^^^`)
         const weekKey = format(currentWeekStart, 'yyyy-MM-dd');
         newCachedData[weekKey] = {
           bpmData: initialBpmData.filter(d => isWithinInterval(new Date(d.timestamp), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
@@ -553,7 +561,7 @@ useEffect(() => {
           sleepData: initialSleepData.filter(d => isWithinInterval(new Date(d.timestamp_start), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
           hrvData: hrvHourData.filter(d => isWithinInterval(new Date(d.ds), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
         };
-        console.log(`newCachedData[weekKey] -------------^^^^^^ ${JSON.stringify(newCachedData[weekKey])}`)
+        //console.log(`newCachedData[weekKey] -------------^^^^^^ ${JSON.stringify(newCachedData[weekKey])}`)
       }
       setCachedData(newCachedData);
 
@@ -568,7 +576,7 @@ useEffect(() => {
       // console.log('Cached Data Keys:', Object.keys(newCachedData));
       // console.log('Cached Data:', newCachedData);
 
-      console.log(`^^^^^^^^^^^^^ ${JSON.stringify(newCachedData[currentWeekKey].bpmData)} ^^^^^^^^^`)
+      //console.log(`^^^^^^^^^^^^^ ${JSON.stringify(newCachedData[currentWeekKey].bpmData)} ^^^^^^^^^`)
     };
 
     initializeCache();
@@ -618,15 +626,15 @@ useEffect(() => {
         const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
         const weekKey = format(weekStart, 'yyyy-MM-dd');
   
-        console.log(`weekKey: ${weekKey}`);
-        console.log(`dateWindow: ${dateWindow.start} ~ ${dateWindow.end}`);
+        //console.log(`weekKey: ${weekKey}`);
+        //console.log(`dateWindow: ${dateWindow.start} ~ ${dateWindow.end}`);
   
         let weekData: WeekData;
         if (cachedData[weekKey]) {
-          console.log("Using cached data for:", weekKey);
+          //console.log("Using cached data for:", weekKey);
           weekData = cachedData[weekKey] as WeekData;
         } else {
-          console.log("Fetching new data for:", weekKey);
+          //console.log("Fetching new data for:", weekKey);
           weekData = await fetchAdditionalData(weekStart, weekEnd) as WeekData;
           setCachedData(prev => ({ ...prev, [weekKey]: weekData }));
         }
@@ -641,7 +649,7 @@ useEffect(() => {
       };
 
         console.log(cachedData)
-        console.log(`dateWindow .. ${dateWindow.start} ~ ${dateWindow.end}`)
+        //console.log(`dateWindow .. ${dateWindow.start} ~ ${dateWindow.end}`)
   
       loadData();
     }
@@ -780,7 +788,7 @@ useEffect(() => {
           weeksToFetch.push({ start: currentWeekStart, end: addWeeks(currentWeekStart, 1) });
         }
       }
-      console.log(`weeksToFetch.length : ${weeksToFetch.length}`)
+      //console.log(`weeksToFetch.length : ${weeksToFetch.length}`)
       if (weeksToFetch.length > 0) {
         // Fetch data for missing weeks
         
@@ -894,12 +902,12 @@ useEffect(() => {
     }
 
 
-    console.log(`in displayData startDate ~ endDate---> ${startDate} ~ ${endDate}`)
+    //console.log(`in displayData startDate ~ endDate---> ${startDate} ~ ${endDate}`)
 
     const normalStartDate = startDate;
     const normalEndDate = endDate;
 
-    console.log(`in displayData normalStartDate ~ normalEndDate---> ${normalStartDate} ~ ${normalEndDate}`)
+    //console.log(`in displayData normalStartDate ~ normalEndDate---> ${normalStartDate} ~ ${normalEndDate}`)
 
     let filteredData;
     //console.log(`in displayData --- timeunit : ${timeUnit}`)
@@ -1136,7 +1144,7 @@ useEffect(() => {
 // 메모의 시간 범위를 파싱하는 함수
 const parseMemoTimeRange = (memoValue: string): [number, number] | null => {
   const match = memoValue.match(/(\d{4}) (\d{2}:\d{2}) ~ (\d{2}:\d{2})/);
-  console.log('$$$$$$$', memoValue, '&&&&&&&', match)
+  //console.log('$$$$$$$', memoValue, '&&&&&&&', match)
   if (match) {
     const [_, dateStr, startTime, endTime] = match;
     const month = parseInt(dateStr.substring(0, 2)) - 1; // JavaScript의 월은 0-indexed
@@ -1151,15 +1159,15 @@ const parseMemoTimeRange = (memoValue: string): [number, number] | null => {
     startDate.setHours(startHour, startMinute, 0, 0);
     endDate.setHours(endHour, endMinute, 0, 0);
     
-    console.log(`Parsed memo: Start - ${startDate}, End - ${endDate}`);
+    //console.log(`Parsed memo: Start - ${startDate}, End - ${endDate}`);
     return [startDate.getTime(), endDate.getTime()];
   }
-  console.log(`Failed to parse memo: ${memoValue}`);
+  //console.log(`Failed to parse memo: ${memoValue}`);
   return null;
 };
 
   useEffect(() => {
-    console.log('Current memos:', memos);
+    //console.log('Current memos:', memos);
   }, [memos]);
 
   const checkSleepMemo = (timestamp: number): { hasMemo: boolean; isCenter: boolean; memo: string } => {
@@ -1428,13 +1436,6 @@ const parseMemoTimeRange = (memoValue: string): [number, number] | null => {
           ))}
         </div>
         <div className="flex items-center">
-          <button 
-            onClick={() => moveDate('backward')}
-            className="px-2 py-1 bg-blue-500 text-white rounded mr-2"
-            disabled={!dateWindow || !dbStartDate || dateWindow.start <= dbStartDate}
-          >
-            ←
-          </button>
           <select
             value={timeUnit}
             onChange={(e) => setTimeUnit(e.target.value as 'minute' | 'hour')}
@@ -1452,8 +1453,15 @@ const parseMemoTimeRange = (memoValue: string): [number, number] | null => {
             <option value="7">7 Days</option>
           </select>
           <button 
+            onClick={() => moveDate('backward')}
+            className="px-2 py-1 bg-blue-500 text-white rounded mr-2 ml-4"
+            disabled={!dateWindow || !dbStartDate || dateWindow.start <= dbStartDate}
+          >
+            ←
+          </button>
+          <button 
             onClick={() => moveDate('forward')}
-            className="px-2 py-1 bg-blue-500 text-white rounded ml-2"
+            className="px-2 py-1 bg-blue-500 text-white rounded"
             disabled={!dateWindow || !dbEndDate || dateWindow.end >= dbEndDate}
           >
             →

@@ -503,6 +503,7 @@
 //   );
 // }
 
+//const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import axios from 'axios'
@@ -515,6 +516,9 @@ import RmssdCalendar from '../../components/RmssdCalendar';
 import SdnnCalendar from '../../components/SdnnCalendar';
 import SdnnCalHeatmap from '../../components/CalHeatMapSdnn'
 import RmssdCalHeatmap from '../../components/CalHeatMapRmssd'
+
+import CombinedHrvHeatmap from '../../components/CombinedHrvHeatmap';
+
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'sueun4701@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
@@ -547,6 +551,7 @@ interface DataItem {
   sdnn?: number;
   min_pred_bpm: number | null;
   pred_rmssd?: number;
+  //firstDate?: string;
 }
 
 export default function Home() {
@@ -563,6 +568,7 @@ export default function Home() {
   const [stepData, setStepData] = useState<DataItem[]>([]);
   const [calorieData, setCalorieData] = useState<DataItem[]>([]);
   const [sleepData, setSleepData] = useState<DataItem[]>([]);
+  const [firstDate, setFirstDate] = useState<any[]>([]);
 
   const [predictMinuteData, setPredictMinuteData] = useState<any[]>([]);
   const [predictHourData, setPredictHourData] = useState<any[]>([]);
@@ -578,6 +584,13 @@ export default function Home() {
 
   const [initialDateWindow, setInitialDateWindow] = useState<{ start: Date; end: Date } | null>(null);
 
+  const multiChartRef = useRef<HTMLDivElement>(null);
+
+  const scrollToMultiChart = useCallback(() => {
+    if (multiChartRef.current) {
+      multiChartRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, []);
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
     const allDates = [...bpmData, ...stepData, ...calorieData].map(item => new Date(item.timestamp).getTime());
@@ -720,7 +733,7 @@ export default function Home() {
         console.log(`히트맵 일일 HRV 전체 데이터 가져오는데 걸리는 시간 : ${calendarendTime - calendarStartTime} ms`);
 
 
-        console.log(`in handleDateSelect start : ${fetchStartDate} , end : ${fetchEndDate}`)
+        //console.log(`in handleDateSelect start : ${fetchStartDate} , end : ${fetchEndDate}`)
 
         const firstFetchStartTime = performance.now();
         const data = await fetchAdditionalData(fetchStartDate, fetchEndDate);
@@ -735,17 +748,28 @@ export default function Home() {
         setSleepData(data.sleepData);
         setHrvHourData(data.hrvData);
 
-        console.log('in index.tsx -- first fetch Data : ', JSON.stringify(data.stepData))
-        console.log('in index.tsx -- first fetch fetchStartDate : ', fetchStartDate)
-        console.log('in index.tsx -- first fetch fetchEndDate : ', fetchEndDate)
+        //console.log('in index.tsx -- first fetch Data : ', JSON.stringify(data.stepData))
+        //console.log('in index.tsx -- first fetch fetchStartDate : ', fetchStartDate)
+        //console.log('in index.tsx -- first fetch fetchEndDate : ', fetchEndDate)
   
         // Prediction 데이터 가져오기 (필요한 경우)
         const predictStartTime = performance.now();
         await fetchPredictionData(selectedUser);
         const predictEndTime = performance.now();
         console.log(`예측 데이터 가져오는데 걸리는 시간 : ${predictEndTime - predictStartTime} ms`);
+
+        const startFirstDateTime = performance.now()
+        const userFirstDate = await axios.get(`${API_URL}/get_start_dates/${selectedUser}`)
+        console.log(userFirstDate, ' kkkkkkkkkkkkkkkkkkkkkkkkkkkkwwwwwwwwwwwww')
+        const userStartDate = userFirstDate.data.start_date
+        setFirstDate([userStartDate])
+        console.log(userStartDate, '--------ooooooooooooo---------------------oooooo')
+        console.log(firstDate, '--------tttttttttttttt---------------------ttttttt')
+        const endFirstDateTime = performance.now()
+        console.log('userFirstDate 걸린 시간 ; ; ', endFirstDateTime - startFirstDateTime)
   
         setShowGraphs(true);  // 모든 데이터 로딩이 완료되면 그래프를 표시합니다.
+        setTimeout(scrollToMultiChart, 100);
       } catch (error) {
         console.error('Error in handleDateSelect:', error);
         setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`);
@@ -754,6 +778,10 @@ export default function Home() {
       }
     }
   };
+
+  useEffect(() => {
+    console.log(firstDate, 'Updated firstDate');
+  }, [firstDate]);
 
   const fetchHrvData = useCallback(async (user: string, start: Date, end: Date) => {
     try {
@@ -792,7 +820,7 @@ export default function Home() {
         //console.log(`in fetchAdditionalData bpm length : ${JSON.stringify(bpm)}`)
 
         const hrvData = bpm.length === 0 ? [] : hrv;
-  
+        setTimeout(scrollToMultiChart, 100);
         return {
           bpmData: bpm || [],
           stepData: step || [],
@@ -971,25 +999,28 @@ export default function Home() {
                 onBrushChange={handleBrushChange}
               /> 
             ) : (
-              <MultiChart
-              selectedUser={selectedUser}
-              bpmData={bpmData}
-              stepData={stepData}
-              calorieData={calorieData}
-              sleepData={sleepData}
-              predictMinuteData={predictMinuteData}
-              predictHourData={predictHourData}
-              hrvHourData={hrvHourData}
-              globalStartDate={globalStartDate}
-              globalEndDate={globalEndDate}
-              onBrushChange={handleBrushChange}
-              fetchAdditionalData={fetchAdditionalData}
-              fetchHrvData={fetchHrvData}
-              initialDateWindow={initialDateWindow}
-              selectedDate={selectedDate}
-              dbStartDate={dbStartDate}
-              dbEndDate={dbEndDate}
-            />
+              <div ref={multiChartRef}>
+                <MultiChart
+                selectedUser={selectedUser}
+                bpmData={bpmData}
+                stepData={stepData}
+                calorieData={calorieData}
+                sleepData={sleepData}
+                predictMinuteData={predictMinuteData}
+                predictHourData={predictHourData}
+                hrvHourData={hrvHourData}
+                globalStartDate={globalStartDate}
+                globalEndDate={globalEndDate}
+                onBrushChange={handleBrushChange}
+                fetchAdditionalData={fetchAdditionalData}
+                fetchHrvData={fetchHrvData}
+                initialDateWindow={initialDateWindow}
+                selectedDate={selectedDate}
+                dbStartDate={dbStartDate}
+                dbEndDate={dbEndDate}
+                scrollToMultiChart={scrollToMultiChart}
+              />
+            </div>
           )}
           {/* {renderTime !== null && (
             <div className="mt-4 text-center text-gray-600">
@@ -998,8 +1029,9 @@ export default function Home() {
           )} */}
         {hrvDayData.length > 0 && (
           <div className="mt-8">
-            <RmssdCalHeatmap hrvDayData={hrvDayData} />
-            <SdnnCalHeatmap hrvDayData={hrvDayData} />
+            {/* <RmssdCalHeatmap hrvDayData={hrvDayData} />
+            <SdnnCalHeatmap hrvDayData={hrvDayData} /> */}
+            <CombinedHrvHeatmap hrvDayData={hrvDayData} firstDate={firstDate} />
             {/* <RmssdCalendar hrvDayData={hrvDayData} />
             <SdnnCalendar hrvDayData={hrvDayData} /> */}
           </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import CalHeatmap from 'cal-heatmap';
 import 'cal-heatmap/cal-heatmap.css';
-import { addDays } from 'date-fns'
+import { addDays, format } from 'date-fns'
 
 interface HrvDayData {
     ds: string;
@@ -10,6 +10,7 @@ interface HrvDayData {
 
 interface RmssdCalHeatmapProps {
     hrvDayData: HrvDayData[];
+    startDate: Date;
 }
 
 interface ICalHeatmap {
@@ -27,12 +28,13 @@ interface CalHeatmapData {
 
 const DATE_SELECT_EVENT = 'dateSelect';
 
-const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
+const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData, startDate }) => {
     const calendarEl = useRef<HTMLDivElement>(null);
     const [cal, setCal] = useState<ICalHeatmap | null>(null);
     const [selectedData, setSelectedData] = useState<{ date: Date; rmssd: number | null } | null>(null);
-    const [showModal, setShowModal] = useState(false);
+    //const [showModal, setShowModal] = useState(false);
     const [range, setRange] = useState(1);
+    const [tooltip, setTooltip] = useState<{ x: number; y: number; date: Date; rmssd: number | null } | null>(null);
 
     const updateRange = () => {
         //console.log(window)
@@ -77,7 +79,8 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
                     y: 'day_rmssd',
                 },
                 date: {
-                    start: new Date(adjustedData[0].ds),
+                    //start: new Date(adjustedData[0].ds),
+                    start: startDate,
                 },
                 range: range,
                 domain: {
@@ -122,7 +125,6 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
             document.head.appendChild(style);
 
             newCal.on('click', (event: any) => {
-                console.log('Click event:', event);
                 if (event && event.target && (event.target as any).__data__) {
                     const data = (event.target as any).__data__ as CalHeatmapData;
                     if (data.v !== null) {
@@ -130,7 +132,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
                         const rmssd = data.v;
                         
                         setSelectedData({ date, rmssd });
-                        setShowModal(true);
+                        //setShowModal(true);
 
                         const customEvent = new CustomEvent(DATE_SELECT_EVENT, {
                             detail: { date, rmssd }
@@ -146,9 +148,31 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
                 }
             });
 
+            newCal.on('mouseover', (event: any) => {
+                if (event && event.target && (event.target as any).__data__ && (event.target as any).__data__.v !== null) {
+                    const data = (event.target as any).__data__ as CalHeatmapData;
+                    const date = new Date(data.t);
+                    const rmssd = data.v;
+                    const rect = event.target.getBoundingClientRect();
+                    
+                    setTooltip({ 
+                        x: rect.left + window.scrollX, 
+                        y: rect.top + window.scrollY, 
+                        date, 
+                        rmssd 
+                    });
+                } else {
+                    setTooltip(null)
+                }
+            });
+
+            newCal.on('mouseout', () => {
+                setTooltip(null);
+            });
+
             setCal(newCal);
         }
-    }, [hrvDayData, range]);
+    }, [hrvDayData, range, startDate]);
 
     const handlePrevious = () => {
         cal?.previous();
@@ -177,15 +201,33 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
     return (
         <div className="p-4 bg-gray-900 text-white">
             <h2 className="text-xl font-bold mb-4">Daily RMSSD</h2>
-            <div className="flex justify-between mb-4">
+            {/* <div className="flex justify-between mb-4">
                 <button onClick={handlePrevious} className="px-4 py-2 bg-blue-500 text-white rounded">
                     Previous
                 </button>
                 <button onClick={handleNext} className="px-4 py-2 bg-blue-500 text-white rounded">
                     Next
                 </button>
-            </div>
-            <div className="flex justify-center" ref={calendarEl}></div>
+            </div> */}
+            {tooltip && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        left: `${tooltip.x}px`,
+                        top: `${tooltip.y - 40}px`,
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        color: 'white',
+                        padding: '5px',
+                        borderRadius: '5px',
+                        zIndex: 1000,
+                        pointerEvents: 'none',
+                    }}
+                >
+                    <p>{format(tooltip.date, 'yyyy-MM-dd')}</p>
+                    <p>RMSSD: {tooltip.rmssd !== null ? tooltip.rmssd.toFixed(2) : 'N/A'}</p>
+                </div>
+            )}
+            <div className="flex justify-center" ref={calendarEl} style={{ height: '200px', width: '100%' }}></div>
             <div className="mt-4 flex justify-center space-x-4">
                 <div className="flex items-center flex-col mr-2">
                     <span>건강 (40+)</span>
@@ -214,7 +256,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
                 </div>
             </div>
 
-            {showModal && selectedData && (
+            {/* {showModal && selectedData && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
                     <div className={`${getBackgroundColorClass(selectedData.rmssd)} text-black p-8 rounded-lg`}>
                         <h3 className="text-2xl font-bold mb-4">RMSSD 정보</h3>
@@ -229,7 +271,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
                         </button>
                     </div>
                 </div>
-            )}
+            )} */}
         </div>
     );
 };
