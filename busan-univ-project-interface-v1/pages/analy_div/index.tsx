@@ -520,7 +520,7 @@ import RmssdCalHeatmap from '../../components/CalHeatMapRmssd'
 import CombinedHrvHeatmap from '../../components/CombinedHrvHeatmap';
 
 
-const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'sueun4701@gmail.com']
+const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'sueun4701@gmail.com', 'psy.suh.hg@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
 
 const LoadingSpinner = () => (
