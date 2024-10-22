@@ -519,6 +519,28 @@ import RmssdCalHeatmap from '../../components/CalHeatMapRmssd'
 
 import CombinedHrvHeatmap from '../../components/CombinedHrvHeatmap';
 
+///
+import Calendar from 'react-calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import styles from './CustomCalendar2.module.css'
+interface DataResult {
+  collection: string;
+  data: { _id: string; count: number }[];
+}
+
+const getDataCountForDate = (date: Date, data: DataResult[]) => {
+  console.log('ingetDataCountForDate date, ', date)
+  const dateString = addDays(date, 1).toISOString().split('T')[0]; // 'YYYY-MM-DD' 형식으로 변환
+  console.log('ingetDataCountForDate dateString, ', dateString)
+  return {
+    bpm: data.find((d) => d.collection === 'bpm')?.data.find((item) => item._id === dateString)?.count || 0,
+    step: data.find((d) => d.collection === 'step')?.data.find((item) => item._id === dateString)?.count || 0,
+    calorie: data.find((d) => d.collection === 'calorie')?.data.find((item) => item._id === dateString)?.count || 0,
+    sleep: data.find((d) => d.collection === 'sleep')?.data.find((item) => item._id === dateString)?.count || 0,
+  };
+};
+////
+
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'sueun4701@gmail.com', 'psy.suh.hg@gmail.com']
 const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
@@ -529,12 +551,19 @@ const LoadingSpinner = () => (
   </div>
 )
 
+
+
 interface AdditionalData {
   bpmData: any[];
   stepData: any[];
   calorieData: any[];
   sleepData: any[];
   hrvData: any[];
+}
+
+interface DataResult {
+  collection: string;
+  data: { _id: string; count: number }[];
 }
 
 interface DataItem {
@@ -553,6 +582,8 @@ interface DataItem {
   pred_rmssd?: number;
   //firstDate?: string;
 }
+
+
 
 export default function Home() {
   const [selectedUser, setSelectedUser] = useState('');
@@ -585,6 +616,8 @@ export default function Home() {
   const [initialDateWindow, setInitialDateWindow] = useState<{ start: Date; end: Date } | null>(null);
 
   const multiChartRef = useRef<HTMLDivElement>(null);
+
+  const [countData, setCountData] = useState<DataResult[]>([]);
 
   const scrollToMultiChart = useCallback(() => {
     if (multiChartRef.current) {
@@ -868,6 +901,10 @@ export default function Home() {
       const endTimeCheckDB = performance.now();
       console.log(`In Index.tsx ---> checkDB 걸린 시간 (1) : ${endTimeCheckDB - startTimeCheckDB} ms`);
 
+
+      const countDataResponse = await axios.get('/api/getCountData', { params: { user_email: user } })
+      setCountData(countDataResponse.data);
+
       // 서버 저장 시간 가져오기 걸린 시간
       const startTimeFetchSaveDates = performance.now();
       await fetchSaveDates(user)
@@ -924,6 +961,44 @@ export default function Home() {
   //   }
   // }, [bpmData, stepData, calorieData, predictHourData, timeUnit]);
 
+  const tileContent = ({ date }: { date: Date }) => {
+    const counts = getDataCountForDate(date, countData);
+    const hasData = Object.values(counts).some(count => count > 0);
+  
+    if (counts.bpm < 1440 - 60 || counts.calorie < 96 - 4) {
+      return hasData ? (
+        // <div className={styles.tileContent}>
+        //   <div className={styles.dataIndicator}>●</div>
+        //   <div className={styles.dataCount}>{counts.bpm}</div>
+        //   <div className={styles.dataCount}>{counts.step}</div>
+        //   <div className={styles.dataCount}>{counts.calorie}</div>
+        //   <div className={styles.dataCount}>{counts.sleep}</div>
+        // </div>
+        <div className={styles.tileContentUnderCount}>
+        {/* <div className={styles.dataIndicator}>●</div> */}
+        <div className={styles.dataCount}>{counts.bpm} / {counts.step} </div>
+        <div className={styles.dataCount}>{counts.calorie} / {counts.sleep}</div>
+      </div>
+      ) : null;
+    } else {
+      return hasData ? (
+        // <div className={styles.tileContent}>
+        //   <div className={styles.dataIndicator}>●</div>
+        //   <div className={styles.dataCount}>{counts.bpm}</div>
+        //   <div className={styles.dataCount}>{counts.step}</div>
+        //   <div className={styles.dataCount}>{counts.calorie}</div>
+        //   <div className={styles.dataCount}>{counts.sleep}</div>
+        // </div>
+        <div className={styles.tileContent}>
+        {/* <div className={styles.dataIndicator}>●</div> */}
+        <div className={styles.dataCount}>{counts.bpm} / {counts.step}</div>
+        <div className={styles.dataCount}>{counts.calorie} / {counts.sleep}</div>
+      </div>
+      ) : null;
+    }
+
+  };
+
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Heart Rate and Sleep Analysis Dashboard</h1>
@@ -941,6 +1016,10 @@ export default function Home() {
         </select>
         {isLoadingUser && <LoadingSpinner />}
       </div>
+
+
+
+
       {selectedUser && saveDates.length > 0 && (
         <div className="mb-4 flex items-center">
           <label className="mr-2">저장된 날짜 선택:</label>
@@ -957,6 +1036,54 @@ export default function Home() {
           {isLoading && <LoadingSpinner />}
         </div>
       )}
+
+      {isLoading ? (
+        <SkeletonLoader viewMode={viewMode} columns={1} />
+      ) : selectedUser && countData.length > 0 && !error ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className='w-[850px]'>
+          <CardHeader>
+            <CardTitle>Data Availability (BPM/Steps/Calories/Sleep)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* <Calendar
+              //locale='ko'
+              onClickDay={handleDateSelect}
+              tileContent={tileContent}
+              className={`rounded-md border ${styles.customCalendar}`}
+            /> */}
+            <Calendar
+              //onClickDay={handleDateSelect}
+              tileContent={tileContent}
+              className={styles.customCalendar}
+              locale="ko"
+              // formatMonthYear={(locale, date) => 
+              //   `${date.getFullYear()}년 ${date.getMonth() + 1}월`
+              // }
+              // formatShortWeekday={(locale, date) => 
+              //   ['일', '월', '화', '수', '목', '금', '토'][date.getDay()]
+              // }
+              nextLabel="▶"
+              prevLabel="◀"
+              next2Label={null}
+              prev2Label={null}
+            />
+            
+            {/* <div className="mt-2 text-sm text-center">
+              (BPM/Steps/Calories/Sleep)
+            </div> */}
+          </CardContent>
+        </Card>
+
+
+
+      </div>
+
+      ) : (
+        <div></div>
+      )}
+
+
       {selectedDate && (
         <div className="mb-4 flex items-center justify-end">
           <button
