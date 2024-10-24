@@ -9,6 +9,7 @@ import { NameType, ValueType } from 'recharts/types/component/DefaultTooltipCont
 import MemoModal from './MemoModal';
 import axios from 'axios'
 import { Memo } from './types'
+import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 
 
 interface MultiChartProps {
@@ -102,91 +103,9 @@ const MultiChart: React.FC<MultiChartProps> = ({
   // heatmap
   const [heatmapSelectedDate, setHeatmapSelectedDate] = useState<Date | null>(null);
 
-  
-
-
-  // useEffect(() => {
-  //   const handleDateSelect = (event: CustomEvent) => {
-  //     const { date } = event.detail;
-  //     console.log(`in 멀티차트 히트맵 클릭 날짜 : ${date}`)
-  //     setHeatmapSelectedDate(date);
-  //     //console.log(heatmapSelectedDate, ': heatmapSelectedDate')
-  //   };
-  //   window.addEventListener('dateSelect', handleDateSelect as EventListener);
-  //   return () => {
-  //     window.removeEventListener('dateSelect', handleDateSelect as EventListener);
-  //   }
-  // }, []);
-
-  // useEffect(() => {
-  //   const handleDateSelect = (event: CustomEvent) => {
-  //     const { date } = event.detail;
-  //     console.log(`히트맵에서 선택된 날짜: ${date}`);
-      
-  //     const selectedDate = new Date(date);
-  //     const moveStartDate = startOfDay(selectedDate);
-  //     const moveEndDate = endOfDay(selectedDate);
-
-  //     const fetchStartDate = startOfWeek(subDays(selectedDate, 7), { weekStartsOn: 1 })
-  //     const fetchEndDate = endOfWeek(addDays(selectedDate, 7), { weekStartsOn: 1 })
-
-  //     console.log(`....fetchAdditionalData... ${fetchStartDate} ~ ${fetchEndDate}`)
-  
-  //     setDateWindow({ start: moveStartDate, end: moveEndDate });
-  //     setDateRange('1');
-  //     setTimeUnit('minute'); 
-  
-  //     // 필요한 데이터 불러오기
-  //     fetchAdditionalData(fetchStartDate, fetchEndDate).then((newData) => {
-  //       setBpmData(newData.bpmData);
-  //       setStepData(newData.stepData);
-  //       setCalorieData(newData.calorieData);
-  //       setSleepData(newData.sleepData);
-  //       setLocalHrvData(newData.hrvData);
-  //     });
-  //   };
-  
-  //   window.addEventListener('dateSelect', handleDateSelect as EventListener);
-  //   return () => {
-  //     window.removeEventListener('dateSelect', handleDateSelect as EventListener);
-  //   };
-  // }, [fetchAdditionalData]);
 
   const [cachedData, setCachedData] = useState<CachedDataType>({});
 
-
-
-
-
-  // const fetchThreeWeeksData = useCallback(async (selectedDate: Date) => {
-  //   const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  //   const previousWeekStart = subWeeks(selectedWeekStart, 1);
-  //   const nextWeekStart = addWeeks(selectedWeekStart, 1);
-
-  //   const weeksToFetch = [previousWeekStart, selectedWeekStart, nextWeekStart];
-  //   const newCachedData = { ...cachedData };
-
-  //   await Promise.all(weeksToFetch.map(async (weekStart) => {
-  //     const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-  //     const weekKey = format(weekStart, 'yyyy-MM-dd');
-
-  //     if (!newCachedData[weekKey]) {
-  //       const weekData = await fetchAdditionalData(weekStart, weekEnd);
-  //       newCachedData[weekKey] = weekData;
-  //     }
-  //   }));
-
-  //   setCachedData(newCachedData);
-
-  //   // 선택된 날짜가 속한 주의 데이터 설정
-  //   const currentWeekKey = format(selectedWeekStart, 'yyyy-MM-dd');
-  //   setBpmData(newCachedData[currentWeekKey].bpmData);
-  //   setStepData(newCachedData[currentWeekKey].stepData);
-  //   setCalorieData(newCachedData[currentWeekKey].calorieData);
-  //   setSleepData(newCachedData[currentWeekKey].sleepData);
-  //   setLocalHrvData(newCachedData[currentWeekKey].hrvData);
-
-  // }, [cachedData, fetchAdditionalData]);
 
   const fetchThreeWeeksData = useCallback(async (selectedDate: Date) => {
     const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
@@ -219,6 +138,10 @@ const MultiChart: React.FC<MultiChartProps> = ({
     const filteredSleepData = newCachedData[currentWeekKey].sleepData.filter(d => format(new Date(d.timestamp_start), 'yyyy-MM-dd') === selectedDateStr);
     const filteredHrvData = newCachedData[currentWeekKey].hrvData.filter(d => format(new Date(d.ds), 'yyyy-MM-dd') === selectedDateStr);
   
+
+
+    //console.log('33333333333333333333333333',filteredBpmData)
+
     setBpmData(filteredBpmData);
     setStepData(filteredStepData);
     setCalorieData(filteredCalorieData);
@@ -226,30 +149,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
     setLocalHrvData(filteredHrvData);
   
   }, [cachedData, fetchAdditionalData]);
-
-  // useEffect(() => {
-  //   const handleDateSelect = async (event: Event) => {
-  //     const customEvent = event as CustomEvent<{ date: string }>;
-  //     const { date } = customEvent.detail;
-  //     console.log(`히트맵에서 선택된 날짜: ${date}`);
-      
-  //     const selectedDate = new Date(date);
-  //     const newStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
-  //     const newEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
-  
-  //     setDateWindow({ start: newStart, end: newEnd });
-  //     setDateRange('1'); // 1주일 보기로 설정
-  //     setTimeUnit('minute'); // 분 단위로 설정 (필요에 따라 조정)
-  
-  //     await fetchThreeWeeksData(selectedDate);
-  //   };
-  
-  //   window.addEventListener('dateSelect', handleDateSelect);
-  //   return () => {
-  //     window.removeEventListener('dateSelect', handleDateSelect);
-  //   };
-  // }, [fetchThreeWeeksData]);
-
 
 /////////////
 const handleDateSelect = useCallback(async (event: Event) => {
@@ -280,150 +179,19 @@ useEffect(() => {
 }, [handleDateSelect]);
 ////////////
 
-
-
-//////////////
-  // useEffect(() => {
-  //   const handleDateSelect = (event: CustomEvent) => {
-  //     const { date } = event.detail;
-  //     console.log(`히트맵에서 선택된 날짜: ${date}`);
-      
-  //     const selectedDate = new Date(date);
-  //     const moveStartDate = startOfDay(selectedDate);
-  //     const moveEndDate = endOfDay(selectedDate);
-
-  //     const fetchStartDate = startOfWeek(subDays(selectedDate, 7), { weekStartsOn: 1 })
-  //     const fetchEndDate = endOfWeek(addDays(selectedDate, 7), { weekStartsOn: 1 })
-
-  //     console.log(`....fetchAdditionalData... ${fetchStartDate} ~ ${fetchEndDate}`)
-  
-  //     setDateWindow({ start: moveStartDate, end: moveEndDate });
-  //     setDateRange('1');
-  //     setTimeUnit('minute'); 
-  
-  //     // 필요한 데이터 불러오기
-  //     fetchAdditionalData(fetchStartDate, fetchEndDate).then((newData) => {
-  //       setBpmData(newData.bpmData);
-  //       setStepData(newData.stepData);
-  //       setCalorieData(newData.calorieData);
-  //       setSleepData(newData.sleepData);
-  //       setLocalHrvData(newData.hrvData);
-  //     });
-  //   };
-  
-  //   window.addEventListener('dateSelect', handleDateSelect as EventListener);
-  //   return () => {
-  //     window.removeEventListener('dateSelect', handleDateSelect as EventListener);
-  //   };
-  // }, [fetchAdditionalData]);
-  //////
-
-
-
-
-  
-
-  useEffect(() => {
-    //console.log(`cachedData in useEffect -> ${Object.keys(cachedData)}`)
-    //console.log('Cached Data Keys:', Object.keys(cachedData));
-    //console.log('Cached Data:', cachedData);
-    //console.log(`cachedData in useEffect -> ${}`)
-  })
-
   const [localHrvData, setLocalHrvData] = useState(hrvHourData);
 
-  const adjustTimeZone = (date: Date) => {
-    return subHours(date, 9);
-  };
-
-  const adjustTimeZoneAddNine = (date: Date) => {
-    return addHours(date, 9);
-  };
-
 
   useEffect(() => {
+    if (dateWindow === null) return ;
+    //console.log('in fetchMemos ; dateWindow: ', dateWindow.start, '~~~', dateWindow.end)
+
     if (dateWindow && selectedUser) {
       fetchMemos();
       //console.log('useEffect memo ------->>>>>',memos, '----', dateWindow.start, '~~~', dateWindow.end)
     }
   }, [dateWindow, selectedUser]);
 
-  // const fetchMemos = async () => {
-  //   if (!selectedUser || !dateWindow) return;
-  //   try {
-  //     const response = await axios.get('/api/getMemos', {
-  //       params: {
-  //         user_email: selectedUser,
-  //         //startDate: adjustTimeZoneAddNine(dateWindow.start),
-  //         //endDate: adjustTimeZoneAddNine(dateWindow.end),
-  //         startDate: dateWindow.start,
-  //         endDate: dateWindow.end
-  //       },
-  //     });
-
-  //     console.log('*******************************************************')
-  //     console.log(dateWindow.start, '~~~', dateWindow.end)
-  //     console.log(response.data)
-  //     console.log('*******************************************************')
-
-  //     const memoData = response.data.reduce((acc: { [key: string]: string }, memo: any) => {
-  //       //const memoTimestamp = adjustTimeZone(new Date(format(memo.timestamp, 'yyyy-MM-dd HH:mm')))
-  //       console.log('memo~~~~~~~~~~~~~ ;;;;;; ', memo)
-  //       const memoTimestamp = new Date(format(memo.timestamp, 'yyyy-MM-dd HH:mm:ss'))
-  //       console.log('memoTimestamp ;;;;;; ', memoTimestamp)
-  //       console.log('memo.memo ;;;;;; ', memo.memo)
-  //       acc[`${memo.type}_${memoTimestamp.getTime()}`] = memo.memo;
-  //       console.log('acc ;;;;;; ', acc)
-  //       return acc;
-  //     }, {});
-
-      
-  
-  //     setMemos(memoData);
-  //     console.log('********%%%%%%%%%%%%%********')
-  //     console.log('----fetchMemos------', memos)
-  //     console.log('********%%%%%%%%%%%%%********')
-  //   } catch (error) {
-  //     console.error('Error fetching memos:', error);
-  //   }
-  // };
-
-  // const fetchMemos = async () => {
-  //   if (!selectedUser || !dateWindow) return;
-  //   try {
-  //     const response = await axios.get('/api/getMemos', {
-  //       params: {
-  //         user_email: selectedUser,
-  //         startDate: dateWindow.start,
-  //         endDate: dateWindow.end
-  //       },
-  //     });
-  
-  //     const memoData = response.data.reduce((acc: { [key: string]: string }, memo: any) => {
-  //       console.log('memo:', memo);
-  //       let memoKey: string;
-        
-  //       if (memo.type === 'sleep') {
-  //         const sleepStart = new Date(memo.timestamp_start);
-  //         memoKey = `sleep_${sleepStart.getTime()}`;
-  //       } else {
-  //         const memoTimestamp = new Date(memo.timestamp);
-  //         memoKey = `${memo.type}_${memoTimestamp.getTime()}`;
-  //       }
-  
-  //       console.log('memoKey:', memoKey);
-  //       console.log('memo.memo:', memo.memo);
-        
-  //       acc[memoKey] = memo.memo;
-  //       return acc;
-  //     }, {});
-  
-  //     console.log('Final memoData:', memoData);
-  //     setMemos(memoData);
-  //   } catch (error) {
-  //     console.error('Error fetching memos:', error);
-  //   }
-  // };
 
   const fetchMemos = async () => {
     if (!selectedUser || !dateWindow) return;
@@ -495,16 +263,6 @@ useEffect(() => {
     setMemoModalOpen(false);
   };
 
-  // const handleChartClick = (data: any, dataKey: string) => {
-  //   if (dataKey === 'calorie') {
-  //     const interval = 15 * 60 * 1000; // 15분을 밀리초로 표현
-  //     const startOfInterval = Math.floor(data.timestamp / interval) * interval;
-  //     setSelectedData({ ...data, type: dataKey, timestamp: startOfInterval });
-  //   } else {
-  //     setSelectedData({ ...data, type: dataKey });
-  //   }
-  //   setMemoModalOpen(true);
-  // };
 
   const handleChartClick = (data: any, dataKey: string) => {
     if (dataKey === 'calorie') {
@@ -524,6 +282,7 @@ useEffect(() => {
   };
 
   useEffect(() => {
+    //console.log('초기 cached 설정!ㄴ!!')
     const initializeCache = () => {
       let startDate: Date;
       if (initialDateWindow) {
@@ -537,11 +296,6 @@ useEffect(() => {
         console.error('No valid start date found for initialization');
         return;
       }
-
-      //console.log(`^^^^^^^^^^^^^initialDateWindow: ${JSON.stringify(initialDateWindow)} ^^^^^^^^^`)
-      //console.log(`^^^^^^^^^^^^^new Date(initialBpmData[0].timestamp): ${new Date(initialBpmData[0].timestamp)} ^^^^^^^^^`)
-      //console.log(`^^^^^^^^^^^^^dbStartDate: ${dbStartDate} ^^^^^^^^^`)
-      //console.log(`^^^^^^^^^^^^^startDate: ${startDate} ^^^^^^^^^`)
 
       const weekStart = startOfWeek(startDate, { weekStartsOn: 1 });
       //console.log(`^^^^^^^^^^^^^weekStart: ${weekStart} ^^^^^^^^^`)
@@ -567,64 +321,48 @@ useEffect(() => {
 
       // Set initial data for display
       const currentWeekKey = format(weekStart, 'yyyy-MM-dd');
+
       setBpmData(newCachedData[currentWeekKey].bpmData);
       setStepData(newCachedData[currentWeekKey].stepData);
       setCalorieData(newCachedData[currentWeekKey].calorieData);
       setSleepData(newCachedData[currentWeekKey].sleepData);
       setLocalHrvData(newCachedData[currentWeekKey].hrvData);
 
-      // console.log('Cached Data Keys:', Object.keys(newCachedData));
-      // console.log('Cached Data:', newCachedData);
-
-      //console.log(`^^^^^^^^^^^^^ ${JSON.stringify(newCachedData[currentWeekKey].bpmData)} ^^^^^^^^^`)
     };
 
     initializeCache();
   }, [initialDateWindow, initialBpmData, initialStepData, initialCalorieData, initialSleepData, hrvHourData, dbStartDate]);
 
-  // useEffect(() => {
-  //   if (dateWindow) {
-  //     const loadData = async () => {
-  //       const weekKey = format(startOfWeek(dateWindow.start, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-
-  //       console.log(`weekKey ; ; ; ; ; ${weekKey}`)
-        
-  //       //console.log("Attempting to load data for week:", weekKey);
-
-  //       console.log(cachedData)
-  //       console.log(`dateWindow .. ${dateWindow.start} ~ ${dateWindow.end}`)
-        
-  //       if (cachedData[weekKey]) {
-  //         console.log("Using cached data for:", weekKey);
-  //         setBpmData(cachedData[weekKey].bpmData);
-  //         setStepData(cachedData[weekKey].stepData);
-  //         setCalorieData(cachedData[weekKey].calorieData);
-  //         setSleepData(cachedData[weekKey].sleepData);
-  //         setLocalHrvData(cachedData[weekKey].hrvData);
-  //       } else {
-  //         console.log("Fetching new data for:", weekKey);
-  //         console.log(`fetching new data -- ${dateWindow.start}, ${dateWindow.end}`)
-  //         const newData = await fetchAdditionalData(dateWindow.start, dateWindow.end);
-  //         setCachedData(prev => ({ ...prev, [weekKey]: newData }));
-  //         setBpmData(newData.bpmData);
-  //         setStepData(newData.stepData);
-  //         setCalorieData(newData.calorieData);
-  //         setSleepData(newData.sleepData);
-  //         setLocalHrvData(newData.hrvData);
-  //       }
-  //     };
-  
-  //     loadData();
-  //   }
-  // }, [dateWindow, cachedData, fetchAdditionalData]);
-
   useEffect(() => {
     if (dateWindow) {
       const loadData = async () => {
-        const selectedDate = dateWindow.start;
+        const timezoneOffset = new Date().getTimezoneOffset()
+        const offsetMs = ((-540 - timezoneOffset) * 60 * 1000) * -1
+        //const offsetMs = timezoneOffset * 60 * 1000
+        
+        
+
+        //const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone
+        //const selectedDate = fromZonedTime(dateWindow.start, localTimezone);
+
+        const selectedDate = dateWindow.start
+        
         const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
         const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
         const weekKey = format(weekStart, 'yyyy-MM-dd');
+
+        
+        // console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+        // console.log('dateWindow.start getTime()', dateWindow.start.getTime())
+        // console.log('dateWindow.start', dateWindow.start)
+        // console.log('dateWindow.start toisostring', dateWindow.start.toISOString())
+        // console.log('selectedDate getTime()', selectedDate.getTime())
+        // console.log('selectedDate', selectedDate)
+        // console.log('selectedDate toisostring', selectedDate.toISOString())
+        // console.log('selectedDate getTime()', fromZonedTime(dateWindow.start, 'Asia/Seoul').getTime())
+        // console.log('selectedDate', selectedDate)
+        // console.log('selectedDate toisostring', selectedDate.toISOString())
+        // console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
   
         //console.log(`weekKey: ${weekKey}`);
         //console.log(`dateWindow: ${dateWindow.start} ~ ${dateWindow.end}`);
@@ -633,20 +371,138 @@ useEffect(() => {
         if (cachedData[weekKey]) {
           //console.log("Using cached data for:", weekKey);
           weekData = cachedData[weekKey] as WeekData;
+          // console.log('-----------------weekKey--------------', weekKey)
+          // console.log('-----------------weekData--------------', weekData)
         } else {
           //console.log("Fetching new data for:", weekKey);
+          console.log('in if문 ...... weekStart, weekEnd ', weekStart, ' ~ ', weekEnd)
           weekData = await fetchAdditionalData(weekStart, weekEnd) as WeekData;
           setCachedData(prev => ({ ...prev, [weekKey]: weekData }));
         }
+
+        //console.log('in loadData -----> weekData -----> ', weekData)
+        console.log('in loadData -----> weekData -----> weekStart ----> weekEnd', weekStart, '~~', weekEnd)
   
-        // 선택된 날짜의 데이터만 필터링
-        const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
-        setBpmData(weekData.bpmData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr));
-        setStepData(weekData.stepData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr));
-        setCalorieData(weekData.calorieData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr));
-        setSleepData(weekData.sleepData.filter(d => format(new Date(d.timestamp_start), 'yyyy-MM-dd') === selectedDateStr));
-        setLocalHrvData(weekData.hrvData.filter(d => format(new Date(d.ds), 'yyyy-MM-dd') === selectedDateStr));
-      };
+        if (dateRange === '7') {
+          console.log('설마?')
+          setBpmData(weekData.bpmData);  // 전체 주간 데이터 사용
+          setStepData(weekData.stepData);
+          setCalorieData(weekData.calorieData);
+          setSleepData(weekData.sleepData);
+          setLocalHrvData(weekData.hrvData);
+        } else {
+          // 선택된 날짜의 데이터만 필터링
+          const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+          //console.log('in dateWindow weekdata part ; after format', selectedDateStr)
+          console.log('??? 1일치만인데')
+          // setBpmData(weekData.bpmData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr));
+          // //console.log('in dateWindow weekdata part ; after bpm', weekData.bpmData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr))
+          // setStepData(weekData.stepData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr));
+          // //console.log('in dateWindow weekdata part ; after step')
+          // setCalorieData(weekData.calorieData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr));
+          // //console.log('in dateWindow weekdata part ; after cal')
+          // setSleepData(weekData.sleepData.filter(d => format(new Date(d.timestamp_start), 'yyyy-MM-dd') === selectedDateStr));
+          // //console.log('in dateWindow weekdata part ; after sleep')
+          // setLocalHrvData(weekData.hrvData.filter(d => format(new Date(d.ds), 'yyyy-MM-dd') === selectedDateStr));
+          // //console.log('in dateWindow weekdata part ; after hrv')
+
+          
+          
+          const utcStartOfDay = new Date(startOfDay(selectedDate).getTime() - offsetMs)
+          const utcEndOfDay = new Date(endOfDay(selectedDate).getTime() - offsetMs)
+          
+          console.log(weekData.bpmData)
+          
+          console.log('selectedDate : ', selectedDate)
+          console.log('selectedDateStr : ', selectedDateStr)
+          console.log('utcStartOfDay iso : ', utcStartOfDay.toISOString())
+          console.log('utcStartOfDay : ', utcStartOfDay)
+          console.log('utcEndOfDay iso : ', utcEndOfDay.toISOString())
+          console.log('utcEndOfDay : ', utcEndOfDay)
+
+          console.log('!!!!!!!!!!', weekData.bpmData.filter(d => {
+            const timestamp = new Date(d.timestamp);
+            return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
+          }))
+
+          // console.log('^^^^^^ TEST1 ^^^^^^')
+          // const testTimestamp = 1729090800000
+          // console.log('original testTimestamp : ', testTimestamp)
+          // console.log('new Date testTimestamp : ', new Date(testTimestamp))
+          // console.log('new Date testTimestamp toisostring : ', new Date(testTimestamp).toISOString())
+          // console.log('new Date getTime : ', new Date(testTimestamp).getTime())
+          // console.log('new Date new Date getTime toisostring : ', new Date(new Date(testTimestamp).getTime()).toISOString())
+          // console.log('^^^^^^^^^^^^^^^^^^')
+
+          // console.log('^^^^^^ TEST2 ^^^^^^')
+          // const newDateTestTimestamp = new Date(testTimestamp)
+          // const newDateTestTimestampToISOString = newDateTestTimestamp.toISOString();
+          // const newDateTestTimestampGetTime = newDateTestTimestamp.getTime();
+          // const newDateNewDateTestTimestampGetTimeToISOString = new Date(newDateTestTimestampGetTime).toISOString();
+          // console.log('original testTimestamp : ', testTimestamp)
+          // console.log('newDateTestTimestamp : ', newDateTestTimestamp)
+          // console.log('newDateTestTimestampToISOString : ', newDateTestTimestampToISOString)
+          // console.log('newDateTestTimestampGetTime : ', newDateTestTimestampGetTime)
+          // console.log('newDateNewDateTestTimestampGetTimeToISOString : ', newDateNewDateTestTimestampGetTimeToISOString)
+          // console.log('^^^^^^^^^^^^^^^^^^')
+
+          console.log('!!!!!!!!!!', new Date(weekData.bpmData.filter(d => {
+            const timestamp = new Date(d.timestamp);
+            return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
+          })[0].timestamp).toISOString())
+          console.log('!!!!!!!!!!', new Date(weekData.bpmData.filter(d => {
+            const timestamp = new Date(d.timestamp);
+            return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
+          })[0].timestamp).getTime())
+
+
+          setBpmData(weekData.bpmData.filter(d => {
+            const timestamp = new Date(d.timestamp);
+            return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
+          }));
+          setStepData(weekData.stepData.filter(d => {
+            const timestamp = new Date(d.timestamp);
+            return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
+          }));
+          setCalorieData(weekData.calorieData.filter(d => {
+            const timestamp = new Date(d.timestamp);
+            return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
+          }));
+          setSleepData(weekData.bpmData.filter(d => {
+            const timestamp_start = new Date(d.timestamp);
+            return timestamp_start >= utcStartOfDay && timestamp_start <= utcEndOfDay;
+          }));
+          setLocalHrvData(weekData.hrvData.filter(d => {
+            const ds = new Date(d.ds);
+            return ds >= utcStartOfDay && ds <= utcEndOfDay;
+          }));
+
+          // console.log('!!!!!!!!!!', weekData.bpmData.filter(d => {
+          //   const timestamp = new Date(d.timestamp);
+          //   return timestamp >= startOfSelectedDate && timestamp <= endOfSelectedDate;
+          // }))
+
+          // setBpmData(weekData.bpmData.filter(d => {
+          //   const timestamp = new Date(d.timestamp);
+          //   return timestamp >= startOfSelectedDate && timestamp <= endOfSelectedDate;
+          // }));
+          // setStepData(weekData.stepData.filter(d => {
+          //   const timestamp = new Date(d.timestamp);
+          //   return timestamp >= startOfSelectedDate && timestamp <= endOfSelectedDate;
+          // }));
+          // setCalorieData(weekData.calorieData.filter(d => {
+          //   const timestamp = new Date(d.timestamp);
+          //   return timestamp >= startOfSelectedDate && timestamp <= endOfSelectedDate;
+          // }));
+          // setSleepData(weekData.bpmData.filter(d => {
+          //   const timestamp_start = new Date(d.timestamp);
+          //   return timestamp_start >= startOfSelectedDate && timestamp_start <= endOfSelectedDate;
+          // }));
+          // setLocalHrvData(weekData.hrvData.filter(d => {
+          //   const ds = new Date(d.ds);
+          //   return ds >= startOfSelectedDate && ds <= endOfSelectedDate;
+          // }));
+        }};
 
         console.log(cachedData)
         //console.log(`dateWindow .. ${dateWindow.start} ~ ${dateWindow.end}`)
@@ -696,17 +552,20 @@ useEffect(() => {
       const selectedDateObj = new Date(selectedDate);
       const startOfWeekDate = startOfWeek(selectedDateObj, { weekStartsOn: 1 }); // 월요일 시작
       const endOfWeekDate = endOfWeek(selectedDateObj, { weekStartsOn: 1 }); // 일요일 끝
+      //console.log('---------------------------------???')
       setDateWindow({
         start: startOfDay(startOfWeekDate),
         end: endOfDay(endOfWeekDate)
       });
     }
+    //console.log('in selectedDate ---->? ')
   }, [selectedDate]);
 
   const processHourlyData = useCallback((data: any[], valueKey: string) => {
+    console.log('--------------processHourlyData before process data :', valueKey , data)
     const hourlyData = data.reduce((acc: any, item: any) => {
-      //const hourKey = startOfHour(adjustTimeZone(new Date(item.timestamp))).getTime();
       const hourKey = startOfHour(new Date(item.timestamp)).getTime();
+      //console.log('In ProcessHourlyData ; item.timestamp ;; ', item.timestamp,' ----> ', hourKey, '---->' , valueKey ,' -----> ' ,item.value)
       if (!acc[hourKey]) {
         acc[hourKey] = { timestamp: hourKey, values: [], sum: 0, count: 0 };
       }
@@ -716,12 +575,23 @@ useEffect(() => {
       return acc;
     }, {});
 
+    console.log('in processHoulryData ', valueKey, '----??', hourlyData)
+
+    console.log('마지막 리턴 값 in processHoulryData ', valueKey, '----??', Object.values(hourlyData).map((item: any) => ({
+      timestamp: item.timestamp,
+      [valueKey]: valueKey === 'bpm' ? item.sum / item.count : item.sum
+    })))
+
     return Object.values(hourlyData).map((item: any) => ({
       timestamp: item.timestamp,
       [valueKey]: valueKey === 'bpm' ? item.sum / item.count : item.sum
     }));
   }, []);
 
+
+  console.log('')
+  console.log(bpmData)
+  console.log('')
   const hourlyBpmData = useMemo(() => processHourlyData(bpmData, 'bpm'), [bpmData, processHourlyData]);
   const hourlyStepData = useMemo(() => processHourlyData(stepData, 'step'), [stepData, processHourlyData]);
   const hourlyCalorieData = useMemo(() => processHourlyData(calorieData, 'calorie'), [calorieData, processHourlyData]);
@@ -735,7 +605,10 @@ useEffect(() => {
 
 
   const fillEmptyHours = useCallback((data: any[], start: Date, end: Date, keys: string[]) => {
+    console.log('in fillEmptyHours ;;;', data, '*************')
+    console.log('in fillEmptyHours start end;;;', start, ' ~~ ',end, '*************')
     const allHours = eachHourOfInterval({ start, end });
+    console.log('in fillEmptyHours allHours;;;', allHours, '*************')
     const filledData = allHours.map(hour => {
       const timestamp = hour.getTime();
       const existingData = data.find(item => item.timestamp === timestamp);
@@ -744,6 +617,7 @@ useEffect(() => {
       keys.forEach(key => emptyData[key] = null);
       return emptyData;
     });
+    
     return filledData;
   }, []);
 
@@ -802,9 +676,14 @@ useEffect(() => {
           });
           setCachedData(newCachedData);
   
+
+          //console.log('is timeunit 7days in moveDate, newCachedData111111111111111: ', newCachedData)
+
+
           // Set data for the current week
           const currentWeekKey = format(weekStart, 'yyyy-MM-dd');
           if (newCachedData[currentWeekKey]) {
+            
             setBpmData(newCachedData[currentWeekKey].bpmData);
             setStepData(newCachedData[currentWeekKey].stepData);
             setCalorieData(newCachedData[currentWeekKey].calorieData);
@@ -813,14 +692,43 @@ useEffect(() => {
           }
         });
       } else {
-        // If all data is already cached, just set the current week's data
         const currentWeekKey = format(weekStart, 'yyyy-MM-dd');
+        console.log('moveDate before setBpmData...')
         setBpmData(cachedData[currentWeekKey].bpmData);
         setStepData(cachedData[currentWeekKey].stepData);
         setCalorieData(cachedData[currentWeekKey].calorieData);
         setSleepData(cachedData[currentWeekKey].sleepData);
         setLocalHrvData(cachedData[currentWeekKey].hrvData);
+        // if (dateRange === '7') {
+        //   console.log('moveDate before setBpmData...')
+        //   setBpmData(cachedData[currentWeekKey].bpmData);
+        //   setStepData(cachedData[currentWeekKey].stepData);
+        //   setCalorieData(cachedData[currentWeekKey].calorieData);
+        //   setSleepData(cachedData[currentWeekKey].sleepData);
+        //   setLocalHrvData(cachedData[currentWeekKey].hrvData);
+        // } else {
+        //   const tempKeyStr = format(newStart, 'yyyy-MM-dd');
+        //   console.log('???????')
+        //   setBpmData(cachedData[currentWeekKey].bpmData.filter(d => 
+        //     format(new Date(d.timestamp), 'yyyy-MM-dd') === tempKeyStr
+        //   ));
+        //   setStepData(cachedData[currentWeekKey].stepData.filter(d => 
+        //     format(new Date(d.timestamp), 'yyyy-MM-dd') === tempKeyStr
+        //   ));
+        //   setCalorieData(cachedData[currentWeekKey].calorieData.filter(d => 
+        //     format(new Date(d.timestamp), 'yyyy-MM-dd') === tempKeyStr
+        //   ));
+        //   setSleepData(cachedData[currentWeekKey].sleepData.filter(d => 
+        //     format(new Date(d.timestamp), 'yyyy-MM-dd') === tempKeyStr
+        //   ));
+        //   setLocalHrvData(cachedData[currentWeekKey].hrvData.filter(d => 
+        //     format(new Date(d.timestamp), 'yyyy-MM-dd') === tempKeyStr
+        //   ));
+        // }
+
       }
+
+      //console.log('is in moveDate ; start : , end : ', newStart, ';;;;;', newEnd)
   
       return { 
         start: newStart, 
@@ -831,6 +739,7 @@ useEffect(() => {
 
   const indexData = useCallback((data: any[]) => {
     //console.log("Indexing data:", data); // 로그 추가
+    //console.log('hoxy?')
     const indexed = data.reduce((acc: { [key: number]: any }, item) => {
       const timestamp = new Date(item.timestamp).getTime();
       if (!acc[timestamp]) {
@@ -858,6 +767,7 @@ useEffect(() => {
   
 
   const indexedPredictData = useMemo(() => {
+    //console.log('hoxy22')
     return predictMinuteData.reduce((acc: { [key: number]: any }, item) => {
       const timestamp = new Date(item.ds).getTime();
       acc[timestamp] = item;
@@ -889,6 +799,18 @@ useEffect(() => {
     }));
   };
 
+
+
+  const formatDateForDisplay = (time: number) => {
+    //const date = formatInTimeZone(new Date(time), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+    const date = new Date(time);
+    //console.log(date);
+    const date2 = formatInTimeZone(new Date(time), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+    //console.log('convert date ', date2)
+    //console.log('convert date format ', format(date2, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00'))
+    return format(date2, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
+  };
+
   const displayData = useMemo(() => {
     if (!dateWindow) return [];
 
@@ -902,6 +824,27 @@ useEffect(() => {
     }
 
 
+// ///////////////// 테스트 부분 ///////////////////
+//     const startInKST = startOfDay(dateWindow.end);
+//     const endInKST = endOfDay(dateWindow.end);
+    
+//     // KST를 UTC로 변환 (9시간 차이)
+//     startDate = subHours(startInKST, 9);
+//     endDate = subHours(endInKST, 9);
+// //////////////////////////////////////////////////
+
+
+
+
+
+    console.log('기존 startDate : ', startDate , '기존 endDate : ', endDate)
+    const timezoneOffset = new Date().getTimezoneOffset()
+    const offsetMs = ((-540 - timezoneOffset) * 60 * 1000) * -1
+    startDate = new Date(startDate.getTime() - offsetMs)
+    endDate = new Date(endDate.getTime() - offsetMs)
+
+
+    console.log(`Date range: ${startDate} to ${endDate}`);
     //console.log(`in displayData startDate ~ endDate---> ${startDate} ~ ${endDate}`)
 
     const normalStartDate = startDate;
@@ -913,21 +856,45 @@ useEffect(() => {
     //console.log(`in displayData --- timeunit : ${timeUnit}`)
     if (timeUnit === 'hour') {
       //console.log('in displayData timeunit === hour, 무한루프')
+      console.log('in timeUnit hour ; startDate: ', startDate, ' endDate: ', endDate, ' hourlyBpmData: ', hourlyBpmData)
       const filledBpmData = fillEmptyHours(hourlyBpmData, startDate, endDate, ['bpm']);
       const filledStepData = fillEmptyHours(hourlyStepData, startDate, endDate, ['step']);
       const filledCalorieData = fillEmptyHours(hourlyCalorieData, startDate, endDate, ['calorie']);
       const filledHrvData = fillEmptyHours(hourlyHrvData, startDate, endDate, ['hour_rmssd', 'hour_sdnn']);
 
-      
+      // const filledBpmData = fillEmptyHours(hourlyBpmData, startDate, endDate, ['bpm'])
+      // .map(item => ({
+      //   ...item,
+      //   timestamp: item.timestamp + timezoneOffset
+      // }));
+      // const filledStepData = fillEmptyHours(hourlyStepData, startDate, endDate, ['step'])
+      // .map(item => ({
+      //   ...item,
+      //   timestamp: item.timestamp + timezoneOffset
+      // }));
+      // const filledCalorieData = fillEmptyHours(hourlyCalorieData, startDate, endDate, ['calorie'])
+      // .map(item => ({
+      //   ...item,
+      //   timestamp: item.timestamp + timezoneOffset
+      // }));
+      // const filledHrvData = fillEmptyHours(hourlyHrvData, startDate, endDate, ['hour_rmssd', 'hour_sdnn'])
+      // .map(item => ({
+      //   ...item,
+      //   timestamp: item.timestamp + timezoneOffset
+      // }));
+
+      console.log('in displayData ; in timeunit hour ; filledBpmData ; ', filledBpmData)
 
       filteredData = filledBpmData.map((item, index) => ({
         ...item,
+        //timestamp: addHours(new Date(item.timestamp), 1).getTime(),
         step: filledStepData[index]?.step ?? 0,
         calorie: filledCalorieData[index]?.calorie ?? 0,
         hour_rmssd: filledHrvData[index]?.hour_rmssd ?? null,
         hour_sdnn: filledHrvData[index]?.hour_sdnn ?? null,
         hour_pred_bpm: predictHourData.find(p => new Date(p.ds).getTime() === item.timestamp)?.hour_pred_bpm ?? null
       }));
+
 
     } else {
       
@@ -967,6 +934,8 @@ useEffect(() => {
       )
     );
 
+    console.log('in displayData, filteredData ; ', filteredData)
+
     return filteredData;
   }, [timeUnit, dateRange, dateWindow, hourlyBpmData, hourlyStepData, hourlyCalorieData, hourlyHrvData, 
       indexedBpmData, indexedStepData, indexedCalorieData, indexedSleepData, indexedPredictData, 
@@ -976,23 +945,36 @@ useEffect(() => {
   const filteredData = useMemo(() => {
     // displayData가 undefined이거나 배열이 아닌 경우 빈 배열 반환
 
+    //console.log('-------? filteredData ;')
+
     if (!Array.isArray(displayData)) return [];
+
+    //console.log('------------ first if ')
+    //console.log('is brushDomain? ', brushDomain)
 
     // brushDomain이 없으면 전체 displayData 반환
     if (!brushDomain) return displayData;
 
+    console.log('------------ second if ')
+
     // brushDomain이 유효한 경우에만 필터링 적용
     if (Array.isArray(brushDomain) && brushDomain.length === 2) {
+      //console.log('여기서?')
       return displayData.filter(
         item => item.timestamp >= brushDomain[0] && item.timestamp <= brushDomain[1]
       );
     }
+
+
+
+    //console.log('@@@@in filteredData --> displayData ; ', displayData)
 
     // 기본적으로 전체 displayData 반환
     return displayData;
   }, [displayData, brushDomain]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
+    //console.log('is brushChange?', newBrushDomain)
     if (newBrushDomain && newBrushDomain.length === 2) {
       setBrushDomain(newBrushDomain);
       onBrushChange(newBrushDomain);
@@ -1002,88 +984,13 @@ useEffect(() => {
     }
   }, [onBrushChange]);
 
-  const formatDateForDisplay = (time: number) => {
-    const date = new Date(time);
-    return format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00');
-  };
 
-  // const CustomTooltip: React.FC<TooltipProps<ValueType, NameType>> = ({ active, payload, label }) => {
-  //   if (active && payload && payload.length) {
-  //     const date = new Date(label as number);
-  //     const currentChart = payload[0].dataKey as string;
-  
-  //     return (
-  //       <div className="bg-white p-2 border border-gray-300 rounded shadow">
-  //         <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
-  //           {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
-  //         </p>
-  //         {payload.map((pld, index) => {
-  //           if (pld.dataKey === currentChart || (currentChart === 'bpm' && (pld.dataKey === 'min_pred_bpm' || pld.dataKey === 'hour_pred_bpm'))) {
-  //             let value = pld.value !== null ? 
-  //               (pld.dataKey === 'step' || pld.dataKey === 'calorie' ? 
-  //                 Number(pld.value).toFixed(0) : 
-  //                 Number(pld.value).toFixed(2)) 
-  //               : 'N/A';
-              
-  //             console.log('in customtooltip &&&&&&&&&&', pld.dataKey)
-  //             if (pld.dataKey === 'sleep_stage') {
-  //               console.log('is in hear? sleep stage???')
-  //               const sleepStage = pld.value as number;
-  //               value = getSleepStageLabel(sleepStage);
-  //               return (
-  //                 <p key={`${pld.dataKey}-${index}`} style={{ color: getSleepStageColor(sleepStage) }}>
-  //                   Sleep Stage: {value}
-  //                 </p>
-  //               );
-  //             }           
-  
-  //             // let memoKey = `${pld.dataKey}_${date.getTime()}`;
-  //             // if (pld.dataKey === 'calorie') {
-  //             //   const interval = 15 * 60 * 1000;
-  //             //   const startOfInterval = Math.floor(date.getTime() / interval) * interval;
-  //             //   memoKey = `${pld.dataKey}_${startOfInterval}`;
-  //             // }
-  //             // const memo = memos[memoKey];
-
-  //             let memoKey = `${pld.dataKey}_${date.getTime()}`;
-  //             console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@', memoKey)
-  //             if (pld.dataKey === 'calorie') {
-  //               console.log('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
-  //               const interval = 15 * 60 * 1000;
-  //               const startOfInterval = Math.floor(date.getTime() / interval) * interval;
-  //               memoKey = `${pld.dataKey}_${startOfInterval}`;
-  //             } else if (pld.dataKey === 'sleep_stage') {
-  //               console.log('in CUSTOMTOOLTIP MEMOKEY IF ELSE IF )))))))')
-  //               const sleepItem = indexedSleepData.find(s => date.getTime() >= s.start && date.getTime() < s.end);
-  //               console.log('in CUSTOMTOOLTIP MEMOKEY IF ELSE IF ))))))) sleepItem ))))))', sleepItem)
-  //               if (sleepItem) {
-  //                 memoKey = `sleep_${sleepItem.start}`;
-  //               }
-  //             }
-  //             const memo = memos[memoKey];
-  
-  //             return (
-  //               <React.Fragment key={`${pld.dataKey}-${index}`}>
-  //                 <p style={{ color: pld.color }}>
-  //                   {`${pld.name}: ${value}`}
-  //                 </p>
-  //                 {memo && (
-  //                   <p className="text-gray-600 italic">Memo: {memo}</p>
-  //                 )}
-  //               </React.Fragment>
-  //             );
-  //           }
-  //           return null;
-  //         })}
-  //       </div>
-  //     );
-  //   }
-  //   return null;
-  // };
 
   const CustomTooltip: React.FC<TooltipProps<ValueType, NameType>> = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-      const date = new Date(label as number);
+      //formatInTimeZone(new Date(time), 'Asia/Seoul', 'yyyy-MM-dd HH:mm');
+      //const date = new Date(label as number);
+      const date = new Date(formatInTimeZone(new Date(label as number), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
       const currentChart = payload[0].dataKey as string;
   
       // Remove duplicates from payload
