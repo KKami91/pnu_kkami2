@@ -636,15 +636,10 @@ export default function Home() {
   const [dbStartDate, setDbStartDate] = useState<Date | null>(null);
   const [dbEndDate, setDbEndDate] = useState<Date | null>(null);
 
-  const [cachedData, setCachedData] = useState<{
-    [key: string]: AdditionalData
-  }>({});
-
 
   const fetchDataRanges = async (user: string) => {
     try {
-      //const collections = ['bpm_test3', 'step_test3', 'calorie_test3'];
-      // const collections = ['bpm', 'step', 'calorie'];
+
       const collections = ['bpm', 'step', 'calorie'];
       const ranges = await Promise.all(collections.map(async (collection) => {
         const response = await axios.get('/api/getDataRange', {
@@ -653,29 +648,17 @@ export default function Home() {
         return response.data;
       }));
 
-      console.log('in fetchDataRanges ; ranges', ranges)
+      //console.log('in fetchDataRanges ; ranges', ranges)
 
 
       const allStartDates = ranges.map((r) => new Date(r.startDate).getTime());
       const allEndDates = ranges.map((r) => new Date(r.endDate).getTime());
 
-      // const dbStartDate = new Date(Math.min(...allStartDates));
-      // const dbEndDate = new Date(Math.max(...allEndDates));
-  
-      // Adjust to UTC start and end of the week
-      // const dbStartDateUtc = new Date(Date.UTC(dbStartDate.getUTCFullYear(), dbStartDate.getUTCMonth(), dbStartDate.getUTCDate(), 0, 0, 0));
-      // const dbEndDateUtc = new Date(Date.UTC(dbEndDate.getUTCFullYear(), dbEndDate.getUTCMonth(), dbEndDate.getUTCDate(), 23, 59, 59));
-
       const dbStartDate = new Date(Math.min(...allStartDates));
-      const dbEndDate = new Date(Math.max(...allEndDates));
-  
-      // setDbStartDate(dbStartDateUtc);
-      // setDbEndDate(dbEndDateUtc);
+      const dbEndDate = addDays(new Date(Math.max(...allEndDates)), 3);
 
       setDbStartDate(dbStartDate);
       setDbEndDate(dbEndDate);
-
-      //console.log('dbStartDate 셋팅하는 index 부분 : ', dbStartDateUtc)
 
     } catch (error) {
       console.error('Error fetching data ranges:', error);
@@ -689,8 +672,11 @@ export default function Home() {
   }, [selectedUser]);
 
   const getWeekRange = (date: Date) => {
+    //console.log('@@@@@in getWeekRange 초기 date: ', date)
     const datePreviousMonday = previousMonday(startOfWeek(date, {weekStartsOn: 1}));
     const dateNextSunday = nextSunday(endOfWeek(date, {weekStartsOn: 1}));
+    // console.log('@@@@@in getWeekRange 변환 월요일: ', datePreviousMonday)
+    // console.log('@@@@@in getWeekRange 변환 일요일: ', dateNextSunday)
 
     return { start: startOfDay(datePreviousMonday), end: dateNextSunday };
   };
@@ -698,25 +684,20 @@ export default function Home() {
   const fetchData = async (collection: string, user: string, startDate: Date, endDate: Date) => {
     try {
       const fetchStart = performance.now()
-      console.log('in fetchData startDate, endDate,,, : ', startDate, '~~~~', endDate)
+
       const utcStartDate = formatInTimeZone(startDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
       const utcEndDate = formatInTimeZone(endDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-      //console.log('in fetchData startDate, endDate convert!!!,,, : ', fromZonedTime(startDate, 'UTC'), '~~~~', fromZonedTime(endDate, 'UTC'))
+    
       const response = await axios.get('/api/getData3_agg', {
         params: { 
           collection, 
           user_email: user, 
-          // startDate: fromZonedTime(startDate, 'UTC'),
-          // endDate: fromZonedTime(endDate, 'UTC')
+
           startDate: utcStartDate,
           endDate: utcEndDate
-          // startDate: format(startDate, 'yyyy-MM-dd'),
-          // endDate: format(endDate, 'yyyy-MM-dd')
+
         }
       });
-
-      console.log('RRRRRRRRRRRRRRRRRRRRRRRRRR', response.data)
-
 
       const fetchEnd = performance.now()
       console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart} // ${startDate} ~ ${endDate}`)
@@ -744,40 +725,44 @@ export default function Home() {
       try {
         const selectedDate = new Date(date);
         //const { start: fetchStartDate, end: fetchEndDate } = getWeekRange(selectedDate);
-        const weekRange = getWeekRange(selectedDate);
-        const utcStartDate = formatInTimeZone(weekRange.start, 'UTC', "yyyy-MM-dd'T'00:00:00.000'Z'");
-        const utcEndDate = formatInTimeZone(weekRange.end, 'UTC', "yyyy-MM-dd'T'23:59:59.999'Z'");
+        const timezoneOffset = new Date().getTimezoneOffset()
+        const offsetMs = ((-540 - timezoneOffset) * 60 * 1000) * -1
 
-        //const calendarStartTime = performance.now();
+        const weekRange = getWeekRange(selectedDate);
+
+        // console.log('in handleDateSelect weekRange.start, weekRagne.end : ', weekRange.start , weekRange.end)
+
+        // const testWeekRangeStart = weekRange.start.getTime()
+        // const testWeekRangeEnd = weekRange.end.getTime()
+        // const testOffsetMsWeekRangeStart = testWeekRangeStart - offsetMs
+        // const testOffsetMsWeekRangeEnd = testWeekRangeEnd - offsetMs
+        // const testNewDateOffsetMsWeekRangeStart = new Date(testOffsetMsWeekRangeStart)
+        // const testNewDateOffsetMsWeekRangeEnd = new Date(testOffsetMsWeekRangeEnd)
+        // console.log('변환 테스트 getTime weekRange : ', testWeekRangeStart , testWeekRangeEnd)
+        // console.log('변환 테스트 getTime - offsetMs : ', testOffsetMsWeekRangeStart , testOffsetMsWeekRangeEnd)
+        // console.log('변환 테스트 new Date getTime - offsetMs : ', testNewDateOffsetMsWeekRangeStart , testNewDateOffsetMsWeekRangeEnd)
+
+        // const utcStartDate = formatInTimeZone(weekRange.start, 'UTC', "yyyy-MM-dd'T'00:00:00.000'Z'");
+        // const utcEndDate = formatInTimeZone(weekRange.end, 'UTC', "yyyy-MM-dd'T'23:59:59.999'Z'");
+
+        const utcStartDate = new Date(weekRange.start.getTime() - offsetMs);
+        const utcEndDate = new Date(weekRange.end.getTime() - offsetMs);
+
+        // console.log('in handleDateSelect utcStartDate, utcEndDate : ', utcStartDate , utcEndDate)
+        // console.log('in handleDateSelect new Date utcStartDate, new Date utcEndDate : ', new Date(utcStartDate) , new Date(utcEndDate))
+
         const responseDay = await axios.get(`${API_URL}/feature_day_div/${selectedUser}`);
         setHrvDayData(responseDay.data.day_hrv);
-        //const calendarendTime = performance.now();
-        //console.log(`히트맵 일일 HRV 전체 데이터 가져오는데 걸리는 시간 : ${calendarendTime - calendarStartTime} ms`);
-
-
-        //console.log(`in handleDateSelect start : ${fetchStartDate} , end : ${fetchEndDate}`)
 
         const firstFetchStartTime = performance.now();
 
         
 
         //const data = await fetchAdditionalData(fetchStartDate, fetchEndDate);
-        const data = await fetchAdditionalData(new Date(utcStartDate), new Date(utcEndDate));
+        //const data = await fetchAdditionalData(new Date(utcStartDate), new Date(utcEndDate));
+        const data = await fetchAdditionalData(utcStartDate, utcEndDate);
         const firstFetchEndTime = performance.now();
         console.log(`handleDateSelect에서 첫 fetch 데이터 걸린 시간 (약 2주) ${firstFetchEndTime - firstFetchStartTime} ms`);
-        
-        // console.log(`in handleDateSelect ${JSON.stringify(data)}`)
-
-        console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-        console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-        console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-        console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-        console.log('&&&&__))___&)&)&&&)&',data)
-        console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-        console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-        console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-        console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
-
 
         setBpmData(data.bpmData);
         setStepData(data.stepData);
@@ -785,12 +770,6 @@ export default function Home() {
         setSleepData(data.sleepData);
         setHrvHourData(data.hrvData);
 
-        console.log(`in handleDateSelect start : ${utcStartDate} , end : ${utcEndDate}`)
-        console.log('initial first data.bpmData : ', bpmData)
-
-
-  
-        // Prediction 데이터 가져오기 (필요한 경우)
         const predictStartTime = performance.now();
         await fetchPredictionData(selectedUser);
         const predictEndTime = performance.now();
@@ -816,9 +795,6 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    console.log(firstDate, 'Updated firstDate');
-  }, [firstDate]);
 
   const fetchHrvData = useCallback(async (user: string, start: Date, end: Date) => {
     try {
@@ -826,17 +802,17 @@ export default function Home() {
       const utcStart = formatInTimeZone(start, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
       const utcEnd = formatInTimeZone(end, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
-      //const response = await axios.get(`${API_URL}/feature_hour_div/${user}/${start.getTime()}/${end.getTime()}`);
+      
       const response = await axios.get(`${API_URL}/feature_hour_div/${user}/${new Date(utcStart).getTime()}/${new Date(utcEnd).getTime()}`);
 
+      // console.log('----------------in fetchHrvData --------------')
+      // console.log(response.data)
+      // console.log(response.data.hour_hrv.map((item: any) => ({
+      //   ...item,
+      //   ds: formatInTimeZone(new Date(item.ds), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+      // })))
+      // console.log('----------------in fetchHrvData --------------')
 
-      // // 응답 데이터 확인 및 처리
-      // if (response.data && response.data.hour_hrv) {
-      //   return response.data.hour_hrv;
-      // } else {
-      //   //console.warn('HRV data is missing or invalid');
-      //   return [];
-      // }
       if (response.data && response.data.hour_hrv) {
         return response.data.hour_hrv.map((item: any) => ({
           ...item,
@@ -854,71 +830,42 @@ export default function Home() {
   const fetchAdditionalData = useCallback((startDate: Date, endDate: Date): Promise<AdditionalData> => {
     if (!selectedUser) return Promise.resolve({ bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] });
 
-    console.log('---------------------------------------------------------why? ----------------------')
-    console.log(`@@@@@@@@@@@@@@@@@@**${startDate}**FETCHADDITIONALDATA**${endDate}**@@@@@@@@@@@@@@@@@@@@@@@`)
-    console.log('---------------------------------------------------------why? ----------------------')
 
-    // const utcStartDate = new Date(startDate.getTime() - 9 * 60 * 60 * 1000);
-    // const utcEndDate = new Date(endDate.getTime() - 9 * 60 * 60 * 1000);
+    console.log('in fetchAdditionalData : (startDate, endDate) : ', startDate, '~~', endDate)
 
-    // const utcStartDate = fromZonedTime(startDate, 'Asia/Seoul')
-    // const utcEndDate = fromZonedTime(endDate, 'Asia/Seoul')
-
-    //const subSecondsEndDate = subSeconds(endDate, 1)
     return Promise.all([
-      
-      // fetchData('bpm', selectedUser, startDate, subSecondsEndDate),
-      // fetchData('step', selectedUser, startDate, subSecondsEndDate),
-      // fetchData('calorie', selectedUser, startDate, subSecondsEndDate),
-      // fetchData('sleep', selectedUser, startDate, subSecondsEndDate),
-
-      // fetchData('bpm', selectedUser, utcStartDate, utcEndDate),
-      // fetchData('step', selectedUser, utcStartDate, utcEndDate),
-      // fetchData('calorie', selectedUser, utcStartDate, utcEndDate),
-      // fetchData('sleep', selectedUser, utcStartDate, utcEndDate),
-      // fetchHrvData(selectedUser, utcStartDate, utcEndDate),
 
       fetchData('bpm', selectedUser, startDate, endDate),
       fetchData('step', selectedUser, startDate, endDate),
       fetchData('calorie', selectedUser, startDate, endDate),
       fetchData('sleep', selectedUser, startDate, endDate),
       fetchHrvData(selectedUser, startDate, endDate),
-
-      // fetchData('bpm', selectedUser, startDate, subSecondsEndDate),
-      // fetchData('step', selectedUser, startDate, subSecondsEndDate),
-      // fetchData('calorie', selectedUser, startDate, subSecondsEndDate),
-      // fetchData('sleep', selectedUser, startDate, subSecondsEndDate),
-      //fetchHrvData(selectedUser, startDate, subSecondsEndDate),
     ])
       .then(([bpm, step, calorie, sleep, hrv]) => {
-
-        //console.log(`in fetchAdditionalData bpm length : ${JSON.stringify(bpm)}`)
-      console.log('----------bpm-------', bpm, '%%%%%%%%%%%%%%%%%%%%%%%%')
-      console.log('----------step-------', step, '%%%%%%%%%%%%%%%%%%%%%%%%')
-      console.log('----------calorie-------', calorie, '%%%%%%%%%%%%%%%%%%%%%%%%')
-      console.log('----------sleep-------', sleep, '%%%%%%%%%%%%%%%%%%%%%%%%')
-      console.log('----------hrv-------', hrv, '%%%%%%%%%%%%%%%%%%%%%%%%')
 
       const processedBpmData = bpm.map((item: DataItem) => ({
         ...item,
         timestamp: formatInTimeZone(new Date(item.timestamp), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
       }));
 
-      console.log('after processedBpmData', processedBpmData)
+      //console.log('after processedBpmData', processedBpmData)
 
       const processedStepData = step.map((item: DataItem) => ({
         ...item,
         timestamp: formatInTimeZone(new Date(item.timestamp), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
       }));
 
-      console.log('after processedStepData', processedStepData)
+      //console.log('after processedStepData', processedStepData)
 
       const processedCalorieData = calorie.map((item: DataItem) => ({
         ...item,
         timestamp: formatInTimeZone(new Date(item.timestamp), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
       }));
 
-      console.log('after processedCalorieData', processedCalorieData)
+      //console.log('after processedCalorieData', processedCalorieData)
+
+      console.log('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&')
+      console.log('before processedSleepData : ', sleep)
 
       const processedSleepData = sleep.map((item: DataItem) => ({
         ...item,
@@ -927,20 +874,21 @@ export default function Home() {
       }));
 
       console.log('after processedSleepData', processedSleepData)
+      console.log('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&')
 
       const processedHrvData = hrv.map((item: DataItem) => ({
         ...item,
         timestamp: formatInTimeZone(new Date(item.ds), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
       }));
 
-      console.log('after processedHrvData', processedHrvData)
+      //console.log('after processedHrvData', processedHrvData)
 
 
   
 
         //const hrvData = bpm.length === 0 ? [] : hrv;
 
-      console.log('in fetchAdditionalData --- initialize ;; ; bpm : ', bpm)
+      //console.log('in fetchAdditionalData --- initialize ;; ; bpm : ', bpm)
 
         //setTimeout(scrollToMultiChart, 100);
         // return {
@@ -952,7 +900,7 @@ export default function Home() {
         // };
 
 
-      console.log('in fetchAdditionalData', processedBpmData)
+      //console.log('in fetchAdditionalData', processedBpmData)
 
       return {
         bpmData: processedBpmData,
@@ -978,6 +926,8 @@ export default function Home() {
 
       const minutePredictions = minuteResponse.data.min_pred_bpm || [];
       const hourPredictions = hourResponse.data.hour_pred_bpm || [];
+
+      //console.log('in fetchPredictionData : minute response : ', minuteResponse.data)
   
       setPredictMinuteData(minutePredictions);
       setPredictHourData(hourPredictions);
@@ -996,31 +946,31 @@ export default function Home() {
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
     const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    console.log('My TimeZone ;;;; ', userTimeZone, 'utcToLocal ;;;; ', utcToLocal('2024-10-14T12:50:00.000+00:00', userTimeZone))
+    // console.log('My TimeZone ;;;; ', userTimeZone, 'utcToLocal ;;;; ', utcToLocal('2024-10-14T12:50:00.000+00:00', userTimeZone))
 
-    console.log('formatInTimeZone(new Date(), UTC, yyyy-MM-dd HH:mm:ssXXX)', formatInTimeZone(new Date(), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'))
-    console.log('formatInTimeZone(new Date(), UTC, yyyy-MM-dd HH:mm:ss zzz)', formatInTimeZone(new Date(), 'UTC', 'yyyy-MM-dd HH:mm:ss zzz'))
+    // console.log('formatInTimeZone(new Date(), UTC, yyyy-MM-dd HH:mm:ssXXX)', formatInTimeZone(new Date(), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'))
+    // console.log('formatInTimeZone(new Date(), UTC, yyyy-MM-dd HH:mm:ss zzz)', formatInTimeZone(new Date(), 'UTC', 'yyyy-MM-dd HH:mm:ss zzz'))
   
-    console.log('toZonedTime(new Date(), UTC)', toZonedTime(new Date(), 'UTC'))
-    console.log('fromZonedTime(new Date(), UTC)', fromZonedTime(new Date(), 'UTC'))
+    // console.log('toZonedTime(new Date(), UTC)', toZonedTime(new Date(), 'UTC'))
+    // console.log('fromZonedTime(new Date(), UTC)', fromZonedTime(new Date(), 'UTC'))
 
     const nowUtc = new Date(Date.now());
 
-    console.log('------', Date.UTC(nowUtc.getUTCFullYear(), nowUtc.getUTCMonth(), nowUtc.getUTCDay(), nowUtc.getUTCHours(), nowUtc.getUTCMinutes()))
+    //console.log('------', Date.UTC(nowUtc.getUTCFullYear(), nowUtc.getUTCMonth(), nowUtc.getUTCDay(), nowUtc.getUTCHours(), nowUtc.getUTCMinutes()))
     const startOfDayUtc = new Date(Date.UTC(
       nowUtc.getUTCFullYear(),
       nowUtc.getUTCMonth(),
       nowUtc.getUTCDate()
     ));
-    console.log(startOfDayUtc)
+    //console.log(startOfDayUtc)
 
     const localDate = new Date(); // 로컬 시간
     const utcDate = fromZonedTime(localDate, Intl.DateTimeFormat().resolvedOptions().timeZone);
-    console.log('33333',localDate)
-    console.log(new Date())
-    console.log('22222', utcDate)
-    console.log('11111', Intl.DateTimeFormat().resolvedOptions().timeZone)
-    console.log('00000', fromZonedTime(localDate, 'Europe/Moscow'))
+    // console.log('33333',localDate)
+    // console.log(new Date())
+    // console.log('22222', utcDate)
+    // console.log('11111', Intl.DateTimeFormat().resolvedOptions().timeZone)
+    // console.log('00000', fromZonedTime(localDate, 'Europe/Moscow'))
 
     setSelectedUser(user)
     setSelectedDate('')
@@ -1072,30 +1022,14 @@ export default function Home() {
   
     if (counts.bpm < 1440 - 60 || counts.calorie < 96 - 4) {
       return hasData ? (
-        // <div className={styles.tileContent}>
-        //   <div className={styles.dataIndicator}>●</div>
-        //   <div className={styles.dataCount}>{counts.bpm}</div>
-        //   <div className={styles.dataCount}>{counts.step}</div>
-        //   <div className={styles.dataCount}>{counts.calorie}</div>
-        //   <div className={styles.dataCount}>{counts.sleep}</div>
-        // </div>
         <div className={styles.tileContentUnderCount}>
-        {/* <div className={styles.dataIndicator}>●</div> */}
         <div className={styles.dataCount}>{counts.bpm} / {counts.step} </div>
         <div className={styles.dataCount}>{counts.calorie} / {counts.sleep}</div>
       </div>
       ) : null;
     } else {
       return hasData ? (
-        // <div className={styles.tileContent}>
-        //   <div className={styles.dataIndicator}>●</div>
-        //   <div className={styles.dataCount}>{counts.bpm}</div>
-        //   <div className={styles.dataCount}>{counts.step}</div>
-        //   <div className={styles.dataCount}>{counts.calorie}</div>
-        //   <div className={styles.dataCount}>{counts.sleep}</div>
-        // </div>
         <div className={styles.tileContent}>
-        {/* <div className={styles.dataIndicator}>●</div> */}
         <div className={styles.dataCount}>{counts.bpm} / {counts.step}</div>
         <div className={styles.dataCount}>{counts.calorie} / {counts.sleep}</div>
       </div>
@@ -1103,12 +1037,6 @@ export default function Home() {
     }
 
   };
-
-  useEffect(() => {
-    console.log('In index.tsx, after setting data:', {
-      bpmData,
-    });
-  }, [bpmData]);
 
   return (
     <div className="container mx-auto p-4">
@@ -1152,32 +1080,17 @@ export default function Home() {
             <CardTitle>Data Availability (BPM/Steps/Calories/Sleep)</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* <Calendar
-              //locale='ko'
-              onClickDay={handleDateSelect}
-              tileContent={tileContent}
-              className={`rounded-md border ${styles.customCalendar}`}
-            /> */}
             <Calendar
               //onClickDay={handleDateSelect}
               tileContent={tileContent}
               className={styles.customCalendar}
               locale="ko"
-              // formatMonthYear={(locale, date) => 
-              //   `${date.getFullYear()}년 ${date.getMonth() + 1}월`
-              // }
-              // formatShortWeekday={(locale, date) => 
-              //   ['일', '월', '화', '수', '목', '금', '토'][date.getDay()]
-              // }
               nextLabel="▶"
               prevLabel="◀"
               next2Label={null}
               prev2Label={null}
             />
-            
-            {/* <div className="mt-2 text-sm text-center">
-              (BPM/Steps/Calories/Sleep)
-            </div> */}
+
           </CardContent>
         </Card>
 

@@ -107,6 +107,10 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const [cachedData, setCachedData] = useState<CachedDataType>({});
 
 
+  const timezoneOffset = new Date().getTimezoneOffset()
+  const offsetMs = ((-540 - timezoneOffset) * 60 * 1000) * -1
+
+
   const fetchThreeWeeksData = useCallback(async (selectedDate: Date) => {
     const selectedWeekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
     const previousWeekStart = subWeeks(selectedWeekStart, 1);
@@ -282,7 +286,7 @@ useEffect(() => {
   };
 
   useEffect(() => {
-    //console.log('초기 cached 설정!ㄴ!!')
+    //console.log('초기 cached 설정!!!')
     const initializeCache = () => {
       let startDate: Date;
       if (initialDateWindow) {
@@ -297,8 +301,26 @@ useEffect(() => {
         return;
       }
 
+      const timezoneOffset = new Date().getTimezoneOffset()
+      const offsetMs = ((-540 - timezoneOffset) * 60 * 1000) * -1
+
+      // console.log('test offset startDate : ', new Date(startDate.getTime() - offsetMs))
+
+      // console.log('startDate getTime()', startDate.getTime())
+      // console.log('offsetMs : ', offsetMs)
+      // console.log('plus', startDate.getTime() + offsetMs)
+      // console.log('plus', new Date(startDate.getTime() + offsetMs))
+      // console.log('minus', startDate.getTime() - offsetMs)
+      // console.log('minus', new Date(startDate.getTime() - offsetMs))
+      // console.log('in initalizecache part : ',startDate)
+      
+      startDate = new Date(startDate.getTime() + offsetMs)
+
+      
+
       const weekStart = startOfWeek(startDate, { weekStartsOn: 1 });
       //console.log(`^^^^^^^^^^^^^weekStart: ${weekStart} ^^^^^^^^^`)
+      
       const threeWeeksEnd = addWeeks(weekStart, 2);
       
       //console.log(`in initializeCache ... ------`)
@@ -306,14 +328,15 @@ useEffect(() => {
       const newCachedData: CachedDataType = {};
       for (let i = 0; i < 3; i++) {
         const currentWeekStart = addWeeks(weekStart, i);
-        //console.log(`^^^^^^^^^^^^^currentWeekStart: ${currentWeekStart} ^^^^^^^^^`)
+        console.log(`^^^^^^^^^^^^^currentWeekStart: ${currentWeekStart} ^^^^^^^^^`)
         const weekKey = format(currentWeekStart, 'yyyy-MM-dd');
+        console.log(`^^^^^^^^^^^^^weekKey: ${weekKey} ^^^^^^^^^`)
         newCachedData[weekKey] = {
-          bpmData: initialBpmData.filter(d => isWithinInterval(new Date(d.timestamp), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
-          stepData: initialStepData.filter(d => isWithinInterval(new Date(d.timestamp), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
-          calorieData: initialCalorieData.filter(d => isWithinInterval(new Date(d.timestamp), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
-          sleepData: initialSleepData.filter(d => isWithinInterval(new Date(d.timestamp_start), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
-          hrvData: hrvHourData.filter(d => isWithinInterval(new Date(d.ds), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
+          bpmData: initialBpmData.filter(d => isWithinInterval(new Date(new Date(d.timestamp).getTime() + offsetMs), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
+          stepData: initialStepData.filter(d => isWithinInterval(new Date(new Date(d.timestamp).getTime() + offsetMs), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
+          calorieData: initialCalorieData.filter(d => isWithinInterval(new Date(new Date(d.timestamp).getTime() + offsetMs), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
+          sleepData: initialSleepData.filter(d => isWithinInterval(new Date(new Date(d.timestamp_start).getTime() + offsetMs), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
+          hrvData: hrvHourData.filter(d => isWithinInterval(new Date(new Date(d.ds).getTime() + offsetMs), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
         };
         //console.log(`newCachedData[weekKey] -------------^^^^^^ ${JSON.stringify(newCachedData[weekKey])}`)
       }
@@ -375,7 +398,7 @@ useEffect(() => {
           // console.log('-----------------weekData--------------', weekData)
         } else {
           //console.log("Fetching new data for:", weekKey);
-          console.log('in if문 ...... weekStart, weekEnd ', weekStart, ' ~ ', weekEnd)
+          //console.log('in if문 ...... weekStart, weekEnd ', weekStart, ' ~ ', weekEnd)
           weekData = await fetchAdditionalData(weekStart, weekEnd) as WeekData;
           setCachedData(prev => ({ ...prev, [weekKey]: weekData }));
         }
@@ -394,7 +417,7 @@ useEffect(() => {
           // 선택된 날짜의 데이터만 필터링
           const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
           //console.log('in dateWindow weekdata part ; after format', selectedDateStr)
-          console.log('??? 1일치만인데')
+          //console.log('??? 1일치만인데')
           // setBpmData(weekData.bpmData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr));
           // //console.log('in dateWindow weekdata part ; after bpm', weekData.bpmData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr))
           // setStepData(weekData.stepData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr));
@@ -411,19 +434,19 @@ useEffect(() => {
           const utcStartOfDay = new Date(startOfDay(selectedDate).getTime() - offsetMs)
           const utcEndOfDay = new Date(endOfDay(selectedDate).getTime() - offsetMs)
           
-          console.log(weekData.bpmData)
+          // console.log(weekData.bpmData)
           
-          console.log('selectedDate : ', selectedDate)
-          console.log('selectedDateStr : ', selectedDateStr)
-          console.log('utcStartOfDay iso : ', utcStartOfDay.toISOString())
-          console.log('utcStartOfDay : ', utcStartOfDay)
-          console.log('utcEndOfDay iso : ', utcEndOfDay.toISOString())
-          console.log('utcEndOfDay : ', utcEndOfDay)
+          // console.log('selectedDate : ', selectedDate)
+          // console.log('selectedDateStr : ', selectedDateStr)
+          // console.log('utcStartOfDay iso : ', utcStartOfDay.toISOString())
+          // console.log('utcStartOfDay : ', utcStartOfDay)
+          // console.log('utcEndOfDay iso : ', utcEndOfDay.toISOString())
+          // console.log('utcEndOfDay : ', utcEndOfDay)
 
-          console.log('!!!!!!!!!!', weekData.bpmData.filter(d => {
-            const timestamp = new Date(d.timestamp);
-            return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
-          }))
+          // console.log('!!!!!!!!!!', weekData.bpmData.filter(d => {
+          //   const timestamp = new Date(d.timestamp);
+          //   return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
+          // }))
 
           // console.log('^^^^^^ TEST1 ^^^^^^')
           // const testTimestamp = 1729090800000
@@ -446,14 +469,14 @@ useEffect(() => {
           // console.log('newDateNewDateTestTimestampGetTimeToISOString : ', newDateNewDateTestTimestampGetTimeToISOString)
           // console.log('^^^^^^^^^^^^^^^^^^')
 
-          console.log('!!!!!!!!!!', new Date(weekData.bpmData.filter(d => {
-            const timestamp = new Date(d.timestamp);
-            return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
-          })[0].timestamp).toISOString())
-          console.log('!!!!!!!!!!', new Date(weekData.bpmData.filter(d => {
-            const timestamp = new Date(d.timestamp);
-            return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
-          })[0].timestamp).getTime())
+          // console.log('!!!!!!!!!!', new Date(weekData.bpmData.filter(d => {
+          //   const timestamp = new Date(d.timestamp);
+          //   return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
+          // })[0].timestamp).toISOString())
+          // console.log('!!!!!!!!!!', new Date(weekData.bpmData.filter(d => {
+          //   const timestamp = new Date(d.timestamp);
+          //   return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
+          // })[0].timestamp).getTime())
 
 
           setBpmData(weekData.bpmData.filter(d => {
@@ -468,14 +491,22 @@ useEffect(() => {
             const timestamp = new Date(d.timestamp);
             return timestamp >= utcStartOfDay && timestamp <= utcEndOfDay;
           }));
-          setSleepData(weekData.bpmData.filter(d => {
-            const timestamp_start = new Date(d.timestamp);
+          setSleepData(weekData.sleepData.filter(d => {
+            const timestamp_start = new Date(d.timestamp_start);
             return timestamp_start >= utcStartOfDay && timestamp_start <= utcEndOfDay;
           }));
           setLocalHrvData(weekData.hrvData.filter(d => {
             const ds = new Date(d.ds);
             return ds >= utcStartOfDay && ds <= utcEndOfDay;
           }));
+
+
+          console.log('LLLLLLLLoad DDDDDDDDData')
+          console.log(weekData.bpmData.filter(d => {
+            const timestamp_start = new Date(d.timestamp);
+            return timestamp_start >= utcStartOfDay && timestamp_start <= utcEndOfDay;
+          }))
+          console.log('LLLLLLLLoad DDDDDDDDData')
 
           // console.log('!!!!!!!!!!', weekData.bpmData.filter(d => {
           //   const timestamp = new Date(d.timestamp);
@@ -562,10 +593,18 @@ useEffect(() => {
   }, [selectedDate]);
 
   const processHourlyData = useCallback((data: any[], valueKey: string) => {
-    console.log('--------------processHourlyData before process data :', valueKey , data)
+    if (valueKey === 'bpm') {
+      console.log('--------------processHourlyData before process data :', valueKey , data)
+    }
+    
     const hourlyData = data.reduce((acc: any, item: any) => {
+      //console.log('@@@@@@@before startOfHour ----> new Date(item.timestamp)', new Date(item.timestamp));
+      //console.log('@@@@@@@before startOfHour ----> new Date(item.timestamp)', new Date(item.timestamp).getTime());
       const hourKey = startOfHour(new Date(item.timestamp)).getTime();
+      //console.log('@@@@@@@after startOfHour ----> startOfHour(new Date(item.timestamp))', startOfHour(new Date(item.timestamp)));
+      //console.log('@@@@@@@after startOfHour ----> startOfHour(new Date(item.timestamp))', startOfHour(new Date(item.timestamp)).getTime());
       //console.log('In ProcessHourlyData ; item.timestamp ;; ', item.timestamp,' ----> ', hourKey, '---->' , valueKey ,' -----> ' ,item.value)
+      //console.log(acc[hourKey])
       if (!acc[hourKey]) {
         acc[hourKey] = { timestamp: hourKey, values: [], sum: 0, count: 0 };
       }
@@ -589,12 +628,17 @@ useEffect(() => {
   }, []);
 
 
-  console.log('')
-  console.log(bpmData)
-  console.log('')
+  // console.log('')
+  // console.log(bpmData)
+  // console.log('')
   const hourlyBpmData = useMemo(() => processHourlyData(bpmData, 'bpm'), [bpmData, processHourlyData]);
   const hourlyStepData = useMemo(() => processHourlyData(stepData, 'step'), [stepData, processHourlyData]);
   const hourlyCalorieData = useMemo(() => processHourlyData(calorieData, 'calorie'), [calorieData, processHourlyData]);
+
+  // console.log('11')
+  // console.log(localHrvData)
+  // console.log('11')
+
   const hourlyHrvData = useMemo(() => {
     return localHrvData.map(item => ({
       timestamp: new Date(item.ds).getTime(),
@@ -603,12 +647,16 @@ useEffect(() => {
     }));
   }, [localHrvData]);
 
+  // console.log('')
+  // console.log(hourlyHrvData)
+  // console.log('')
+
 
   const fillEmptyHours = useCallback((data: any[], start: Date, end: Date, keys: string[]) => {
-    console.log('in fillEmptyHours ;;;', data, '*************')
-    console.log('in fillEmptyHours start end;;;', start, ' ~~ ',end, '*************')
+    // console.log('in fillEmptyHours ;;;', data, '*************')
+    // console.log('in fillEmptyHours start end;;;', start, ' ~~ ',end, '*************')
     const allHours = eachHourOfInterval({ start, end });
-    console.log('in fillEmptyHours allHours;;;', allHours, '*************')
+    //console.log('in fillEmptyHours allHours;;;', allHours, '*************')
     const filledData = allHours.map(hour => {
       const timestamp = hour.getTime();
       const existingData = data.find(item => item.timestamp === timestamp);
@@ -622,12 +670,16 @@ useEffect(() => {
   }, []);
 
   const moveDate = useCallback(async (direction: 'forward' | 'backward') => {
+    console.log('$$$$$$$$$$$$$$$$$$$$$$$$MoveDate$$$$$$$$$$$$$$$$$$$$$$$')
     setDateWindow(prevWindow => {
       if (!prevWindow || !dbStartDate || !dbEndDate) return prevWindow;
   
       const days = dateRange === '7' ? 7 : 1;
       let newStart, newEnd;
   
+
+      console.log('in moveDate prevWinodw : ', prevWindow.start , '~~', prevWindow.end)
+
       if (dateRange === '7') {
         newStart = direction === 'forward' 
           ? addDays(prevWindow.start, 7) 
@@ -648,12 +700,21 @@ useEffect(() => {
         newEnd = dbEndDate;
         newStart = dateRange === '7' ? startOfWeek(newEnd, { weekStartsOn: 1 }) : startOfDay(newEnd);
       }
+
+      //console.log('in moveDate new Start & new End: ', newStart, '~~', newEnd )
   
       const weekStart = startOfWeek(newStart, { weekStartsOn: 1 });
+
+      //console.log('in moveDate weekStart : ', weekStart)
+
       const threeWeeksStart = subWeeks(weekStart, 1);
+
+      //console.log('in moveDate threeWeeksStart : ', threeWeeksStart)
+
       const threeWeeksEnd = addWeeks(weekStart, 1);
   
       // Check if we need to fetch new data
+      console.log('----------------------------------')
       const weeksToFetch: WeekRange[] = [];
       for (let i = 0; i < 3; i++) {
         const currentWeekStart = addWeeks(threeWeeksStart, i);
@@ -661,10 +722,14 @@ useEffect(() => {
         if (!cachedData[weekKey]) {
           weeksToFetch.push({ start: currentWeekStart, end: addWeeks(currentWeekStart, 1) });
         }
+        // console.log('in moveDate currentWeekStart : ', currentWeekStart)
+        // console.log('in moveDate weekKey : ', weekKey)
       }
       //console.log(`weeksToFetch.length : ${weeksToFetch.length}`)
       if (weeksToFetch.length > 0) {
         // Fetch data for missing weeks
+
+        console.log('-------------in weeksToFetch.length>0-----------')
         
         Promise.all(weeksToFetch.map(week => 
           fetchAdditionalData(week.start, week.end)
@@ -682,6 +747,7 @@ useEffect(() => {
 
           // Set data for the current week
           const currentWeekKey = format(weekStart, 'yyyy-MM-dd');
+
           if (newCachedData[currentWeekKey]) {
             
             setBpmData(newCachedData[currentWeekKey].bpmData);
@@ -693,7 +759,12 @@ useEffect(() => {
         });
       } else {
         const currentWeekKey = format(weekStart, 'yyyy-MM-dd');
-        console.log('moveDate before setBpmData...')
+        // console.log('^^^^^^^^^^^^^^^^^^^')
+        // console.log('in moveDate newCachedData',cachedData)
+        // console.log('in moveDate currentWeekKey',currentWeekKey)
+        // console.log('in moveDate cachedData[currentWeekKey].bpmData',cachedData[currentWeekKey].bpmData)
+        // console.log('^^^^^^^^^^^^^^^^^^^')
+        //console.log('moveDate before setBpmData...')
         setBpmData(cachedData[currentWeekKey].bpmData);
         setStepData(cachedData[currentWeekKey].stepData);
         setCalorieData(cachedData[currentWeekKey].calorieData);
@@ -729,7 +800,7 @@ useEffect(() => {
       }
 
       //console.log('is in moveDate ; start : , end : ', newStart, ';;;;;', newEnd)
-  
+      console.log('$$$$$$$$$$$$$$$$$$$$$$$$MoveDate$$$$$$$$$$$$$$$$$$$$$$$')
       return { 
         start: newStart, 
         end: newEnd 
@@ -756,19 +827,43 @@ useEffect(() => {
   const indexedStepData = useMemo(() => indexData(stepData), [stepData, indexData]);
   const indexedCalorieData = useMemo(() => indexData(calorieData), [calorieData, indexData]);
 
+
+  console.log('')
+  console.log(sleepData)
+  console.log('')
+
   const indexedSleepData = useMemo(() => {
+    console.log('----------in indexedSleepData--------')
+    console.log(sleepData.map(item => ({
+      start: new Date(item.timestamp_start).getTime(),
+      end: new Date(item.timestamp_end).getTime(),
+      value: item.value
+    })))
+    console.log('----------in indexedSleepData--------')
     return sleepData.map(item => ({
       start: new Date(item.timestamp_start).getTime(),
       end: new Date(item.timestamp_end).getTime(),
       value: item.value
     }));
   }, [sleepData]);
-
+  console.log('2222')
+  console.log(sleepData)
+  console.log('2222')
   
 
   const indexedPredictData = useMemo(() => {
-    //console.log('hoxy22')
+    // console.log('hoxy22')
+    // console.log(predictMinuteData.reduce((acc: { [key: number]: any }, item) => {
+    //   const timestamp = new Date(item.ds).getTime();
+    //   acc[timestamp] = item;
+    //   return acc;
+    // }, {}))
+    // console.log('hoxy22')
     return predictMinuteData.reduce((acc: { [key: number]: any }, item) => {
+      // console.log('--------------predict minute reduce------------')
+      // console.log(item.ds)
+      // console.log(new Date(item.ds));
+      // console.log('--------------predict minute reduce------------')
       const timestamp = new Date(item.ds).getTime();
       acc[timestamp] = item;
       return acc;
@@ -856,7 +951,7 @@ useEffect(() => {
     //console.log(`in displayData --- timeunit : ${timeUnit}`)
     if (timeUnit === 'hour') {
       //console.log('in displayData timeunit === hour, 무한루프')
-      console.log('in timeUnit hour ; startDate: ', startDate, ' endDate: ', endDate, ' hourlyBpmData: ', hourlyBpmData)
+      //console.log('in timeUnit hour ; startDate: ', startDate, ' endDate: ', endDate, ' hourlyBpmData: ', hourlyBpmData, 'hourlyHrvData: ', hourlyHrvData)
       const filledBpmData = fillEmptyHours(hourlyBpmData, startDate, endDate, ['bpm']);
       const filledStepData = fillEmptyHours(hourlyStepData, startDate, endDate, ['step']);
       const filledCalorieData = fillEmptyHours(hourlyCalorieData, startDate, endDate, ['calorie']);
@@ -883,7 +978,7 @@ useEffect(() => {
       //   timestamp: item.timestamp + timezoneOffset
       // }));
 
-      console.log('in displayData ; in timeunit hour ; filledBpmData ; ', filledBpmData)
+      //console.log('in displayData ; in timeunit hour ; filledBpmData ; ', filledBpmData)
 
       filteredData = filledBpmData.map((item, index) => ({
         ...item,
@@ -901,17 +996,31 @@ useEffect(() => {
       const allMinutes = eachMinuteOfInterval({ start: normalStartDate, end: normalEndDate });
       const aggregatedCalorieData = aggregateCalorieData(calorieData);
       
+      // console.log('!!!!!!!!!!!!!!!!!!!!!!!!! In DisplayData !!!!!!!!!!!!!!!!!!!')
+      // console.log(indexedSleepData)
+      // //console.log('.....indexedSleepData.find(s => adjustTimestamp >= s.start && adjustTimestamp < s.end)', indexedSleepData.find(s => adjustTimestamp >= s.start && adjustTimestamp < s.end))
+      // console.log('!!!!!!!!!!!!!!!!!!!!!!!!! In DisplayData !!!!!!!!!!!!!!!!!!!')
+
       filteredData = allMinutes.map(minute => {
         //const adjustedAddNineMinute = adjustTimeZoneAddNine(minute);
         const adjustedAddNineMinute = minute;
         const timestamp = minute.getTime();
         const adjustTimestamp = adjustedAddNineMinute.getTime();
+
+        // console.log('!!!!!!!!!!!!!!!!!!!!!!!!! In DisplayData !!!!!!!!!!!!!!!!!!!')
+        // console.log(indexedSleepData)
+        // console.log('.....indexedSleepData.find(s => adjustTimestamp >= s.start && adjustTimestamp < s.end)', indexedSleepData.find(s => adjustTimestamp >= s.start && adjustTimestamp < s.end))
+        // console.log('!!!!!!!!!!!!!!!!!!!!!!!!! In DisplayData !!!!!!!!!!!!!!!!!!!')
   
         const bpmItem = indexedBpmData[adjustTimestamp] ? indexedBpmData[adjustTimestamp][0] : null;
         const stepItem = indexedStepData[adjustTimestamp] ? indexedStepData[adjustTimestamp][0] : null;
         //const calorieItem = indexedCalorieData[adjustTimestamp] ? indexedCalorieData[adjustTimestamp][0] : null;
         const calorieItem = aggregatedCalorieData.find(item => item.timestamp <= timestamp && timestamp < item.timestamp + 15 * 60 * 1000);
         const sleepItem = indexedSleepData.find(s => adjustTimestamp >= s.start && adjustTimestamp < s.end);
+
+        // console.log('##########################')
+        // console.log('sleepItem : ', sleepItem)
+        // console.log('##########################')
   
         const originalTimestamp = minute.getTime();
         const predItem = indexedPredictData[originalTimestamp];
@@ -955,7 +1064,7 @@ useEffect(() => {
     // brushDomain이 없으면 전체 displayData 반환
     if (!brushDomain) return displayData;
 
-    console.log('------------ second if ')
+    //console.log('------------ second if ')
 
     // brushDomain이 유효한 경우에만 필터링 적용
     if (Array.isArray(brushDomain) && brushDomain.length === 2) {
