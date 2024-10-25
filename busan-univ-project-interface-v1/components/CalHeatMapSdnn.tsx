@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import CalHeatmap from 'cal-heatmap';
 import 'cal-heatmap/cal-heatmap.css';
-import { addDays, format } from 'date-fns'
+import { addDays, format, parseISO } from 'date-fns'
 
 interface HrvDayData {
     ds: string;
@@ -36,15 +36,25 @@ const SdnnCalHeatmap: React.FC<SdnnCalHeatmapProps> = ({ hrvDayData, startDate }
     const [range, setRange] = useState(1);
     const [tooltip, setTooltip] = useState<{ x: number; y: number; date: Date; sdnn: number | null } | null>(null);
 
+    const timezoneOffset = new Date().getTimezoneOffset();
+    const offsetMs = ((-540 - timezoneOffset) * 60 * 1000) * -1;
+
     const updateRange = () => {
         //console.log(window)
-        if (window.matchMedia('(min-width: 2160px)').matches) {
-            setRange(5)
-        } else if (window.matchMedia('(min-width: 1536px)').matches) {
-            setRange(4);  // 2xl
-        } else if (window.matchMedia('(min-width: 1280px)').matches) {
+        // if (window.matchMedia('(min-width: 2160px)').matches) {
+        //     setRange(5)
+        // } else if (window.matchMedia('(min-width: 1536px)').matches) {
+        //     setRange(4);  // 2xl
+        // } else if (window.matchMedia('(min-width: 1280px)').matches) {
+        //     setRange(3);  // xl
+        // } else if (window.matchMedia('(min-width: 1024px)').matches) {
+        //     setRange(2);  // lg
+        // } else {
+        //     setRange(1);  // md and smaller
+        // }
+        if (window.matchMedia('(min-width: 320)').matches) {
             setRange(3);  // xl
-        } else if (window.matchMedia('(min-width: 1024px)').matches) {
+        } else if (window.matchMedia('(min-width: 256px)').matches) {
             setRange(2);  // lg
         } else {
             setRange(1);  // md and smaller
@@ -69,7 +79,9 @@ const SdnnCalHeatmap: React.FC<SdnnCalHeatmapProps> = ({ hrvDayData, startDate }
 
             const adjustedData = hrvDayData.map(item => ({
                 ...item,
-                ds: addDays(new Date(item.ds), 1).toISOString().split('T')[0]
+                //ds: addDays(new Date(item.ds), 1).toISOString().split('T')[0]
+                //ds: new Date(new Date(item.ds).getTime() + offsetMs).toISOString().split('T')[0]
+                ds: format(parseISO(item.ds), 'yyyy-MM-dd')
             }));
 
             newCal.paint({

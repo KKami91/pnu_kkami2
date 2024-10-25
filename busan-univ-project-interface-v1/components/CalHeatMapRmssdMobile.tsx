@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import CalHeatmap from 'cal-heatmap';
 import 'cal-heatmap/cal-heatmap.css';
-import { addDays } from 'date-fns'
+import { addDays, parseISO, format } from 'date-fns'
 
 interface HrvDayData {
     ds: string;
@@ -36,7 +36,8 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
 
             const adjustedData = hrvDayData.map(item => ({
                 ...item,
-                ds: addDays(new Date(item.ds), 1).toISOString().split('T')[0]
+                //ds: addDays(new Date(item.ds), 1).toISOString().split('T')[0]
+                ds: format(parseISO(item.ds), 'yyyy-MM-dd')
             }));
 
             console.log(new Date(adjustedData[0].ds))

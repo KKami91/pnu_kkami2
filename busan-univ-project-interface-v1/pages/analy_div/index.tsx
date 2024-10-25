@@ -611,6 +611,9 @@ export default function Home() {
 
   const multiChartRef = useRef<HTMLDivElement>(null);
 
+  ///테스트;;
+  const [hrvConvertDate, setHrvConvertDate] = useState<DataItem[]>([]);
+
   ///
   const [countData, setCountData] = useState<DataResult[]>([]);
   ///
@@ -622,7 +625,8 @@ export default function Home() {
   }, []);
 
   
-
+  const timezoneOffset = new Date().getTimezoneOffset()
+  const offsetMs = ((-540 - timezoneOffset) * 60 * 1000) * -1
 
 
   const { globalStartDate, globalEndDate } = useMemo(() => {
@@ -752,6 +756,18 @@ export default function Home() {
         // console.log('in handleDateSelect new Date utcStartDate, new Date utcEndDate : ', new Date(utcStartDate) , new Date(utcEndDate))
 
         const responseDay = await axios.get(`${API_URL}/feature_day_div/${selectedUser}`);
+        console.log('%%%%%%%%%%%%%%%%%%%%dayHRV%%%%%%%%%%%%%%%%%%%%')
+
+        //console.log(responseDay.data.day_hrv)
+        
+
+        // const hrvConvertDate = responseDay.data.day_hrv
+        // const dayConvertHrv = responseDay.data.day_hrv.map(item => ({
+        //   ...item,
+        //   ds: format(item.ds, 'yyyy-MM-dd')
+        // }))
+
+        console.log('%%%%%%%%%%%%%%%%%%%%dayHRV%%%%%%%%%%%%%%%%%%%%')
         setHrvDayData(responseDay.data.day_hrv);
 
         const firstFetchStartTime = performance.now();
@@ -1008,7 +1024,11 @@ export default function Home() {
   const fetchSaveDates = async (user: string) => {
     try {
       const response = await axios.get(`${API_URL}/get_save_dates_div/${user}`);
+      //console.log('--- in fetchSaveDates --- before convert', response.data.save_dates)
+      //const convertSaveDate = [new Date(new Date(response.data.save_dates).getTime() + offsetMs).toString()]
+      //console.log('--- in fetchSaveDates --- after convert', convertSaveDate)
       setSaveDates(response.data.save_dates);
+      //setSaveDates(convertSaveDate);
     } catch (error) {
       console.error('Error fetching save dates:', error);
       setMessage(`Error fetching save dates: ${error instanceof Error ? error.message : String(error)}`);
