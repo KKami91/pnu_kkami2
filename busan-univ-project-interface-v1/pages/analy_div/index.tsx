@@ -532,14 +532,22 @@ interface DataResult {
 ////
 
 const getDataCountForDate = (date: Date, data: DataResult[]) => {
-  //console.log('ingetDataCountForDate date, ', date)
-  const dateString = addDays(date, 1).toISOString().split('T')[0]; // 'YYYY-MM-DD' 형식으로 변환
-  //console.log('ingetDataCountForDate dateString, ', dateString)
+  // 날짜만 추출 (YYYY-MM-DD 형식)
+  const dateString = format(date, 'yyyy-MM-dd');
+
   return {
-    bpm: data.find((d) => d.collection === 'bpm')?.data.find((item) => item._id === dateString)?.count || 0,
-    step: data.find((d) => d.collection === 'step')?.data.find((item) => item._id === dateString)?.count || 0,
-    calorie: data.find((d) => d.collection === 'calorie')?.data.find((item) => item._id === dateString)?.count || 0,
-    sleep: data.find((d) => d.collection === 'sleep')?.data.find((item) => item._id === dateString)?.count || 0,
+    bpm: data.find((d) => d.collection === 'bpm')?.data.find((item) => 
+      format(parseISO(item._id), 'yyyy-MM-dd') === dateString
+    )?.count || 0,
+    step: data.find((d) => d.collection === 'step')?.data.find((item) => 
+      format(parseISO(item._id), 'yyyy-MM-dd') === dateString
+    )?.count || 0,
+    calorie: data.find((d) => d.collection === 'calorie')?.data.find((item) => 
+      format(parseISO(item._id), 'yyyy-MM-dd') === dateString
+    )?.count || 0,
+    sleep: data.find((d) => d.collection === 'sleep')?.data.find((item) => 
+      format(parseISO(item._id), 'yyyy-MM-dd') === dateString
+    )?.count || 0,
   };
 };
 ////
