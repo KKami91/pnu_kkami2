@@ -200,15 +200,22 @@ useEffect(() => {
   const fetchMemos = async () => {
     if (!selectedUser || !dateWindow) return;
     try {
+      console.log('@@@@@@@@@@@fetchMemos@@@@@@@@@@@')
+      console.log(dateWindow.start , dateWindow.end)
+      console.log(formatInTimeZone(dateWindow.start, 'UTC', 'yyyy-MM-dd HH:mm:ss'), formatInTimeZone(dateWindow.end, 'UTC', 'yyyy-MM-dd HH:mm:ss'))
+      console.log(format(new Date(dateWindow.start), 'yyyy-MM-dd HH:mm:ss'), format(new Date(dateWindow.end), 'yyyy-MM-dd HH:mm:ss'))
+      console.log('@@@@@@@@@@@fetchMemos@@@@@@@@@@@')
       const response = await axios.get('/api/getMemos', {
         params: {
           user_email: selectedUser,
-          startDate: dateWindow.start.toISOString(),
-          endDate: dateWindow.end.toISOString()
+          // startDate: dateWindow.start.toISOString(),
+          // endDate: dateWindow.end.toISOString()
+          startDate: new Date(format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss')),
+          endDate: new Date(format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'))
         },
       });
   
-      //console.log('Raw memo data from server:', response.data);
+      console.log('Raw memo data from server:', response.data);
   
       const memoData = response.data.reduce((acc: { [key: string]: Memo }, memo: any) => {
         if (memo.type === 'sleep') {
@@ -328,9 +335,9 @@ useEffect(() => {
       const newCachedData: CachedDataType = {};
       for (let i = 0; i < 3; i++) {
         const currentWeekStart = addWeeks(weekStart, i);
-        console.log(`^^^^^^^^^^^^^currentWeekStart: ${currentWeekStart} ^^^^^^^^^`)
+        //console.log(`^^^^^^^^^^^^^currentWeekStart: ${currentWeekStart} ^^^^^^^^^`)
         const weekKey = format(currentWeekStart, 'yyyy-MM-dd');
-        console.log(`^^^^^^^^^^^^^weekKey: ${weekKey} ^^^^^^^^^`)
+        //console.log(`^^^^^^^^^^^^^weekKey: ${weekKey} ^^^^^^^^^`)
         newCachedData[weekKey] = {
           bpmData: initialBpmData.filter(d => isWithinInterval(new Date(new Date(d.timestamp).getTime() + offsetMs), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
           stepData: initialStepData.filter(d => isWithinInterval(new Date(new Date(d.timestamp).getTime() + offsetMs), { start: currentWeekStart, end: addWeeks(currentWeekStart, 1) })),
@@ -404,10 +411,10 @@ useEffect(() => {
         }
 
         //console.log('in loadData -----> weekData -----> ', weekData)
-        console.log('in loadData -----> weekData -----> weekStart ----> weekEnd', weekStart, '~~', weekEnd)
+        //console.log('in loadData -----> weekData -----> weekStart ----> weekEnd', weekStart, '~~', weekEnd)
   
         if (dateRange === '7') {
-          console.log('설마?')
+          //console.log('설마?')
           setBpmData(weekData.bpmData);  // 전체 주간 데이터 사용
           setStepData(weekData.stepData);
           setCalorieData(weekData.calorieData);
@@ -501,12 +508,12 @@ useEffect(() => {
           }));
 
 
-          console.log('LLLLLLLLoad DDDDDDDDData')
-          console.log(weekData.bpmData.filter(d => {
-            const timestamp_start = new Date(d.timestamp);
-            return timestamp_start >= utcStartOfDay && timestamp_start <= utcEndOfDay;
-          }))
-          console.log('LLLLLLLLoad DDDDDDDDData')
+          // console.log('LLLLLLLLoad DDDDDDDDData')
+          // console.log(weekData.bpmData.filter(d => {
+          //   const timestamp_start = new Date(d.timestamp);
+          //   return timestamp_start >= utcStartOfDay && timestamp_start <= utcEndOfDay;
+          // }))
+          // console.log('LLLLLLLLoad DDDDDDDDData')
 
           // console.log('!!!!!!!!!!', weekData.bpmData.filter(d => {
           //   const timestamp = new Date(d.timestamp);
@@ -593,9 +600,9 @@ useEffect(() => {
   }, [selectedDate]);
 
   const processHourlyData = useCallback((data: any[], valueKey: string) => {
-    if (valueKey === 'bpm') {
-      console.log('--------------processHourlyData before process data :', valueKey , data)
-    }
+    // if (valueKey === 'bpm') {
+    //   console.log('--------------processHourlyData before process data :', valueKey , data)
+    // }
     
     const hourlyData = data.reduce((acc: any, item: any) => {
       //console.log('@@@@@@@before startOfHour ----> new Date(item.timestamp)', new Date(item.timestamp));
@@ -614,12 +621,12 @@ useEffect(() => {
       return acc;
     }, {});
 
-    console.log('in processHoulryData ', valueKey, '----??', hourlyData)
+    //console.log('in processHoulryData ', valueKey, '----??', hourlyData)
 
-    console.log('마지막 리턴 값 in processHoulryData ', valueKey, '----??', Object.values(hourlyData).map((item: any) => ({
-      timestamp: item.timestamp,
-      [valueKey]: valueKey === 'bpm' ? item.sum / item.count : item.sum
-    })))
+    // console.log('마지막 리턴 값 in processHoulryData ', valueKey, '----??', Object.values(hourlyData).map((item: any) => ({
+    //   timestamp: item.timestamp,
+    //   [valueKey]: valueKey === 'bpm' ? item.sum / item.count : item.sum
+    // })))
 
     return Object.values(hourlyData).map((item: any) => ({
       timestamp: item.timestamp,
@@ -670,7 +677,7 @@ useEffect(() => {
   }, []);
 
   const moveDate = useCallback(async (direction: 'forward' | 'backward') => {
-    console.log('$$$$$$$$$$$$$$$$$$$$$$$$MoveDate$$$$$$$$$$$$$$$$$$$$$$$')
+    //console.log('$$$$$$$$$$$$$$$$$$$$$$$$MoveDate$$$$$$$$$$$$$$$$$$$$$$$')
     setDateWindow(prevWindow => {
       if (!prevWindow || !dbStartDate || !dbEndDate) return prevWindow;
   
@@ -678,7 +685,7 @@ useEffect(() => {
       let newStart, newEnd;
   
 
-      console.log('in moveDate prevWinodw : ', prevWindow.start , '~~', prevWindow.end)
+      //console.log('in moveDate prevWinodw : ', prevWindow.start , '~~', prevWindow.end)
 
       if (dateRange === '7') {
         newStart = direction === 'forward' 
@@ -729,7 +736,7 @@ useEffect(() => {
       if (weeksToFetch.length > 0) {
         // Fetch data for missing weeks
 
-        console.log('-------------in weeksToFetch.length>0-----------')
+        //console.log('-------------in weeksToFetch.length>0-----------')
         
         Promise.all(weeksToFetch.map(week => 
           fetchAdditionalData(week.start, week.end)
@@ -800,7 +807,7 @@ useEffect(() => {
       }
 
       //console.log('is in moveDate ; start : , end : ', newStart, ';;;;;', newEnd)
-      console.log('$$$$$$$$$$$$$$$$$$$$$$$$MoveDate$$$$$$$$$$$$$$$$$$$$$$$')
+      //console.log('$$$$$$$$$$$$$$$$$$$$$$$$MoveDate$$$$$$$$$$$$$$$$$$$$$$$')
       return { 
         start: newStart, 
         end: newEnd 
@@ -828,28 +835,29 @@ useEffect(() => {
   const indexedCalorieData = useMemo(() => indexData(calorieData), [calorieData, indexData]);
 
 
-  console.log('')
-  console.log(sleepData)
-  console.log('')
+  // console.log('')
+  // console.log(sleepData)
+  // console.log('')
 
   const indexedSleepData = useMemo(() => {
-    console.log('----------in indexedSleepData--------')
-    console.log(sleepData.map(item => ({
-      start: new Date(item.timestamp_start).getTime(),
-      end: new Date(item.timestamp_end).getTime(),
-      value: item.value
-    })))
-    console.log('----------in indexedSleepData--------')
+    // console.log('----------in indexedSleepData--------')
+    // console.log(sleepData.map(item => ({
+    //   start: new Date(item.timestamp_start).getTime(),
+    //   end: new Date(item.timestamp_end).getTime(),
+    //   value: item.value
+    // })))
+    // console.log('----------in indexedSleepData--------')
     return sleepData.map(item => ({
       start: new Date(item.timestamp_start).getTime(),
       end: new Date(item.timestamp_end).getTime(),
       value: item.value
     }));
   }, [sleepData]);
-  console.log('2222')
-  console.log(sleepData)
-  console.log('2222')
-  
+  // console.log('2222')
+  // console.log(sleepData)
+  // console.log('2222')
+
+  console.log(cachedData)
 
   const indexedPredictData = useMemo(() => {
     // console.log('hoxy22')
@@ -932,14 +940,14 @@ useEffect(() => {
 
 
 
-    console.log('기존 startDate : ', startDate , '기존 endDate : ', endDate)
+    //console.log('기존 startDate : ', startDate , '기존 endDate : ', endDate)
     const timezoneOffset = new Date().getTimezoneOffset()
     const offsetMs = ((-540 - timezoneOffset) * 60 * 1000) * -1
     startDate = new Date(startDate.getTime() - offsetMs)
     endDate = new Date(endDate.getTime() - offsetMs)
 
 
-    console.log(`Date range: ${startDate} to ${endDate}`);
+    //console.log(`Date range: ${startDate} to ${endDate}`);
     //console.log(`in displayData startDate ~ endDate---> ${startDate} ~ ${endDate}`)
 
     const normalStartDate = startDate;
@@ -1043,7 +1051,7 @@ useEffect(() => {
       )
     );
 
-    console.log('in displayData, filteredData ; ', filteredData)
+    //console.log('in displayData, filteredData ; ', filteredData)
 
     return filteredData;
   }, [timeUnit, dateRange, dateWindow, hourlyBpmData, hourlyStepData, hourlyCalorieData, hourlyHrvData, 
@@ -1081,6 +1089,20 @@ useEffect(() => {
     // 기본적으로 전체 displayData 반환
     return displayData;
   }, [displayData, brushDomain]);
+
+
+
+  useEffect(() => {
+    if (selectedDate) {
+      const date = new Date(selectedDate);
+      setDateWindow({
+        start: startOfDay(date),
+        end: endOfDay(date)
+      });
+      setDateRange('1');
+      setTimeUnit('minute');
+    }
+  }, [selectedDate]);
 
   const handleBrushChange = useCallback((newBrushDomain: any) => {
     //console.log('is brushChange?', newBrushDomain)
@@ -1158,33 +1180,33 @@ useEffect(() => {
 
   // 메모의 시작 시간과 종료 시간을 파싱하는 함수
 // 메모의 시간 범위를 파싱하는 함수
-const parseMemoTimeRange = (memoValue: string): [number, number] | null => {
-  const match = memoValue.match(/(\d{4}) (\d{2}:\d{2}) ~ (\d{2}:\d{2})/);
-  //console.log('$$$$$$$', memoValue, '&&&&&&&', match)
-  if (match) {
-    const [_, dateStr, startTime, endTime] = match;
-    const month = parseInt(dateStr.substring(0, 2)) - 1; // JavaScript의 월은 0-indexed
-    const day = parseInt(dateStr.substring(2, 4));
+// const parseMemoTimeRange = (memoValue: string): [number, number] | null => {
+//   const match = memoValue.match(/(\d{4}) (\d{2}:\d{2}) ~ (\d{2}:\d{2})/);
+//   //console.log('$$$$$$$', memoValue, '&&&&&&&', match)
+//   if (match) {
+//     const [_, dateStr, startTime, endTime] = match;
+//     const month = parseInt(dateStr.substring(0, 2)) - 1; // JavaScript의 월은 0-indexed
+//     const day = parseInt(dateStr.substring(2, 4));
     
-    const startDate = new Date(2024, month, day);
-    const endDate = new Date(2024, month, day);
+//     const startDate = new Date(2024, month, day);
+//     const endDate = new Date(2024, month, day);
     
-    const [startHour, startMinute] = startTime.split(':').map(Number);
-    const [endHour, endMinute] = endTime.split(':').map(Number);
+//     const [startHour, startMinute] = startTime.split(':').map(Number);
+//     const [endHour, endMinute] = endTime.split(':').map(Number);
     
-    startDate.setHours(startHour, startMinute, 0, 0);
-    endDate.setHours(endHour, endMinute, 0, 0);
+//     startDate.setHours(startHour, startMinute, 0, 0);
+//     endDate.setHours(endHour, endMinute, 0, 0);
     
-    //console.log(`Parsed memo: Start - ${startDate}, End - ${endDate}`);
-    return [startDate.getTime(), endDate.getTime()];
-  }
-  //console.log(`Failed to parse memo: ${memoValue}`);
-  return null;
-};
+//     //console.log(`Parsed memo: Start - ${startDate}, End - ${endDate}`);
+//     return [startDate.getTime(), endDate.getTime()];
+//   }
+//   //console.log(`Failed to parse memo: ${memoValue}`);
+//   return null;
+// };
 
-  useEffect(() => {
-    //console.log('Current memos:', memos);
-  }, [memos]);
+  // useEffect(() => {
+  //   //console.log('Current memos:', memos);
+  // }, [memos]);
 
   const checkSleepMemo = (timestamp: number): { hasMemo: boolean; isCenter: boolean; memo: string } => {
     for (const [key, memo] of Object.entries(memos)) {
