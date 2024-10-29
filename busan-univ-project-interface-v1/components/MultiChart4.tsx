@@ -167,7 +167,7 @@ const handleDateSelect = useCallback(async (event: Event) => {
   setTimeout(scrollToMultiChart, 10);
 
   setDateWindow({ start: newStart, end: newEnd });
-  setDateRange('1'); // 
+  setDateRange('1'); // 1주일 보기로 설정
   setTimeUnit('minute'); // 분 단위로 설정 (필요에 따라 조정)
 
   
@@ -200,18 +200,33 @@ useEffect(() => {
   const fetchMemos = async () => {
     if (!selectedUser || !dateWindow) return;
     try {
+
+      const timezoneOffset = new Date().getTimezoneOffset()
+      const offsetMs = ((-540 - timezoneOffset) * 60 * 1000) * -1
+
+      const newStartDate = addSeconds(subDays(dateWindow.end, 1), 0.001)
+      const newEndDate = dateWindow.end
+
       console.log('@@@@@@@@@@@fetchMemos@@@@@@@@@@@')
-      console.log(dateWindow.start , dateWindow.end)
-      console.log(formatInTimeZone(dateWindow.start, 'UTC', 'yyyy-MM-dd HH:mm:ss'), formatInTimeZone(dateWindow.end, 'UTC', 'yyyy-MM-dd HH:mm:ss'))
-      console.log(format(new Date(dateWindow.start), 'yyyy-MM-dd HH:mm:ss'), format(new Date(dateWindow.end), 'yyyy-MM-dd HH:mm:ss'))
+      console.log(newStartDate , newEndDate)
+      console.log(new Date(newStartDate.getTime() - offsetMs), new Date(newEndDate.getTime() - offsetMs))
+      //console.log(formatInTimeZone(addSeconds(subDays(dateWindow.end, 1), 0.001), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"), formatInTimeZone(dateWindow.end, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"))
+      //console.log(format(new Date(dateWindow.start), 'yyyy-MM-dd HH:mm:ss'), format(new Date(dateWindow.end), 'yyyy-MM-dd HH:mm:ss'))
+
+      //const newStartDate = addSeconds(subDays(dateWindow.end, 1), 1)
+      //console.log(newStartDate)
       console.log('@@@@@@@@@@@fetchMemos@@@@@@@@@@@')
       const response = await axios.get('/api/getMemos', {
         params: {
           user_email: selectedUser,
+          startDate: new Date(newStartDate.getTime() - offsetMs),
+          endDate: new Date(newEndDate.getTime() - offsetMs)
           // startDate: dateWindow.start.toISOString(),
           // endDate: dateWindow.end.toISOString()
-          startDate: formatInTimeZone(dateWindow.start, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
-          endDate: formatInTimeZone(dateWindow.end, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+          //startDate: formatInTimeZone(addSeconds(subDays(dateWindow.end, 1), 0.001), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
+          //endDate: formatInTimeZone(dateWindow.end, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+          // startDate: formatInTimeZone(newStartDate, 'UTC', 'yyyy-MM-dd HH:mm:ss'),
+          // endDate: formatInTimeZone(dateWindow.end, 'UTC', 'yyyy-MM-dd HH:mm:ss')
         },
       });
   
@@ -232,6 +247,8 @@ useEffect(() => {
         }
         return acc;
       }, {});
+
+      console.log('변환 memoData : ', memoData)
   
       //console.log('Processed memo data:', memoData);
       setMemos(memoData);
@@ -1123,6 +1140,11 @@ useEffect(() => {
       //const date = new Date(label as number);
       const date = new Date(formatInTimeZone(new Date(label as number), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
       const currentChart = payload[0].dataKey as string;
+
+      const timezoneOffset = new Date().getTimezoneOffset()
+      const offsetMs = ((-540 - timezoneOffset) * 60 * 1000) * -1
+
+      console.log('offsetMS ;;;;; ',offsetMs)
   
       // Remove duplicates from payload
       const uniquePayload = payload.filter((item, index, self) =>
@@ -1142,22 +1164,26 @@ useEffect(() => {
                   Number(pld.value).toFixed(2)) 
                 : 'N/A';
               
-              let memoKey = `${pld.dataKey}_${date.getTime()}`;
+              let memoKey = `${pld.dataKey}_${date.getTime() - offsetMs}`;
   
               if (pld.dataKey === 'sleep_stage') {
                 const sleepStage = pld.value as number;
                 value = getSleepStageLabel(sleepStage);
-                const sleepItem = indexedSleepData.find(s => date.getTime() >= s.start && date.getTime() < s.end);
+                const sleepItem = indexedSleepData.find(s => date.getTime() - offsetMs >= s.start && date.getTime() - offsetMs < s.end);
                 if (sleepItem) {
                   memoKey = `sleep_${sleepItem.start}`;
                 }
               } else if (pld.dataKey === 'calorie') {
                 const interval = 15 * 60 * 1000;
-                const startOfInterval = Math.floor(date.getTime() / interval) * interval;
+                const startOfInterval = (Math.floor(date.getTime() / interval) * interval) - offsetMs;
                 memoKey = `${pld.dataKey}_${startOfInterval}`;
               }
   
               const memo = memos[memoKey];
+
+              console.log('in custom tooltip memos ; ', memos)
+              console.log('in custom tooltip memoKey ; ', memoKey)
+              console.log('in custom tooltip memo', memo)
   
               return (
                 <React.Fragment key={`${pld.dataKey}-${index}`}>
@@ -1235,6 +1261,7 @@ useEffect(() => {
     //const sleepMemosCount = Object.keys(memos).filter(key => key.startsWith('sleep_')).length;
     //console.log('Number of sleep memos:', sleepMemosCount);
 
+    //console.log('in renderChart ,',dataKey)
 
     return (
       <div className="w-full h-full">
@@ -1374,6 +1401,7 @@ useEffect(() => {
                 name={dataKey.toUpperCase()} 
                 dot={((props: any) => {
                   const memoKey = `${dataKey}_${props.payload.timestamp}`;
+                  
                   if (memos[memoKey]) {
                     return (
                       <circle 

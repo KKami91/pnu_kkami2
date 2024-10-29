@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { MongoClient } from 'mongodb';
-import { addHours } from 'date-fns'
+import { addHours, format } from 'date-fns'
 
 const uri = process.env.MONGODB_URI
 
@@ -15,7 +15,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const client = await MongoClient.connect(uri);
       const db = client.db('heart_rate_db');
-      const collections = ['bpm_test3', 'step_test3', 'calorie_test3', 'sleep_test3'];
+      //const collections = ['bpm_test3', 'step_test3', 'calorie_test3', 'sleep_test3'];
+      const collections = ['bpm', 'step', 'calorie', 'sleep'];
 
       const memos = [];
 
@@ -24,12 +25,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         let query;
         let project;
 
-        if (collectionName === 'sleep_test3') {
+        //if (collectionName === 'sleep_test3') {
+        if (collectionName === 'sleep') {
           query = {
             user_email,
             timestamp_start: { 
-              $gte: new Date(startDate as string), 
-              $lte: new Date(endDate as string) 
+              $gte: new Date(format(startDate as string, 'yyyy-MM-dd HH:mm:ss')),
+              $lte: new Date(format(endDate as string, 'yyyy-MM-dd HH:mm:ss'))
             },
             memo: { $exists: true }
           };
@@ -43,8 +45,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           query = {
             user_email,
             timestamp: { 
-              $gte: new Date(startDate as string), 
-              $lte: new Date(endDate as string) 
+              $gte: new Date(format(startDate as string, 'yyyy-MM-dd HH:mm:ss')),
+              $lte: new Date(format(endDate as string, 'yyyy-MM-dd HH:mm:ss'))
             },
             memo: { $exists: true }
           };
@@ -56,6 +58,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         const collectionMemos = await collection.find(query).project(project).toArray();
+        console.log('startDate & endDate', startDate, endDate)
+        console.log('startDate & endDate', new Date(format(startDate as string, 'yyyy-MM-dd HH:mm:ss')), new Date(format(endDate as string, 'yyyy-MM-dd HH:mm:ss')))
+        //console.log('startDate & endDate', new Date(startDate as string), new Date(endDate as string))
+        //console.log('startDate & endDate', new Date(format(startDate as string, 'yyyy-MM-dd HH:mm:ssXXX')), new Date(format(endDate as string, 'yyyy-MM-dd HH:mm:ssXXX')))
+        //console.log('CONVERT startDate & endDate', new Date(formatInTimeZone(new Date(startDate as string), 'UTC', 'yyyy-MM-dd HH:mm:ss')), new Date(formatInTimeZone(new Date(endDate as string), 'UTC', 'yyyy-MM-dd HH:mm:ss')))
         console.log(`in getMemos.ts ---- collectionMemos ----`, collectionMemos)
         memos.push(...collectionMemos);
       }
