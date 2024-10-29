@@ -76,19 +76,23 @@ interface MemoModalProps {
   data: {
     timestamp: number;
     end?: number;
-    value: number;
+    bpm?: number;
+    step?: number;
+    calorie?: number;
+    sleep_stage?: number;
     type: string;
   };
   existingMemo: string | Memo;
 }
 
 function getSleepStageLabel(value: number): string {
+  console.log('-----value----', value)
   switch(value) {
-    case 1: return 'Awake';
-    case 2: return 'Light1';
-    case 3: return 'Light2';
-    case 4: return 'Deep';
-    case 5: return 'REM';
+    case -1: return 'Awake';
+    case -1.5: return 'Light1 Sleep';
+    case -2: return 'Light2 Sleep';
+    case -2.5: return 'REM';
+    case -3: return 'Deep Sleep';
     default: return 'Unknown';
   }
 }
@@ -108,17 +112,28 @@ const MemoModal: React.FC<MemoModalProps> = ({ isOpen, onClose, onSave, data, ex
     return new Date(timestamp).toLocaleString();
   };
 
+  const getDisplayValue = () => {
+    if (data.type === 'sleep') {
+      // sleep일 경우, sleep_stage 값으로 레이블 표시
+      return getSleepStageLabel(data.sleep_stage ?? -1); 
+    }
+    return data[data.type as keyof typeof data] ?? data.sleep_stage; // 동적 접근
+  };
+
+  console.log(data[data.type as keyof typeof data])
+  console.log(data)
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-4 rounded-lg w-96">
+      <div className="bg-white p-4 rounded-lg w-96 text-black">
         <h2 className="text-lg font-bold mb-2">{data.type.toUpperCase()} Data</h2>
         <p>Timestamp: {formatTimestamp(data.timestamp)}</p>
         {data.type === 'sleep' && data.end && (
           <p>End Time: {formatTimestamp(data.end)}</p>
         )}
-        <p>Value: {data.type === 'sleep' ? getSleepStageLabel(data.value) : data.value}</p>
+        <p>Value: {data.type === 'sleep' ? getDisplayValue() : data[data.type as keyof typeof data]}</p>
         <textarea
-          className="w-full mt-2 p-2 border rounded"
+          className="w-full mt-2 p-2 border rounded text-white"
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
           placeholder="Enter your memo here..."
