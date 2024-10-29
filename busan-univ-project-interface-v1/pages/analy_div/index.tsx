@@ -511,15 +511,12 @@ import MultiChart from '../../components/MultiChart4';
 import CombinedChart from '../../components/CombinedChart3';
 import { SkeletonLoader } from '../../components/SkeletonLoaders3';
 import { LaptopMinimal, LayoutGrid, BarChart } from 'lucide-react';
-import { parseISO, format, startOfHour, endOfHour, startOfWeek, endOfWeek, addDays, subDays, isSunday, nextSunday, endOfDay, startOfDay, previousSunday, previousMonday, isSaturday, isFriday, isFuture, nextMonday, nextSaturday, subSeconds } from 'date-fns';
-import RmssdCalendar from '../../components/RmssdCalendar';
-import SdnnCalendar from '../../components/SdnnCalendar';
-import SdnnCalHeatmap from '../../components/CalHeatMapSdnn'
-import RmssdCalHeatmap from '../../components/CalHeatMapRmssd'
+import { addHours, parseISO, format, startOfHour, endOfHour, startOfWeek, endOfWeek, addDays, subDays, isSunday, nextSunday, endOfDay, startOfDay, previousSunday, previousMonday, isSaturday, isFriday, isFuture, nextMonday, nextSaturday, subSeconds } from 'date-fns';
 
 import CombinedHrvHeatmap from '../../components/CombinedHrvHeatmap';
 
 import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
+
 
 ///
 import Calendar from 'react-calendar';
@@ -530,6 +527,16 @@ interface DataResult {
   data: { _id: string; count: number }[];
 }
 ////
+
+// const getDataCountForDate = (date: Date, data: DataResult[]) => {
+//   const dateString = addDays(date, 1).toISOString().split('T')[0]; // 'YYYY-MM-DD' 형식으로 변환
+//   return {
+//     bpm: data.find((d) => d.collection === 'bpm')?.data.find((item) => item._id === dateString)?.count || 0,
+//     step: data.find((d) => d.collection === 'step')?.data.find((item) => item._id === dateString)?.count || 0,
+//     calorie: data.find((d) => d.collection === 'calorie')?.data.find((item) => item._id === dateString)?.count || 0,
+//     sleep: data.find((d) => d.collection === 'sleep')?.data.find((item) => item._id === dateString)?.count || 0,
+//   };
+// };
 
 const getDataCountForDate = (date: Date, data: DataResult[]) => {
   // 날짜만 추출 (YYYY-MM-DD 형식)
@@ -550,7 +557,6 @@ const getDataCountForDate = (date: Date, data: DataResult[]) => {
     )?.count || 0,
   };
 };
-////
 
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'sueun4701@gmail.com', 'psy.suh.hg@gmail.com']
@@ -799,14 +805,7 @@ export default function Home() {
         const predictEndTime = performance.now();
         console.log(`예측 데이터 가져오는데 걸리는 시간 : ${predictEndTime - predictStartTime} ms`);
 
-        const startFirstDateTime = performance.now()
-        const userFirstDate = await axios.get(`${API_URL}/get_start_dates/${selectedUser}`)
 
-        const userStartDate = userFirstDate.data.start_date
-        setFirstDate([userStartDate])
-
-        const endFirstDateTime = performance.now()
-        console.log('userFirstDate 걸린 시간 ; ; ', endFirstDateTime - startFirstDateTime)
   
         setShowGraphs(true);  // 모든 데이터 로딩이 완료되면 그래프를 표시합니다.
         setTimeout(scrollToMultiChart, 100);
@@ -988,8 +987,6 @@ export default function Home() {
     ));
     //console.log(startOfDayUtc)
 
-    const localDate = new Date(); // 로컬 시간
-    const utcDate = fromZonedTime(localDate, Intl.DateTimeFormat().resolvedOptions().timeZone);
     // console.log('33333',localDate)
     // console.log(new Date())
     // console.log('22222', utcDate)
@@ -1006,6 +1003,19 @@ export default function Home() {
       await checkDb(user)
       const endTimeCheckDB = performance.now();
       console.log(`In Index.tsx ---> checkDB 걸린 시간 (1) : ${endTimeCheckDB - startTimeCheckDB} ms`);
+
+      const responseDay = await axios.get(`${API_URL}/feature_day_div/${user}`);
+      const userFirstDate = await axios.get(`${API_URL}/get_start_dates/${user}`)
+
+      const userStartDate = userFirstDate.data.start_date
+      setFirstDate([userStartDate])
+
+      console.log('---------------------------')
+      console.log('---------------------------')
+      console.log(responseDay.data.day_hrv)
+      console.log('---------------------------')
+      console.log('---------------------------')
+      setHrvDayData(responseDay.data.day_hrv);
 
       const countDataResponse = await axios.get('/api/getCountData', { params: { user_email: user } })
       setCountData(countDataResponse.data);
@@ -1118,9 +1128,16 @@ export default function Home() {
               next2Label={null}
               prev2Label={null}
             />
-
           </CardContent>
         </Card>
+        {/* <Card>
+          <CardHeader>
+            <CardTitle>HRV Heatmaps</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col space-y-4">
+            <CombinedHrvHeatmap hrvDayData={hrvDayData} firstDate={firstDate} />
+          </CardContent>
+        </Card> */}
 
 
 

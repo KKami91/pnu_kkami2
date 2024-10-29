@@ -167,7 +167,7 @@ const handleDateSelect = useCallback(async (event: Event) => {
   setTimeout(scrollToMultiChart, 10);
 
   setDateWindow({ start: newStart, end: newEnd });
-  setDateRange('1'); // 1주일 보기로 설정
+  setDateRange('1'); // 
   setTimeUnit('minute'); // 분 단위로 설정 (필요에 따라 조정)
 
   
