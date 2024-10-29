@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Calendar, dateFnsLocalizer, Views } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay, parseISO } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import styles from './BigCalendar.module.css'
+
 
 interface DataResult {
   collection: string;
@@ -30,8 +31,14 @@ interface DataAvailabilityCalendarProps {
 
 
 const DataAvailabilityCalendar: React.FC<DataAvailabilityCalendarProps> = ({ countData }) => {
+  // const [startDate, setStartDate] = useState<any>(null);
+  // const [endDate, setEndDate] = useState<any>(null);
   const getDataCountForDate = (date: Date) => {
     const dateString = format(date, 'yyyy-MM-dd');
+
+    // console.log('in DataCountCalendar ;', countData[0].data.)
+
+    // setStartDate(countData[0])
     
     return {
       bpm: countData.find((d) => d.collection === 'bpm')?.data.find((item) => 
@@ -49,19 +56,46 @@ const DataAvailabilityCalendar: React.FC<DataAvailabilityCalendarProps> = ({ cou
     };
   };
 
-  const hasWarning = (type: 'bpm' | 'calorie', value: number) => {
-    if (type === 'bpm') return value < 1440 - 60;
-    if (type === 'calorie') return value < 96 - 4;
-    return false;
-  };
+  // const hasWarning = (type: 'bpm' | 'calorie', value: number) => {
+  //   if (type === 'bpm') return value < 1440 - 60;
+  //   if (type === 'calorie') return value < 96 - 4;
+  //   return false;
+  // };
+
+  // console.log('%%%%%%%%%%%%%%%%')
+  // console.log(getDataCountForDate)
+  // console.log('%%%%%%%%%%%%%%%%')
+
+  const getDateRange = React.useMemo(() => {
+    const allDates = countData.flatMap(collection => 
+      collection.data.map(item => new Date(item._id).getTime())
+    );
+
+    if (allDates.length === 0) {
+      // 데이터가 없는 경우 현재 달을 기준으로 범위 설정
+      const today = new Date();
+      return {
+        start: new Date(today.getFullYear(), today.getMonth(), 1),
+        end: new Date(today.getFullYear(), today.getMonth() + 1, 0)
+      };
+    }
+
+    return {
+      start: new Date(Math.min(...allDates)),
+      end: new Date(Math.max(...allDates))
+    };
+  }, [countData]);
 
   const events = React.useMemo(() => {
     const today = new Date();
-    const startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const endDate = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    // const startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    // const endDate = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+    const { start, end } = getDateRange;
     const events = [];
 
-    for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
+    //console.log(startDate, endDate)
+
+    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
       const counts = getDataCountForDate(new Date(date));
       if (Object.values(counts).some(count => count > 0)) {
         events.push({
@@ -118,7 +152,7 @@ const DataAvailabilityCalendar: React.FC<DataAvailabilityCalendarProps> = ({ cou
 
     return (
       <div className={`px-1.5 py-0.5 rounded-md ${getBackgroundColor()} text-xs flex items-center justify-between gap-1`}>
-        <span className="font-medium">{value}</span>
+        <span className="font-bold">{value}</span>
         {needsWarning && <AlertCircle className="h-4 w-4 text-red-800 " />}
       </div>
     );
@@ -157,6 +191,14 @@ const DataAvailabilityCalendar: React.FC<DataAvailabilityCalendarProps> = ({ cou
     },
   };
 
+  // 높이 설정 useEffect 추가
+  useEffect(() => {
+    const cells = document.querySelectorAll('.rbc-month-row');
+    cells.forEach(cell => {
+      (cell as HTMLElement).style.height = '250px'; // 원하는 높이로 설정
+    });
+  }, [events]);
+
   return (
     <Card className="w-[850px]">
       <CardHeader>
@@ -169,7 +211,7 @@ const DataAvailabilityCalendar: React.FC<DataAvailabilityCalendarProps> = ({ cou
           events={events}
           startAccessor="start"
           endAccessor="end"
-          style={{ height: 800 }}
+          style={{ height: 850 }}
           views={['month']}
           defaultView={Views.MONTH}
           eventPropGetter={eventStyleGetter}
@@ -177,7 +219,7 @@ const DataAvailabilityCalendar: React.FC<DataAvailabilityCalendarProps> = ({ cou
           messages={{
             next: "▶",
             previous: "◀",
-            today: "오늘",
+            today: "Today",
           }}
         />
         </div>

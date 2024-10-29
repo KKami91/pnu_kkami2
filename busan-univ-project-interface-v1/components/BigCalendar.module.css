@@ -1,32 +1,40 @@
 /* styles/Calendar.module.css */
 .calendarWrapper :global(.rbc-calendar) {
-    font-family: system-ui, -apple-system, sans-serif;
-  }
-  
-  .calendarWrapper :global(.rbc-header) {
-    padding: 8px;
-    font-weight: 600;
-  }
-  
-  .calendarWrapper :global(.rbc-event) {
-    background-color: transparent !important;
-    border: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  
-  .calendarWrapper :global(.rbc-event-content) {
-    white-space: normal !important;
-  }
-  
-  .calendarWrapper :global(.rbc-today) {
-    background-color: #000000 !important;
-  }
-  
-  .calendarWrapper :global(.rbc-month-view) {
-    border-radius: 0.5rem;
-  }
+  font-family: system-ui, -apple-system, sans-serif;
+}
 
-  .calendarWrapper :global(.rbc-btn-group) {
-    background-color: #928091 !important;
-  }
+.calendarWrapper :global(.rbc-header) {
+  padding: 8px;
+  font-weight: 600;
+}
+
+.calendarWrapper :global(.rbc-event) {
+  background-color: transparent !important;
+  border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.calendarWrapper :global(.rbc-event-content) {
+  white-space: normal !important;
+}
+
+.calendarWrapper :global(.rbc-today) {
+  background-color: #000000 !important;
+}
+
+.calendarWrapper :global(.rbc-month-view) {
+  border-radius: 0.5rem;
+}
+
+.calendarWrapper :global(.rbc-btn-group) {
+  background-color: #928091 !important;
+}
+
+.calendarWrapper :global(.rbc-month-row) {
+  height: 130px !important; /* 각 주 행의 높이를 고정 */
+}
+
+.calendarWrapper :global(.rbc-date-cell) {
+  text-align: right;
+}
