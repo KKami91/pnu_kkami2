@@ -515,18 +515,52 @@ import { addHours, parseISO, format, startOfHour, endOfHour, startOfWeek, endOfW
 
 import CombinedHrvHeatmap from '../../components/CombinedHrvHeatmap';
 
+
 import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 
-
-///
-import Calendar from 'react-calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import styles from './CustomCalendar2.module.css'
+import DataAvailabilityCalendar from '../../components/DataCountCalendar'
+// ///
+// import Calendar from 'react-calendar';
+// import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+// import styles from './CustomCalendar2.module.css'
 interface DataResult {
   collection: string;
   data: { _id: string; count: number }[];
 }
-////
+// ////
+
+// // const getDataCountForDate = (date: Date, data: DataResult[]) => {
+// //   const dateString = addDays(date, 1).toISOString().split('T')[0]; // 'YYYY-MM-DD' 형식으로 변환
+// //   return {
+// //     bpm: data.find((d) => d.collection === 'bpm')?.data.find((item) => item._id === dateString)?.count || 0,
+// //     step: data.find((d) => d.collection === 'step')?.data.find((item) => item._id === dateString)?.count || 0,
+// //     calorie: data.find((d) => d.collection === 'calorie')?.data.find((item) => item._id === dateString)?.count || 0,
+// //     sleep: data.find((d) => d.collection === 'sleep')?.data.find((item) => item._id === dateString)?.count || 0,
+// //   };
+// // };
+
+// const getDataCountForDate = (date: Date, data: DataResult[]) => {
+//   // 날짜만 추출 (YYYY-MM-DD 형식)
+//   const dateString = format(date, 'yyyy-MM-dd');
+
+//   return {
+//     bpm: data.find((d) => d.collection === 'bpm')?.data.find((item) => 
+//       format(parseISO(item._id), 'yyyy-MM-dd') === dateString
+//     )?.count || 0,
+//     step: data.find((d) => d.collection === 'step')?.data.find((item) => 
+//       format(parseISO(item._id), 'yyyy-MM-dd') === dateString
+//     )?.count || 0,
+//     calorie: data.find((d) => d.collection === 'calorie')?.data.find((item) => 
+//       format(parseISO(item._id), 'yyyy-MM-dd') === dateString
+//     )?.count || 0,
+//     sleep: data.find((d) => d.collection === 'sleep')?.data.find((item) => 
+//       format(parseISO(item._id), 'yyyy-MM-dd') === dateString
+//     )?.count || 0,
+//   };
+// };
+
+// ///
+
 
 // const getDataCountForDate = (date: Date, data: DataResult[]) => {
 //   const dateString = addDays(date, 1).toISOString().split('T')[0]; // 'YYYY-MM-DD' 형식으로 변환
@@ -1054,27 +1088,27 @@ export default function Home() {
   };
 
 
-  const tileContent = ({ date }: { date: Date }) => {
-    const counts = getDataCountForDate(date, countData);
-    const hasData = Object.values(counts).some(count => count > 0);
+  // const tileContent = ({ date }: { date: Date }) => {
+  //   const counts = getDataCountForDate(date, countData);
+  //   const hasData = Object.values(counts).some(count => count > 0);
   
-    if (counts.bpm < 1440 - 60 || counts.calorie < 96 - 4) {
-      return hasData ? (
-        <div className={styles.tileContentUnderCount}>
-        <div className={styles.dataCount}>{counts.bpm} / {counts.step} </div>
-        <div className={styles.dataCount}>{counts.calorie} / {counts.sleep}</div>
-      </div>
-      ) : null;
-    } else {
-      return hasData ? (
-        <div className={styles.tileContent}>
-        <div className={styles.dataCount}>{counts.bpm} / {counts.step}</div>
-        <div className={styles.dataCount}>{counts.calorie} / {counts.sleep}</div>
-      </div>
-      ) : null;
-    }
+  //   if (counts.bpm < 1440 - 60 || counts.calorie < 96 - 4) {
+  //     return hasData ? (
+  //       <div className={styles.tileContentUnderCount}>
+  //       <div className={styles.dataCount}>{counts.bpm} / {counts.step} </div>
+  //       <div className={styles.dataCount}>{counts.calorie} / {counts.sleep}</div>
+  //     </div>
+  //     ) : null;
+  //   } else {
+  //     return hasData ? (
+  //       <div className={styles.tileContent}>
+  //       <div className={styles.dataCount}>{counts.bpm} / {counts.step}</div>
+  //       <div className={styles.dataCount}>{counts.calorie} / {counts.sleep}</div>
+  //     </div>
+  //     ) : null;
+  //   }
 
-  };
+  // };
 
   return (
     <div className="container mx-auto p-4">
@@ -1113,7 +1147,8 @@ export default function Home() {
         <SkeletonLoader viewMode={viewMode} columns={1} />
       ) : selectedUser && countData.length > 0 && !error ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className='w-[850px]'>
+          <DataAvailabilityCalendar countData={countData} />
+        {/* <Card className='w-[850px]'>
           <CardHeader>
             <CardTitle>Data Availability (BPM/Steps/Calories/Sleep)</CardTitle>
           </CardHeader>
@@ -1129,7 +1164,7 @@ export default function Home() {
               prev2Label={null}
             />
           </CardContent>
-        </Card>
+        </Card> */}
         {/* <Card>
           <CardHeader>
             <CardTitle>HRV Heatmaps</CardTitle>
