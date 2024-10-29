@@ -44,6 +44,7 @@
     "plotly.js-dist-min": "^2.32.0",
     "pnpm": "^9.1.0",
     "react": "^18.3.1",
+    "react-big-calendar": "^1.15.0",
     "react-calendar": "^5.0.0",
     "react-calendar-heatmap": "^1.9.0",
     "react-dom": "^18.3.1",
