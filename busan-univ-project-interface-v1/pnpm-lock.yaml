@@ -32,6 +32,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.34.2
         version: 5.34.2(react@18.3.1)
+      '@types/react-big-calendar':
+        specifier: ^1.8.12
+        version: 1.8.12
       '@types/react-plotly.js':
         specifier: ^2.6.3
         version: 2.6.3
@@ -2125,6 +2128,9 @@ packages:
   '@types/d3@7.4.3':
     resolution: {integrity: sha512-lZXZ9ckh5R8uiFVt8ogUNf+pIrK4EsWrx2Np75WvF/eTpJ0FMHNhjXk8CKEx/+gpHbNQyJWehbFaTvqmHWB3ww==}
 
+  '@types/date-arithmetic@4.1.4':
+    resolution: {integrity: sha512-p9eZ2X9B80iKiTW4ukVj8B4K6q9/+xFtQ5MGYA5HWToY9nL4EkhV9+6ftT2VHpVMEZb5Tv00Iel516bVdO+yRw==}
+
   '@types/geojson@7946.0.14':
     resolution: {integrity: sha512-WCfD5Ht3ZesJUsONdhvm84dmzWOiOzOAqOncN0++w0lBw1o8OuDNJF2McvvCef/yBqb/HYRahp1BYtODFQ8bRg==}
 
@@ -2172,6 +2178,9 @@ packages:
 
   '@types/prop-types@15.7.12':
     resolution: {integrity: sha512-5zvhXYtRNRluoE/jAp4GVsSduVUzNWKkOZrCDBWYtE7biZywwdC2AcEzg+cSMLFRfVgeAFqpfNabiPjxFddV1Q==}
+
+  '@types/react-big-calendar@1.8.12':
+    resolution: {integrity: sha512-dN9kPm2cLgPKDVc8q7RdXMehZxQea+LlcWPB8sU3ES7S3WF/ff8e87NfhJREfzHWEeEJBx2TqRKQRkdHA9vNFw==}
 
   '@types/react-calendar-heatmap@1.6.7':
     resolution: {integrity: sha512-xWBS9iOvw+aCidPk8QwCH69OCO7jnj6/9TjooqGQ9W+rA5m1aw36GjQMlSYKAg86otDeg9dzA+hSAIcvw/y9Rg==}
@@ -9238,6 +9247,8 @@ snapshots:
       '@types/d3-transition': 3.0.8
       '@types/d3-zoom': 3.0.8
 
+  '@types/date-arithmetic@4.1.4': {}
+
   '@types/geojson@7946.0.14': {}
 
   '@types/istanbul-lib-coverage@2.0.6': {}
@@ -9284,6 +9295,12 @@ snapshots:
   '@types/plotly.js@2.29.4': {}
 
   '@types/prop-types@15.7.12': {}
+
+  '@types/react-big-calendar@1.8.12':
+    dependencies:
+      '@types/date-arithmetic': 4.1.4
+      '@types/prop-types': 15.7.12
+      '@types/react': 18.3.1
 
   '@types/react-calendar-heatmap@1.6.7':
     dependencies:
