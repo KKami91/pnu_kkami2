@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import CalHeatmap from 'cal-heatmap';
 import 'cal-heatmap/cal-heatmap.css';
 import { addDays, parseISO, format } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz';
 
 interface HrvDayData {
     ds: string;
@@ -60,7 +61,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
                     label: { 
                         position: 'top',
                         text: (timestamp: number) => {
-                            const date = new Date(timestamp);
+                            const date = new Date(formatInTimeZone(new Date(timestamp).getTime(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
                             return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })
                         },
                         offset: { x: 0, y: -10 }
@@ -95,16 +96,11 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
                 if (event && event.target && (event.target as any).__data__) {
                     const data = (event.target as any).__data__ as CalHeatmapData;
                     if (data.v !== null) {
-                        const date = new Date(data.t);
+                        const date = new Date(formatInTimeZone(data.t as number, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));
                         const rmssd = data.v;
 
                         setSelectedData({ date, rmssd });
                         setShowModal(true);
-                    } else {
-                        // 데이터가 없는 경우 처리
-                        //console.log('No data available for this date');
-                        // 선택적: 사용자에게 알림 표시
-                        //alert('이 날짜에 대한 데이터가 없습니다.');
                     }
                 }
             });
@@ -138,7 +134,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
     };
 
     return (
-        <div className="p-4 bg-gray-900 text-white">
+        <div className="p-4 bg-white text-black">
             <h2 className="text-xl font-bold mb-4">스트레스 지수</h2>
             <div className="flex justify-between mb-4">
                 <button onClick={handlePrevious} className="px-4 py-2 bg-blue-500 text-white rounded">
