@@ -183,7 +183,7 @@ const DataAvailabilityCalendar: React.FC<DataAvailabilityCalendarProps> = ({ cou
         </div>
         <div className="mt-4 flex justify-center space-x-4">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-purple-400 rounded"></div>
+            <div className="w-4 h-4 bg-gray-400 rounded"></div>
             <span className="text-sm">BPM</span>
           </div>
           <div className="flex items-center gap-2">
