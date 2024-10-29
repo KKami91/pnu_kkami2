@@ -210,8 +210,8 @@ useEffect(() => {
           user_email: selectedUser,
           // startDate: dateWindow.start.toISOString(),
           // endDate: dateWindow.end.toISOString()
-          startDate: new Date(format(dateWindow.start, 'yyyy-MM-dd HH:mm:ss')),
-          endDate: new Date(format(dateWindow.end, 'yyyy-MM-dd HH:mm:ss'))
+          startDate: formatInTimeZone(dateWindow.start, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
+          endDate: formatInTimeZone(dateWindow.end, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         },
       });
   
