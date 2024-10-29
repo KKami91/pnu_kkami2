@@ -4,6 +4,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { MongoClient } from 'mongodb';
 import { subHours } from 'date-fns'
 
+
 const uri = process.env.MONGODB_URI
 let client: MongoClient | null = null;
 
@@ -14,10 +15,6 @@ async function connectToDatabase() {
   }
   return client;
 }
-
-const adjustTimeZone = (date: Date) => {
-    return subHours(date, 9);
-  };
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
@@ -40,6 +37,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             startDate: { $min: "$timestamp" },
             endDate: { $max: "$timestamp" }
           }
+        },
+        {
+          $project: {
+            _id: 0,
+            startDate: {
+              $dateToString: {
+                format: "%Y-%m-%dT%H:%M:%S.%L%z",
+                date: "$startDate",
+                timezone: "UTC"
+              }
+            },
+            endDate: {
+              $dateToString: {
+                format: "%Y-%m-%dT%H:%M:%S.%L%z",
+                date: "$endDate",
+                timezone: "UTC"
+              }
+            }
+          }
         }
       ];
 
@@ -47,11 +63,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (result.length > 0) {
         res.status(200).json({
-          startDate: adjustTimeZone(result[0].startDate),
-          endDate: adjustTimeZone(result[0].endDate)
+          startDate: result[0].startDate,
+          endDate: result[0].endDate
         });
       } else {
-        // Instead of sending a 404, we'll send a 200 with null dates
         res.status(200).json({
           startDate: null,
           endDate: null

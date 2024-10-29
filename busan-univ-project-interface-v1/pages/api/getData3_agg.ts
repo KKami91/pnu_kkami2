@@ -122,7 +122,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const startTime = performance.now();
     const { collection, user_email, startDate, endDate } = req.query;
 
-    console.log(`@@@@@@@@@@@@@@@@@ in getData3_div original date : ${startDate} ~ ${endDate}`);
+    // console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+    // console.log('in agg.ts ; 원본 startDate ~ endDate : ,,, ', startDate, '~~', endDate)
+    // console.log('in agg.ts ; parseISO startDate ~ endDate : ,,, ', parseISO(startDate as string), '~~', parseISO(endDate as string))
+    // console.log('in agg.ts ; startOfDay, endOfDay parseISO startDate ~ endDate : ,,, ',  startOfDay(parseISO(startDate as string)), '~~', startOfDay(parseISO(endDate as string)))
+    // console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@')
+
+    //console.log('테스트!!! : ', new Date(subHours(startDate as string, 9)), new Date(subHours(endDate as string, 9)))
+
+
 
     if (!collection || !user_email || !startDate || !endDate) {
       return res.status(400).json({ error: 'Missing required parameters' });
@@ -133,15 +141,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const database = client.db('heart_rate_db');
       const dataCollection = database.collection(collection as string);
 
-      // 로컬 전용
-      //const start = adjustTimeZone(startOfDay(parseISO(startDate as string)));
-      //const end = adjustTimeZone(endOfDay(parseISO(endDate as string)));
+      // const start = startOfDay(parseISO(startDate as string));
+      // const end = endOfDay(parseISO(endDate as string));
 
-      // 배포 전용
-      const start = startOfDay(parseISO(startDate as string));
-      const end = endOfDay(parseISO(endDate as string));
+      // const start = new Date(subHours(startDate as string, 9))
+      // const end = new Date(subHours(endDate as string, 9))
 
-      console.log(`%%%%%%%%%%%%%% In getData3_div convert date : ${start} ~ ${end}`);
+      const start = new Date(startDate as string)
+      const end = new Date(endDate as string)
+
 
       let matchStage: any = {
         user_email,
@@ -156,36 +164,56 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         value: 1
       }
 
-      if (collection === 'sleep_test3') {
+      //if (collection === 'sleep_test3') {
+      //if (collection === 'sleep') {
+      if (collection === 'sleep') {
         matchStage = {
           user_email,
           timestamp_start: { $gte: start, $lte: end }
         };
       }
 
-    //   if (collection === 'sleep_test3') {
-    //     prject = {
-    //       user_email,
-    //       timestamp_start: { $gte: start, $lte: end }
-    //     };
-    //   }
 
       const pipeline = [
         { 
-            $match: matchStage 
+          $match: matchStage 
         },
-        { 
-            $project: projectStage
+        {
+          $project: {
+            _id: 0,
+            timestamp: {
+              $dateToString: {
+                format: "%Y-%m-%dT%H:%M:%S.%L%z", // ISO 형식 + 타임존
+                date: { $add: ["$timestamp"] }, // UTC -> KST 변환
+                timezone: 'UTC'
+              }
+            },
+            timestamp_start: {
+              $dateToString: {
+                format: "%Y-%m-%dT%H:%M:%S.%L%z",
+                date: { $add: ["$timestamp_start"] },
+                timezone: "UTC"
+              }
+            },
+            timestamp_end: {
+              $dateToString: {
+                format: "%Y-%m-%dT%H:%M:%S.%L%z",
+                date: { $add: ["$timestamp_end"] },
+                timezone: "UTC"
+              }
+            },
+            value: 1
+          }
         }
-      ]
+      ];
 
       const startTime = performance.now()
       const result = await dataCollection.aggregate(pipeline).toArray();
-      
-      //console.log(`**********${collection} result 길이 : ${result.length} & 시간대 : ${startDate} ~ ${endDate}********`);
-      const endTime = performance.now();
-      //console.log(`in getData3_agg -> result 걸린 시간 : ${endTime - startTime} ------- ${collection} ----- ${result.length} --- ${start} --- ${end}`)
-      //console.log(result.slice(0,5), result.slice(result.length - 5, result.length))
+
+      // console.log('(((((((((((((((((((((((((((((((((((((((((((((((((((((((')
+      // console.log('in agg.ts ; 변환 start ~ end : ,,, ', start, '~~', end)
+      // console.log('(((((((((((((((((((((((((((((((((((((((((((((((((((((((')
+
 
       if (result) {
         res.status(200).json(result);
@@ -201,6 +229,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }
-
 
 
