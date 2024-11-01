@@ -31,6 +31,23 @@ interface DataAvailabilityCalendarProps {
 
 
 const DataAvailabilityCalendar: React.FC<DataAvailabilityCalendarProps> = ({ countData }) => {
+  const [calendarHeight, setCalendarHeight] = useState(800);
+
+  // 창 크기 변경 감지 및 캘린더 높이 조정
+  useEffect(() => {
+    const handleResize = () => {
+      const sidebar = document.querySelector('.sidebar-content');
+      if (sidebar) {
+        const sidebarHeight = sidebar.clientHeight;
+        const newHeight = Math.max(400, sidebarHeight - 200); // 최소 높이 400px 보장
+        setCalendarHeight(newHeight);
+      }
+    };
+
+    handleResize(); // 초기 실행
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   // const [startDate, setStartDate] = useState<any>(null);
   // const [endDate, setEndDate] = useState<any>(null);
   const getDataCountForDate = (date: Date) => {
@@ -200,45 +217,50 @@ const DataAvailabilityCalendar: React.FC<DataAvailabilityCalendarProps> = ({ cou
   }, [events]);
 
   return (
-    <Card className="w-[850px]">
-      <CardHeader>
-        <CardTitle>Data Availability (BPM/Steps/Calories/Sleep)</CardTitle>
+    <Card className="w-full">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-lg">Data Availability</CardTitle>
       </CardHeader>
       <CardContent>
+        {/* <div className={`${styles.calendarWrapper} overflow-hidden`}> */}
         <div className={styles.calendarWrapper}>
-        <Calendar
-          localizer={localizer}
-          events={events}
-          startAccessor="start"
-          endAccessor="end"
-          style={{ height: 850 }}
-          views={['month']}
-          defaultView={Views.MONTH}
-          eventPropGetter={eventStyleGetter}
-          components={components}
-          messages={{
-            next: "▶",
-            previous: "◀",
-            today: "Today",
-          }}
-        />
+          <Calendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            style={{ 
+              height: calendarHeight,
+              minHeight: '400px',
+              maxHeight: '800px'
+            }}
+            views={['month']}
+            defaultView={Views.MONTH}
+            eventPropGetter={eventStyleGetter}
+            components={components}
+            messages={{
+              next: "▶",
+              previous: "◀",
+              today: "Today",
+            }}
+          />
         </div>
-        <div className="mt-4 flex justify-center space-x-4">
+        <div className="mt-4 flex flex-wrap justify-center gap-3">
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-400 rounded"></div>
-            <span className="text-sm">BPM</span>
+            <div className="w-3 h-3 bg-gray-400 rounded"></div>
+            <span className="text-xs">BPM</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-400 rounded"></div>
-            <span className="text-sm">Steps</span>
+            <div className="w-3 h-3 bg-green-400 rounded"></div>
+            <span className="text-xs">Steps</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-yellow-400 rounded"></div>
-            <span className="text-sm">Calories</span>
+            <div className="w-3 h-3 bg-yellow-400 rounded"></div>
+            <span className="text-xs">Calories</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-400 rounded"></div>
-            <span className="text-sm">Sleep</span>
+            <div className="w-3 h-3 bg-blue-400 rounded"></div>
+            <span className="text-xs">Sleep</span>
           </div>
         </div>
       </CardContent>

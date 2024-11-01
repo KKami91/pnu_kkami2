@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import CalHeatmap from 'cal-heatmap';
 import 'cal-heatmap/cal-heatmap.css';
-import { addDays, format, parseISO } from 'date-fns'
+import { addHours, addDays, format, parseISO } from 'date-fns'
+import { formatInTimeZone } from 'date-fns-tz';
 
 interface HrvDayData {
     ds: string;
@@ -81,7 +82,8 @@ const SdnnCalHeatmap: React.FC<SdnnCalHeatmapProps> = ({ hrvDayData, startDate }
                 ...item,
                 //ds: addDays(new Date(item.ds), 1).toISOString().split('T')[0]
                 //ds: new Date(new Date(item.ds).getTime() + offsetMs).toISOString().split('T')[0]
-                ds: format(parseISO(item.ds), 'yyyy-MM-dd')
+                //ds: format(parseISO(item.ds), 'yyyy-MM-dd')
+                ds: format(formatInTimeZone(addHours(new Date(item.ds), 9), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
             }));
 
             newCal.paint({
@@ -101,7 +103,7 @@ const SdnnCalHeatmap: React.FC<SdnnCalHeatmapProps> = ({ hrvDayData, startDate }
                     label: { 
                         position: 'top',
                         text: (timestamp: number) => {
-                            const date = new Date(timestamp);
+                            const date = new Date(formatInTimeZone(new Date(timestamp).getTime(), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
                             return date.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long' })
                         },
                         offset: { x: 0, y: -10 }
@@ -165,7 +167,7 @@ const SdnnCalHeatmap: React.FC<SdnnCalHeatmapProps> = ({ hrvDayData, startDate }
             newCal.on('mouseover', (event: any) => {
                 if (event && event.target && (event.target as any).__data__ && (event.target as any).__data__.v !== null) {
                     const data = (event.target as any).__data__ as CalHeatmapData;
-                    const date = new Date(data.t);
+                    const date = new Date(formatInTimeZone(data.t as number, 'Asia/Seoul', 'yyyy-MM-dd HH:mm:ss'));
                     const sdnn = data.v;
                     const rect = event.target.getBoundingClientRect();
                     

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import CalHeatmap from 'cal-heatmap';
 import 'cal-heatmap/cal-heatmap.css';
-import { addDays, parseISO, format } from 'date-fns'
+import { addHours, addDays, parseISO, format } from 'date-fns'
 import { formatInTimeZone } from 'date-fns-tz';
 
 interface HrvDayData {
@@ -38,10 +38,11 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
             const adjustedData = hrvDayData.map(item => ({
                 ...item,
                 //ds: addDays(new Date(item.ds), 1).toISOString().split('T')[0]
-                ds: format(parseISO(item.ds), 'yyyy-MM-dd')
+                //ds: format(parseISO(item.ds), 'yyyy-MM-dd')
+                ds: format(formatInTimeZone(addHours(new Date(item.ds), 9), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
             }));
 
-            console.log(new Date(adjustedData[0].ds))
+            //console.log(new Date(adjustedData[0].ds))
 
 
             newCal.paint({
@@ -92,7 +93,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData }) => {
             document.head.appendChild(style);
 
             newCal.on('click', (event: any) => {
-                console.log('Click event:', event);
+                //console.log('Click event:', event);
                 if (event && event.target && (event.target as any).__data__) {
                     const data = (event.target as any).__data__ as CalHeatmapData;
                     if (data.v !== null) {
