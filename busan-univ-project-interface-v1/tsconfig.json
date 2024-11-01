@@ -1,3 +1,29 @@
+// {
+//   "compilerOptions": {
+//     "lib": ["dom", "dom.iterable", "esnext"],
+//     "allowJs": true,
+//     "skipLibCheck": true,
+//     "strict": true,
+//     "noEmit": true,
+//     "esModuleInterop": true,
+//     "allowSyntheticDefaultImports": true,
+//     "module": "esnext",
+//     "moduleResolution": "node",
+//     "resolveJsonModule": true,
+//     "isolatedModules": true,
+//     "noImplicitAny": true,
+//     "strictNullChecks": true,
+//     "jsx": "preserve",
+//     "incremental": true,
+//     "paths": {
+//       "@/*": ["./*"]
+//     },
+//     "typeRoots": ["./types", "./node_modules/@types"]
+//   },
+//   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "upload2.js"],
+//   "exclude": ["node_modules"]
+// }
+
 {
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "esnext"],
@@ -6,20 +32,16 @@
     "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
     "jsx": "preserve",
     "incremental": true,
     "paths": {
       "@/*": ["./*"]
-    },
-    "typeRoots": ["./types", "./node_modules/@types"]
+    }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "upload2.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]
 }
