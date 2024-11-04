@@ -22,7 +22,7 @@
 }
 
 .customCalendar :global(.react-calendar__navigation button) {
-  color: #ffffff;
+  color: #6000cf;
   font-size: 1.2em;
   padding: 10px;
 }
@@ -95,7 +95,7 @@
 }
 
 .dataCount {
-  font-size: 14px;
+  font-size: 34px;
 }
 
 
@@ -111,7 +111,7 @@
   transition: width 0.1s ease;
   /* 컨테이너 자체를 제한 */
   max-width: 800px;
-  min-width: 256px;
+  min-width: 0px;
 }
 
 .sidebar {
@@ -149,5 +149,36 @@
   width: 100% !important;
   min-width: 0 !important;
   max-width: none !important;
+  
 }
 
+.container {
+  width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+  padding-right: 2rem /* 32px */;
+  padding-left: 2rem /* 32px */;
+  flex-direction: column;
+  display: flex;
+  gap: 0;
+  height: auto;        /* 추가 */
+  max-height: fit-content; 
+}
+
+/* 또는 더 강력하게 */
+.container, 
+.container > *,
+.container > * > * {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.container :global(.shadcn-resizable-panel-group) {
+  margin-bottom: 0 !important;
+}
+
+@media (min-width: 2460px) {
+  .container {
+      max-width: 2460px;
+  }
+}

@@ -22,11 +22,16 @@ const localizer = dateFnsLocalizer({
   parse,
   startOfWeek,
   getDay,
-  locales,
+  locales
 });
 
 interface DataAvailabilityCalendarProps {
   countData: DataResult[];
+}
+
+interface LegendItem {
+  color: string
+  label: string
 }
 
 
@@ -216,14 +221,33 @@ const DataAvailabilityCalendar: React.FC<DataAvailabilityCalendarProps> = ({ cou
     });
   }, [events]);
 
+  const legendItems: LegendItem[] = [
+    { color: 'bg-gray-400', label: 'BPM' },
+    { color: 'bg-green-400', label: 'Steps' },
+    { color: 'bg-yellow-400', label: 'Calories' },
+    { color: 'bg-blue-400', label: 'Sleep' }
+  ]
+
   return (
     <Card className="w-full">
       <CardHeader className="space-y-1">
-        <CardTitle className="text-lg">Data Availability</CardTitle>
+        <div className="grid grid-cols-2" >
+          <CardTitle className="text-xl ml-8 mt-3">Data Counts</CardTitle>
+          <div className="flex-col grid grid-cols-2 grid-rows-2 gap-4">
+          {legendItems.map((item, index) => (
+          <div key={index} className="flex items-center space-x-2">
+            <div className={`w-4 h-4 rounded ${item.color}`} />
+            <p className="text-xs">{item.label}</p>
+          </div>
+        ))}
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {/* <div className={`${styles.calendarWrapper} overflow-hidden`}> */}
+        
         <div className={styles.calendarWrapper}>
+          
           <Calendar
             localizer={localizer}
             events={events}
@@ -243,25 +267,13 @@ const DataAvailabilityCalendar: React.FC<DataAvailabilityCalendarProps> = ({ cou
               previous: "◀",
               today: "Today",
             }}
+            formats={{
+              dateFormat: 'd', // 일 표시 형식 예: 1, 2, 3 ...
+              dayFormat: (date, culture, localizer) => localizer ? localizer.format(date, 'EEE', 'ko') : '', // 요일 형식
+              weekdayFormat: (date, culture, localizer) => localizer ? localizer.format(date, 'eee', 'ko') : '',
+              monthHeaderFormat: (date, culture, localizer) => localizer ? localizer.format(date, 'yyyy년 M월', 'ko') : '' // 월 헤더 형식
+            }}
           />
-        </div>
-        <div className="mt-4 flex flex-wrap justify-center gap-3">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-gray-400 rounded"></div>
-            <span className="text-xs">BPM</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-green-400 rounded"></div>
-            <span className="text-xs">Steps</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-yellow-400 rounded"></div>
-            <span className="text-xs">Calories</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-blue-400 rounded"></div>
-            <span className="text-xs">Sleep</span>
-          </div>
         </div>
       </CardContent>
     </Card>

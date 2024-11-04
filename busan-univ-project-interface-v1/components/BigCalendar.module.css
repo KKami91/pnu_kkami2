@@ -11,6 +11,7 @@
   .calendarWrapper {
     width: 100%;
     overflow: hidden;
+    
   }
   
   .calendarWrapper :global(.rbc-calendar) {

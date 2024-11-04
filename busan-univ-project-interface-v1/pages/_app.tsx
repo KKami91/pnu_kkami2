@@ -37,6 +37,11 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
     ? (page: ReactElement) => page
     : Component.getLayout ?? ((page) => <DefaultLayout>{page}</DefaultLayout>);
 
+  // --- 기존 --- 
+  // const getLayout = Component.getLayout ?? ((page) => <DefaultLayout>{page}</DefaultLayout>);
+
+  
+
   return (
     <RecoilRoot>
       <QueryClientProvider client={queryClient}>

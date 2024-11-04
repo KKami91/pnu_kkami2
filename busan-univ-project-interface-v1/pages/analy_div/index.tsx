@@ -1384,6 +1384,7 @@ interface DataItem {
   pred_rmssd?: number;
   //firstDate?: string;
 }
+
 TempPage.getLayout = (page: React.ReactElement) => page;
 export default function TempPage() {
   const [selectedUser, setSelectedUser] = useState('');
@@ -1520,15 +1521,7 @@ export default function TempPage() {
     //console.log(`index 히트맵에서 선택된 날짜: ${date}`);
     
     const selectedDate = new Date(date);
-    //const convertSelectedDate = formatInTimeZone(new Date(selectedDate), 'UTC', 'yyyy-MM-dd HH:mm:ss')
 
-    //console.log(`index 히트맵에서 선택된 날짜222: ${selectedDate}`);
-    //console.log('???',convertSelectedDate)
-  
-    // MultiChart로 스크롤
-    //setTimeout(scrollToMultiChart, 10);
-  
-    // selectedDate만 설정하면 MultiChart가 나머지를 처리
     setSelectedDate(format(selectedDate, 'yyyy-MM-dd'));
     
   }, [scrollToMultiChart]);
@@ -1540,58 +1533,6 @@ export default function TempPage() {
     };
   }, [handleDateSelect]);
 
-  // const handleDateSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-  //   const date = e.target.value;
-  //   setSelectedDate(date);
-  //   if (date) {
-  //     setIsLoading(false);
-  //     setError(null);
-  //     setShowGraphs(false);  // 그래프를 숨깁니다.
-  //     startTimeRef.current = performance.now();  // 시작 시간을 기록합니다.
-  //     try {
-  //       const selectedDate = new Date(date);
-  //       //const { start: fetchStartDate, end: fetchEndDate } = getWeekRange(selectedDate);
-  //       const timezoneOffset = new Date().getTimezoneOffset()
-  //       const offsetMs = ((-540 - timezoneOffset) * 60 * 1000) * -1
-
-  //       const weekRange = getWeekRange(selectedDate);
-
-  //       const utcStartDate = new Date(weekRange.start.getTime() - offsetMs);
-  //       const utcEndDate = new Date(weekRange.end.getTime() - offsetMs);
-
-  //       const responseDay = await axios.get(`${API_URL}/feature_day_div/${selectedUser}`);
-
-  //       setHrvDayData(responseDay.data.day_hrv);
-
-  //       const firstFetchStartTime = performance.now();
-
-  //       const data = await fetchAdditionalData(utcStartDate, utcEndDate);
-  //       const firstFetchEndTime = performance.now();
-  //       console.log(`handleDateSelect에서 첫 fetch 데이터 걸린 시간 (약 2주) ${firstFetchEndTime - firstFetchStartTime} ms`);
-
-  //       setBpmData(data.bpmData);
-  //       setStepData(data.stepData);
-  //       setCalorieData(data.calorieData);
-  //       setSleepData(data.sleepData);
-  //       setHrvHourData(data.hrvData);
-
-  //       const predictStartTime = performance.now();
-  //       await fetchPredictionData(selectedUser);
-  //       const predictEndTime = performance.now();
-  //       console.log(`예측 데이터 가져오는데 걸리는 시간 : ${predictEndTime - predictStartTime} ms`);
-
-
-  
-  //       setShowGraphs(true);  // 모든 데이터 로딩이 완료되면 그래프를 표시합니다.
-  //       setTimeout(scrollToMultiChart, 100);
-  //     } catch (error) {
-  //       console.error('Error in handleDateSelect:', error);
-  //       setError(`Error loading data: ${error instanceof Error ? error.message : String(error)}`);
-  //     } finally {
-  //       setIsLoading(false);
-  //     }
-  //   }
-  // };
 
 
   const fetchHrvData = useCallback(async (user: string, start: Date, end: Date) => {
@@ -1841,10 +1782,20 @@ export default function TempPage() {
   }
 
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [panelSize, setPanelSize] = useState(45);
+
+  
 
   const handleTriggerClick = () => {
-    //console.log('Toggle clicked, current state:', isCollapsed);
-    setIsCollapsed(!isCollapsed);
+    if (!isCollapsed) {
+      // 닫을 때
+      setPanelSize(0);
+      setIsCollapsed(true);
+    } else {
+      // 열 때
+      setPanelSize(45);
+      setIsCollapsed(false);
+    }
   };
 
   const DataAvailabilityCalendar = dynamic(
@@ -1853,27 +1804,38 @@ export default function TempPage() {
   );
 
   return (
-    <div className="container mx-auto p-4">
-      <SidebarProvider>
-        <ResizablePanelGroup direction="horizontal" className="min-h-[200px] rounded-lg border">
-          <ResizablePanel 
-            defaultSize={isCollapsed ? 4 : 25}
-            minSize={4}
-            maxSize={40}
-          >
-            <div className={`h-full bg-background transition-all duration-300 ${
-              isCollapsed ? 'opacity-0' : 'opacity-100'
-            }`}>
-              <div className="h-16 border-b border-sidebar-border">
-                <NavUser user={data.user} />
+    <div className={styles.container} h-auto max-h-fit>
+      <SidebarProvider className='h-[1000px] flex items.center rounded-lg'>
+        <ResizablePanelGroup direction="horizontal" className="rounded-lg border-2" style={{ height: '987px', flexShrink: 0}}>
+          <div className={`h-[987px] transition-all duration-300 ease-in-out flex ${
+            isCollapsed ? 'w-0' : 'w-[550px]'
+          }`}>
+            <ResizablePanel 
+              defaultSize={45}
+              minSize={45}
+              maxSize={50}
+            >
+              <div className={`h-full bg-background transition-all duration-500 ${
+                isCollapsed ? 'opacity-0' : 'opacity-100'
+              }`}>
+                <div className="h-16 border-b border-sidebar-border">
+                  <NavUser user={data.user} />
+                </div>
+                {/* <div className="w-full h-[860px]"> */}
+                <div className="h-[calc(100%-4rem)]"> 
+                  <DataAvailabilityCalendar countData={countData} />
+                </div>
               </div>
-              <div className="w-full">
-                <DataAvailabilityCalendar countData={countData} />
-              </div>
-            </div>
-          </ResizablePanel>
+            </ResizablePanel>
 
-          <ResizableHandle withHandle />
+            {/* <ResizableHandle 
+              withHandle 
+              className={`transition-transform duration-300 ${
+                isCollapsed ? '-translate-x-full' : 'translate-x-0'
+              }`}
+            /> */}
+            <ResizableHandle withHandle />
+          </div>
 
           <ResizablePanel>
             <div className="h-full flex flex-col">
@@ -1907,7 +1869,7 @@ export default function TempPage() {
       {isLoading ? (
         <SkeletonLoader viewMode={viewMode} columns={1} />
       ) : selectedUser && selectedDate && countData.length > 0 && !error ? (
-        <div className="grid-cols-1 md:grid-cols-2 gap-4 p-6 ">
+        <div className="grid-cols-1 md:grid-cols-2 gap-4">
             <div ref={multiChartRef}>
               <MultiChart
               selectedUser={selectedUser}
@@ -1935,7 +1897,7 @@ export default function TempPage() {
       ) : (
         <div></div>
       )}
-      {selectedDate && (
+      {/* {selectedDate && (
         <div className="mb-4 flex items-center justify-end">
           <button
             onClick={() => setViewMode('combined')}
@@ -1956,65 +1918,7 @@ export default function TempPage() {
             <BarChart size={20} />
           </button>
         </div>
-      )}
-      {/* <div className="mt-8">
-        {isLoading ? (
-          <SkeletonLoader viewMode={viewMode} columns={1} />
-        ) : error ? (
-          <div className="text-center text-red-500">{error}</div>
-        ) : showGraphs ? (
-          <>
-            {viewMode === 'combined' ? (
-              <CombinedChart
-                bpmData={bpmData}
-                stepData={stepData}
-                calorieData={calorieData}
-                predictMinuteData={predictMinuteData}
-                predictHourData={predictHourData}
-                hrvHourData={hrvHourData}  // 새로운 HRV 데이터 전달
-                globalStartDate={globalStartDate}
-                globalEndDate={globalEndDate}
-                onBrushChange={handleBrushChange}
-              /> 
-            ) : (
-              <div ref={multiChartRef}>
-              
-                <MultiChart
-                selectedUser={selectedUser}
-                bpmData={bpmData}
-                stepData={stepData}
-                calorieData={calorieData}
-                sleepData={sleepData}
-                predictMinuteData={predictMinuteData}
-                predictHourData={predictHourData}
-                hrvHourData={hrvHourData}
-                globalStartDate={globalStartDate}
-                globalEndDate={globalEndDate}
-                onBrushChange={handleBrushChange}
-                fetchAdditionalData={fetchAdditionalData}
-                fetchHrvData={fetchHrvData}
-                initialDateWindow={initialDateWindow}
-                selectedDate={selectedDate}
-                dbStartDate={dbStartDate}
-                dbEndDate={dbEndDate}
-                scrollToMultiChart={scrollToMultiChart}
-              />
-            </div>
-          )}
-
-        {hrvDayData.length > 0 && (
-          <div className="mt-8">
-
-            <CombinedHrvHeatmap hrvDayData={hrvDayData} firstDate={firstDate} />
-
-          </div>
-        )}
-        </>
-      ) : null}
-      {showGraphs && bpmData.length === 0 && stepData.length === 0 && calorieData.length === 0 && predictMinuteData.length === 0 && (
-        <div className="text-center text-red-500">No data available for the charts.</div>
-      )}
-      </div> */}
+      )} */}
     </div>
   );
 }
