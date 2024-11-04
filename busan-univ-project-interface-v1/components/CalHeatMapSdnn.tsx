@@ -53,12 +53,19 @@ const SdnnCalHeatmap: React.FC<SdnnCalHeatmapProps> = ({ hrvDayData, startDate }
         // } else {
         //     setRange(1);  // md and smaller
         // }
-        if (window.matchMedia('(min-width: 320)').matches) {
-            setRange(3);  // xl
-        } else if (window.matchMedia('(min-width: 256px)').matches) {
-            setRange(2);  // lg
+        if (window.matchMedia('(min-width: 1720px)').matches) {
+            
+            setRange(4);  
+        } else if (window.matchMedia('(min-width: 1280px)').matches) {
+            
+            setRange(3);  
+        } else if (window.matchMedia('(min-width: 1024px)').matches) {
+            
+            setRange(2);  
+        } else if (window.matchMedia('(min-width: 900px)').matches) {
+            setRange(1);  
         } else {
-            setRange(1);  // md and smaller
+            setRange(0);
         }
     };
 
