@@ -1,8 +1,8 @@
 import "../styles/globals.css";
+
 import { ReactElement, ReactNode } from "react";
 import type { AppProps } from "next/app";
 import { NextPage } from "next";
-import { useRouter } from 'next/router';
 
 import { RecoilRoot } from "recoil";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -26,13 +26,14 @@ type AppPropsWithLayout = AppProps & {
 const queryClient = new QueryClient();
 
 function MyApp({ Component, pageProps }: AppPropsWithLayout) {
-  const router = useRouter();
+  const isPageWithoutLayout = (componentName: string) => {
+    return ['HeatmapCharts', 'Page', 'TempPage'].includes(componentName);
+  };
 
-  // 라우트 경로를 사용하여 HeatmapCharts 페이지인지 확인
-  const isHeatmapCharts = router.pathname === '/heatmap-charts';
+  // BubbleChat을 제외할 페이지만 별도로 체크
+  const isHeatmapCharts = Component.name === 'HeatmapCharts';
 
-  // HeatmapCharts 페이지일 경우 레이아웃을 적용하지 않음
-  const getLayout = isHeatmapCharts
+  const getLayout = isPageWithoutLayout(Component.name)
     ? (page: ReactElement) => page
     : Component.getLayout ?? ((page) => <DefaultLayout>{page}</DefaultLayout>);
 
@@ -42,8 +43,7 @@ function MyApp({ Component, pageProps }: AppPropsWithLayout) {
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
           {getLayout(<Component {...pageProps} />)}
         </ThemeProvider>
-        {/* BubbleChat은 HeatmapCharts 페이지가 아닐 때만 렌더링 */}
-        {!isHeatmapCharts && (
+        {!isHeatmapCharts && (  // HeatmapCharts가 아닐 때만 BubbleChat 표시
           <BubbleChat
             chatflowid="1352afdb-1933-4a3f-88ea-b55d560ea805"
             apiHost="https://flowise-6pxd.onrender.com"
