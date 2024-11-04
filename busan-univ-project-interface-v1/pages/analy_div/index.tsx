@@ -1384,7 +1384,7 @@ interface DataItem {
   pred_rmssd?: number;
   //firstDate?: string;
 }
-
+TempPage.getLayout = (page: React.ReactElement) => page;
 export default function TempPage() {
   const [selectedUser, setSelectedUser] = useState('');
   const [message, setMessage] = useState('');
