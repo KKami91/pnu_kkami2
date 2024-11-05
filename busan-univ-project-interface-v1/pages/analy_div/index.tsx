@@ -433,7 +433,7 @@ function NavUser({
           >
             <div className="grid flex-1 text-left text-sm leading-tight">
               <span className="truncate text-center text-base">
-                {selectedUser || "계정 선택"}
+                {selectedUser || "계정 선택"} * 히트맵 날짜 선택시 생체 데이터 차트가 나옵니다.
               </span>
             </div>
             <ChevronsUpDown className="ml-auto size-4" />
