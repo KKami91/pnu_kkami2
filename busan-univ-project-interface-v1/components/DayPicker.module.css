@@ -1,0 +1,43 @@
+/* DayPicker.module.css */
+.calendar button.day-warning,
+.calendar button.day-success {
+    position: relative;
+}
+
+.calendar button.day-warning::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: #dc2626;
+    z-index: 1;
+}
+
+.calendar button.day-success::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background-color: #22c55e;
+    z-index: 1;
+}
+
+.calendar button.day-selected {
+    background-color: transparent !important;
+    border: 2px solid rgb(37, 99, 235) !important;
+    border-radius: 4px !important;
+    color: inherit !important;
+}
+
+/* 호버 효과 유지 */
+.calendar button:hover {
+    background-color: var(--gray-100);
+}

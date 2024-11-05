@@ -1,0 +1,33 @@
+.sidebarHeader {
+    height: 4rem;
+    border-bottom: 1px solid var(--sidebar-border-color);
+  }
+  
+  .avatar {
+    height: 2rem;
+    width: 2rem;
+    border-radius: 0.5rem;
+  }
+  
+  .userName {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .userEmail {
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .calendarWrapper {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  
+  .calendarCell {
+    width: 33px;
+  }
