@@ -66,6 +66,13 @@ interface AdditionalData {
   hrvData: any[];
 }
 
+interface SleepData {
+  timestamp_start: string;
+  timestamp_end: string;
+  type?: string;
+  stage: number;
+}
+
 interface DataItem {
   ds: string;
   timestamp: string;
@@ -89,10 +96,15 @@ export default function Page() {
   const [selectedUser, setSelectedUser] = useState('');
   const [message, setMessage] = useState('');
   const [isLoadingUser, setIsLoadingUser] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [firstSelectDate, setFirstSelectDate] = useState(true);
+
   const [selectedDate, setSelectedDate] = useState('');
   const [showGraphs, setShowGraphs] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const isFirstRender = useRef(true);
   const [saveDates, setSaveDates] = useState<string[]>([]);
 
   const [bpmData, setBpmData] = useState<DataItem[]>([]);
@@ -231,10 +243,19 @@ export default function Page() {
   const handleDateSelect = useCallback(async (event: Event) => {
     const customEvent = event as CustomEvent<{ date: string }>;
     const { date } = customEvent.detail;
+
+    if (firstSelectDate) {
+      setIsLoading(true)
+    }
     
     const selectedDate = new Date(date);
     setHeatmapSelectedDate(selectedDate);
     setSelectedDate(format(selectedDate, 'yyyy-MM-dd'));
+
+    if (firstSelectDate) {
+      setIsLoading(false)
+      setFirstSelectDate(false)
+    }
     
 }, [scrollToMultiChart]);
 
@@ -244,6 +265,8 @@ export default function Page() {
       window.removeEventListener('dateSelect', handleDateSelect);
     };
   }, [handleDateSelect]);
+
+  
 
 
 
@@ -273,7 +296,7 @@ export default function Page() {
   const fetchAdditionalData = useCallback((startDate: Date, endDate: Date): Promise<AdditionalData> => {
     if (!selectedUser) return Promise.resolve({ bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] });
 
-    console.log('in index fetchAddtionalData start, end ', startDate, endDate)
+    //console.log('in index fetchAddtionalData start, end ', startDate, endDate)
 
     return Promise.all([
 
@@ -285,14 +308,14 @@ export default function Page() {
     ])
       .then(([bpm, step, calorie, sleep, hrv]) => {
 
-      console.log('fetch BPM Data : ', bpm)
+      //console.log('fetch BPM Data : ', bpm)
 
       const processedBpmData = bpm.map((item: DataItem) => ({
         ...item,
         timestamp: formatInTimeZone(new Date(item.timestamp), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
       }));
 
-      console.log('precessed BPM Data : ', processedBpmData)
+      //console.log('precessed BPM Data : ', processedBpmData)
 
       const processedStepData = step.map((item: DataItem) => ({
         ...item,
@@ -358,25 +381,46 @@ export default function Page() {
     setSaveDates([])
     if (user) {
       setIsLoadingUser(true)
+      setIsInitialLoading(true)
+      try {
+        // checkDb 완료까지 대기
+        await checkDb(user);
+      } catch (error) {
+        console.error("checkDb에서 오류가 발생했습니다:", error);
+        setMessage(`Error occurred in checkDb: ${error instanceof Error ? error.message : String(error)}`);
+        setIsLoadingUser(false);
+        return; // 오류 발생 시 이후 코드 실행 중단
+      }
 
-      await checkDb(user)
+      try {
+        // checkDb 완료 후에만 feature_day_div 호출
 
-      const responseDay = await axios.get(`${API_URL}/feature_day_div/${user}`);
-      const userFirstDate = await axios.get(`${API_URL}/get_start_dates/${user}`)
+        const [responseDay, userFirstDate, countDataResponse] = await Promise.all([
+          axios.get(`${API_URL}/feature_day_div/${user}`),
+          axios.get(`${API_URL}/get_start_dates/${user}`),
+          axios.get('/api/getCountData', { params: { user_email: user }},)
+        ])
+        await fetchPredictionData(user)
+        const userStartDate = userFirstDate.data.start_date;
 
-      const userStartDate = userFirstDate.data.start_date
-      setFirstDate([userStartDate])
-
-      setHrvDayData(responseDay.data.day_hrv);
-
-      const countDataResponse = await axios.get('/api/getCountData', { params: { user_email: user } })
-
-      console.log(countDataResponse.data)
-      setCountData(countDataResponse.data);
-
-      await fetchSaveDates(user)
-
-      setIsLoadingUser(false)
+        // const responseDay = await axios.get(`${API_URL}/feature_day_div/${user}`);
+        // const userFirstDate = await axios.get(`${API_URL}/get_start_dates/${user}`);
+        // const userStartDate = userFirstDate.data.start_date;
+  
+        setFirstDate([userStartDate]);
+        setHrvDayData(responseDay.data.day_hrv);
+  
+        //const countDataResponse = await axios.get('/api/getCountData', { params: { user_email: user } });
+        //console.log(countDataResponse.data);
+        setCountData(countDataResponse.data);
+  
+        await fetchSaveDates(user);
+      } catch (error) {
+        console.error("feature_day_div 또는 관련 API 호출 중 에러가 발생했습니다:", error);
+        setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`);
+      } finally {
+        setIsLoadingUser(false);
+      }
     }
   }
   
@@ -432,8 +476,8 @@ function NavUser({
             size="lg"
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
-            <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate text-center text-base ml-10">
+            <div className="grid flex-1 text-left text-sm leading-tight ml-10">
+              <span className="truncate text-center text-base">
                 {selectedUser || "계정 선택"}
               </span>
             </div>
@@ -470,6 +514,7 @@ function NavUser({
   )
 }
 
+
 function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar {...props}>
@@ -499,7 +544,8 @@ return (
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbPage>{selectedUser}</BreadcrumbPage>  * 히트맵 날짜 선택시 생체 데이터 차트가 나옵니다.
+              <BreadcrumbPage>{selectedUser}</BreadcrumbPage>
+              {isLoadingUser && <LoadingSpinner />}
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -511,7 +557,7 @@ return (
               <CombinedHrvHeatmap hrvDayData={hrvDayData} firstDate={firstDate} />
             </div>            
           )}
-                {isLoading ? (
+        {isLoading ? (
         <SkeletonLoader viewMode={viewMode} columns={1} />
       ) : selectedUser && selectedDate && countData.length > 0 && !error ? (
         <div className="grid-cols-1 md:grid-cols-2 gap-4">

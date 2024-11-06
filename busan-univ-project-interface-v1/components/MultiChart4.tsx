@@ -82,7 +82,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
   scrollToMultiChart,
 }) => {
 
-  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('hour');
+  const [timeUnit, setTimeUnit] = useState<'minute' | 'hour'>('minute');
   const [dateRange, setDateRange] = useState<DateRange>('1');
   const [columnCount, setColumnCount] = useState(2);
   const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
@@ -126,13 +126,13 @@ const MultiChart: React.FC<MultiChartProps> = ({
     //console.log('in fetchThreeWeeksData ;;; , ', selectedWeekStart, previousWeekStart, nextWeekStart)
     const newCachedData = { ...cachedData };
 
-    console.log('Selected Date:', selectedDate);
-    console.log('Selected Week Start:', selectedWeekStart);
-    console.log('Previous Week Start:', previousWeekStart);
-    console.log('Next Week Start:', nextWeekStart);
+    // console.log('Selected Date:', selectedDate);
+    // console.log('Selected Week Start:', selectedWeekStart);
+    // console.log('Previous Week Start:', previousWeekStart);
+    // console.log('Next Week Start:', nextWeekStart);
 
     if (JSON.stringify(newCachedData) !== JSON.stringify(cachedData)) {
-      console.log('????')
+      //console.log('????')
       setCachedData(newCachedData);
     }
 
@@ -142,12 +142,12 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
       //console.log('in fetchThreeWeeksData , in promise ;; ', weekStart, weekEnd)
 
-      console.log(`Week ${weekKey}:`, {
-        start: weekStart,
-        end: weekEnd,
-        startUTC: weekStart.toUTCString(),
-        endUTC: weekEnd.toUTCString()
-      });
+      // console.log(`Week ${weekKey}:`, {
+      //   start: weekStart,
+      //   end: weekEnd,
+      //   startUTC: weekStart.toUTCString(),
+      //   endUTC: weekEnd.toUTCString()
+      // });
 
 
       if (!newCachedData[weekKey]) {
@@ -179,7 +179,6 @@ const MultiChart: React.FC<MultiChartProps> = ({
         // };
         // console.log('in promise? , adjustedWeekData', adjustedWeekData)
 
-        console.log()
 
         newCachedData[weekKey] = weekData;
         
@@ -644,12 +643,12 @@ useEffect(() => {
       if (weeksToFetch.length > 0) {
 
 
-        console.log('------------> moveDate weeksToFetch : ',weeksToFetch)
+        //console.log('------------> moveDate weeksToFetch : ',weeksToFetch)
 
         const weekStartFetch = new Date(weeksToFetch[0].start.getTime() - offsetMs)
         const weekEndFetch = new Date(weeksToFetch[0].end.getTime() - offsetMs)
 
-        console.log('------new start new end',weekStartFetch, weekEndFetch)
+        //console.log('------new start new end',weekStartFetch, weekEndFetch)
 
         Promise.all(weeksToFetch.map(week => 
           
@@ -859,7 +858,7 @@ useEffect(() => {
       )
     );
 
-    console.log('filteredData ; ',filteredData)
+    //console.log('filteredData ; ',filteredData)
 
 
     return filteredData;
@@ -964,6 +963,10 @@ useEffect(() => {
   const CustomTooltip: React.FC<TooltipProps<ValueType, NameType>> = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
 
+      console.log('IN CUSTOMTOOLTIP Label : ',label)
+      console.log('IN CUSTOMTOOLTIP convert1111 : ',new Date(label as number))
+      console.log('IN CUSTOMTOOLTIP convert2222 : ',formatInTimeZone(new Date(label as number), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'))
+      console.log('IN CUSTOMTOOLTIP convert3333 : ',new Date(formatInTimeZone(new Date(label as number), 'Asia/Seoul', 'yyyy-MM-dd HH:mm')))
       const date = new Date(formatInTimeZone(new Date(label as number), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
       const currentChart = payload[0].dataKey as string;
 
