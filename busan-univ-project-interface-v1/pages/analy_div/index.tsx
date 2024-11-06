@@ -544,7 +544,7 @@ return (
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbPage>{selectedUser}</BreadcrumbPage>
+              <BreadcrumbPage>{selectedUser}</BreadcrumbPage> * 히트맵 날짜 선택시 생체 데이터 차트가 나옵니다.
               {isLoadingUser && <LoadingSpinner />}
             </BreadcrumbItem>
           </BreadcrumbList>
