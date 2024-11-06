@@ -43,6 +43,7 @@
     "echarts": "^5.5.1",
     "flowise-embed": "^1.2.6",
     "flowise-embed-react": "^1.0.2",
+    "framer-motion": "^11.11.11",
     "iamport": "^0.3.4",
     "iamport-react-native": "^2.0.12",
     "iamport-rest-client-nodejs": "^0.9.12",

@@ -42,6 +42,7 @@ import dynamic from 'next/dynamic';
 import { formatInTimeZone } from 'date-fns-tz';
 import { format, startOfWeek, endOfWeek, addDays, nextSunday, startOfDay, previousMonday} from 'date-fns';
 import DataAvailabilityCalendar2 from '../../components/DataCountCalendar2'
+import { ArrowRightIcon } from '../../components/ui/ArrowRight';
 
 interface DataResult {
   collection: string;
@@ -436,7 +437,8 @@ function NavUser({
                 {selectedUser || "계정 선택"}
               </span>
             </div>
-            <ChevronsUpDown className="ml-auto size-4" />
+            {/* <ChevronsUpDown className="ml-auto size-4" /> */}
+            <ArrowRightIcon />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent
