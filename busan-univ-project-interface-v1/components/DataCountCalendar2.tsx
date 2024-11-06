@@ -175,7 +175,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
 
             />
             {/* </div> */}
-        <SidebarSeparator className="mx-0 border-b" />
+        {/* <SidebarSeparator className="mx-0 border-b" /> */}
         {selectedDayData && (
             <> 
                     <div className='text-base grid place-items-center'>

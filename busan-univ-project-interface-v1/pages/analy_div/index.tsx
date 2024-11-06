@@ -433,7 +433,7 @@ function NavUser({
             className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             <div className="grid flex-1 text-left text-sm leading-tight">
-              <span className="truncate text-center text-base">
+              <span className="truncate text-center text-base ml-10">
                 {selectedUser || "계정 선택"}
               </span>
             </div>
