@@ -524,7 +524,12 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         {/* <DatePicker /> */}
         <SidebarSeparator className="mx-0" />
-        <DataAvailabilityCalendar2 countData={countData} selectedUser={selectedUser}  heatmapDate={heatmapSelectedDate}/>
+        <DataAvailabilityCalendar2 
+        countData={countData} 
+        selectedUser={selectedUser}  
+        heatmapDate={heatmapSelectedDate}
+        hrvDayData={hrvDayData}
+        />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

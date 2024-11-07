@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Calendar } from "@/components/ui/calendar"
-import { format, parse, startOfMonth, startOfDay, endOfDay } from 'date-fns';
+import { format, parse, startOfMonth, startOfDay, endOfDay, addHours } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import styles from './DayPicker.module.css';
@@ -16,10 +16,17 @@ interface DataResult {
     data: { _id: string; count: number }[];
   }
 
+interface DayHrvData {
+    ds: string;
+    day_rmssd: number;
+    day_sdnn: number;
+}
+
 interface DataAvailabilityCalendarProps {
     countData: DataResult[];
     selectedUser: string;
     heatmapDate: Date | null;
+    hrvDayData: DayHrvData[];
 }
 
 interface LegendItem {
@@ -61,7 +68,7 @@ interface CachedRawData {
 }
   
 
-const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ countData, selectedUser, heatmapDate }) => {
+const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ countData, selectedUser, heatmapDate, hrvDayData }) => {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [selectedDayData, setSelectedDayData] = useState<DayData | null>(null);
     const [isOpen, setIsOpen] = useState(true);
@@ -79,6 +86,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
     const getCacheKey = useCallback((user: string, date: string) => {
         return `${user}_${date}`;
     }, []);
+    const [analysisHrvData, setAnalysisHrvData] = useState<DayHrvData[] | null>(null);
 
 
     const fetchData = async (collection: string, user: string, startDate: Date, endDate: Date) => {
@@ -148,10 +156,23 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
     // 컴포넌트가 처음 마운트될 때 실행
     useEffect(() => {
         if (selectedUser && !selectedDate && !heatmapDate) {
+            const adjustedData = hrvDayData.map(item => ({
+                ...item,
+                ds: format(formatInTimeZone(addHours(new Date(item.ds), 9), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
+            }))
+            
+            setAnalysisHrvData(adjustedData)
+            
+            console.log('??aaaaaaaaaaaa?',analysisHrvData)
+            console.log('??bbbbbbbbbbbbb?',adjustedData)
             const lastDate = selectedDate || new Date();
             handleDateSelect(lastDate);
         }
     }, [selectedUser]);
+
+    useEffect(() => {
+        console.log('analysisHrvData updated:', analysisHrvData);
+    }, [analysisHrvData]);
 
 
     const getDataCountForDate = (date: Date) => {
@@ -297,6 +318,8 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
         );
     }
 
+    const selectedDateString = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
+
     return (
         <>
         {/* <div className={styles.calendar}> */}
@@ -368,6 +391,14 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
                     <div className='flex justify-between'>
                         <div className='ml-8 text-[16px]'>Sleep 합계</div>
                         <div className='mr-8 text-[16px]'>{analysisDayData2.sumSleep} 시간</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>RMSSD</div>
+                        <div className='mr-8 text-[16px]'>{analysisHrvData?.find(data => data.ds === selectedDateString)?.day_rmssd?.toFixed(2) || '0'}</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>SDNN</div>
+                        <div className='mr-8 text-[16px]'>{analysisHrvData?.find(data => data.ds === selectedDateString)?.day_sdnn?.toFixed(2) || '0'}</div>
                     </div>
                 </div>
                 <SidebarSeparator className="mx-0 border-b" />
