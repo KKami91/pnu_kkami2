@@ -158,19 +158,30 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
     // 컴포넌트가 처음 마운트될 때 실행
     useEffect(() => {
         if (selectedUser && !selectedDate && !heatmapDate) {
-            const adjustedData = hrvDayData.map(item => ({
-                ...item,
-                ds: format(formatInTimeZone(addHours(new Date(item.ds), 9), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
-            }))
+            // const adjustedData = hrvDayData.map(item => ({
+            //     ...item,
+            //     ds: format(formatInTimeZone(addHours(new Date(item.ds), 9), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
+            // }))
             
-            setAnalysisHrvData(adjustedData)
+            // setAnalysisHrvData(adjustedData)
             
-            // console.log('??aaaaaaaaaaaa?',analysisHrvData)
-            // console.log('??bbbbbbbbbbbbb?',adjustedData)
+            // // console.log('??aaaaaaaaaaaa?',analysisHrvData)
+            // // console.log('??bbbbbbbbbbbbb?',adjustedData)
             const lastDate = selectedDate || new Date();
             handleDateSelect(lastDate);
         }
     }, [selectedUser]);
+    
+    useEffect(() => {
+        if (hrvDayData && hrvDayData.length > 0) {
+            const adjustedData = hrvDayData.map(item => ({
+                ...item,
+                ds: format(formatInTimeZone(addHours(new Date(item.ds), 9), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
+            }));
+            
+            setAnalysisHrvData(adjustedData);
+        }
+    }, [hrvDayData, heatmapDate]);
 
     // useEffect(() => {
     //     console.log('analysisHrvData updated:', analysisHrvData);
