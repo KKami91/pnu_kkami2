@@ -97,6 +97,12 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [isLoadingUser, setIsLoadingUser] = useState(false);
 
+  // 에러 처리를 위한 상태 추가
+  const [dataError, setDataError] = useState<Error | null>(null);
+
+  // 데이터 유효성 검사를 위한 ref
+  const isDataValid = useRef(false);
+  const [isDataLoading, setIsDataLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [firstSelectDate, setFirstSelectDate] = useState(true);
 
@@ -526,7 +532,7 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <SidebarSeparator className="mx-0" />
         <DataAvailabilityCalendar2 
         countData={countData} 
-        selectedUser={selectedUser}  
+        selectedUser={selectedUser} 
         heatmapDate={heatmapSelectedDate}
         hrvDayData={hrvDayData}
         />
@@ -536,6 +542,23 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   )
 }
 
+const shouldRenderMultiChart = useMemo(() => {
+  return (
+    !isDataLoading &&
+    selectedUser &&
+    selectedDate &&
+    countData.length > 0 &&
+    !error &&
+    isDataValid.current
+  );
+}, [isDataLoading, selectedUser, selectedDate, countData, error]);
+
+const ErrorFallback = ({ error }: { error: Error }) => (
+  <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+    <h3 className="text-red-800 font-medium">데이터를 불러오는 중 오류가 발생했습니다</h3>
+    <p className="text-red-600 text-sm mt-1">{error.message}</p>
+  </div>
+);
 
 return (
   // <div className={styles.container} h-auto max-h-fit>
@@ -549,7 +572,7 @@ return (
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbPage>{selectedUser}</BreadcrumbPage> * 히트맵 날짜 선택시 생체 데이터 차트가 나옵니다.
+              <BreadcrumbPage>{selectedUser}</BreadcrumbPage>
               {isLoadingUser && <LoadingSpinner />}
             </BreadcrumbItem>
           </BreadcrumbList>
@@ -562,36 +585,37 @@ return (
               <CombinedHrvHeatmap hrvDayData={hrvDayData} firstDate={firstDate} />
             </div>            
           )}
-        {isLoading ? (
-        <SkeletonLoader viewMode={viewMode} columns={1} />
-      ) : selectedUser && selectedDate && countData.length > 0 && !error ? (
-        <div className="grid-cols-1 md:grid-cols-2 gap-4">
-            <div ref={multiChartRef}>
-              <MultiChart
-              selectedUser={selectedUser}
-              bpmData={bpmData}
-              stepData={stepData}
-              calorieData={calorieData}
-              sleepData={sleepData}
-              predictMinuteData={predictMinuteData}
-              predictHourData={predictHourData}
-              hrvHourData={hrvHourData}
-              globalStartDate={globalStartDate}
-              globalEndDate={globalEndDate}
-              onBrushChange={handleBrushChange}
-              fetchAdditionalData={fetchAdditionalData}
-              fetchHrvData={fetchHrvData}
-              initialDateWindow={initialDateWindow}
-              selectedDate={selectedDate}
-              dbStartDate={dbStartDate}
-              dbEndDate={dbEndDate}
-              scrollToMultiChart={scrollToMultiChart}
-            />
-          </div>
-      </div>
-
-      ) : (
-        <div></div>
+            {isLoading || isDataLoading ? (
+              <SkeletonLoader viewMode={viewMode} columns={1} />
+            ) : dataError ? (
+              <ErrorFallback error={dataError} />
+            ) : shouldRenderMultiChart ? (
+              <div className="grid-cols-1 md:grid-cols-2 gap-4">
+                <div ref={multiChartRef}>
+                  <MultiChart
+                    selectedUser={selectedUser}
+                    bpmData={bpmData}
+                    stepData={stepData}
+                    calorieData={calorieData}
+                    sleepData={sleepData}
+                    predictMinuteData={predictMinuteData}
+                    predictHourData={predictHourData}
+                    hrvHourData={hrvHourData}
+                    globalStartDate={globalStartDate}
+                    globalEndDate={globalEndDate}
+                    onBrushChange={handleBrushChange}
+                    fetchAdditionalData={fetchAdditionalData}
+                    fetchHrvData={fetchHrvData}
+                    initialDateWindow={initialDateWindow}
+                    selectedDate={selectedDate}
+                    dbStartDate={dbStartDate}
+                    dbEndDate={dbEndDate}
+                    scrollToMultiChart={scrollToMultiChart}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div></div>
       )}
         </div>
       </div>
