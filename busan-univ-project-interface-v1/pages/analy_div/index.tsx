@@ -250,20 +250,30 @@ export default function Page() {
     const customEvent = event as CustomEvent<{ date: string }>;
     const { date } = customEvent.detail;
 
-    if (firstSelectDate) {
-      setIsLoading(true)
-    }
-    
-    const selectedDate = new Date(date);
-    setHeatmapSelectedDate(selectedDate);
-    setSelectedDate(format(selectedDate, 'yyyy-MM-dd'));
+    try {
+      setIsDataLoading(true);
+      setDataError(null);
 
-    if (firstSelectDate) {
-      setIsLoading(false)
-      setFirstSelectDate(false)
+      if (!selectedUser) {
+        throw new Error('사용자가 선택되지 않았습니다.');
+      }
+
+      const selectedDate = new Date(date);
+      setHeatmapSelectedDate(selectedDate);
+      setSelectedDate(format(selectedDate, 'yyyy-MM-dd'));
+
+      // 데이터 유효성 확인
+      isDataValid.current = true;
+
+    } catch (error) {
+      console.error('Date selection error:', error);
+      setDataError(error as Error);
+      isDataValid.current = false;
+    } finally {
+      setIsDataLoading(false);
+      setFirstSelectDate(false);
     }
-    
-}, [scrollToMultiChart]);
+}, [selectedUser]);
 
   useEffect(() => {
     window.addEventListener('dateSelect', handleDateSelect);
@@ -543,6 +553,7 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 }
 
 const shouldRenderMultiChart = useMemo(() => {
+  console.log('?aaaaaaaaaa???')
   return (
     !isDataLoading &&
     selectedUser &&
