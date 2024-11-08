@@ -430,7 +430,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
                     </div>
                     <div className='flex justify-between'>
                         <div className='ml-8 text-[16px]'>Sleep Quality</div>
-                        <div className='mr-8 text-[16px]'>{analysisDayData2.sleepQuality} 점</div>
+                        <div className='mr-8 text-[16px]'>{analysisDayData2.sleepQuality || 0} 점</div>
                     </div>
                     <div className='flex justify-between'>
                         <div className='ml-8 text-[16px]'>RMSSD</div>
