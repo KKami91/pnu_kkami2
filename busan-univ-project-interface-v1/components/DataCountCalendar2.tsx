@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Calendar } from "@/components/ui/calendar"
-import { format, parse, startOfMonth, startOfDay, endOfDay, addHours } from 'date-fns';
+import { format, parse, startOfMonth, startOfDay, endOfDay, addHours, subHours } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import styles from './DayPicker.module.css';
@@ -91,7 +91,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
 
     const fetchData = async (collection: string, user: string, startDate: Date, endDate: Date) => {
         try {
-          console.log('fetch함???')
+          //console.log('fetch함???')
     
           const utcStartDate = formatInTimeZone(startDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
           const utcEndDate = formatInTimeZone(endDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -163,16 +163,16 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
             
             setAnalysisHrvData(adjustedData)
             
-            console.log('??aaaaaaaaaaaa?',analysisHrvData)
-            console.log('??bbbbbbbbbbbbb?',adjustedData)
+            // console.log('??aaaaaaaaaaaa?',analysisHrvData)
+            // console.log('??bbbbbbbbbbbbb?',adjustedData)
             const lastDate = selectedDate || new Date();
             handleDateSelect(lastDate);
         }
     }, [selectedUser]);
 
-    useEffect(() => {
-        console.log('analysisHrvData updated:', analysisHrvData);
-    }, [analysisHrvData]);
+    // useEffect(() => {
+    //     console.log('analysisHrvData updated:', analysisHrvData);
+    // }, [analysisHrvData]);
 
 
     const getDataCountForDate = (date: Date) => {
@@ -220,9 +220,9 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
 
         const cachedData = dataCache[cacheKey];
         let rawData: RawData;
-        console.log('in fetchDayData cache ', dataCache)
-        console.log('in fetchDayData cachedData ', cachedData)
-        console.log('in fetchDayData cacheKey ', cacheKey)
+        // console.log('in fetchDayData cache ', dataCache)
+        // console.log('in fetchDayData cachedData ', cachedData)
+        // console.log('in fetchDayData cacheKey ', cacheKey)
         if (cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
             console.log('Using cached data for:', date);
             rawData = cachedData;
@@ -237,7 +237,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
                     fetchData('bpm', user, startDate, endDate),
                     fetchData('step', user, startDate, endDate),
                     fetchData('calorie', user, startDate, endDate),
-                    fetchData('sleep', user, startDate, endDate),
+                    fetchData('sleep', user, subHours(startDate, 12), subHours(endDate, 12)),
                 ]);
 
                 // 새로운 데이터를 캐시에 저장
@@ -293,8 +293,8 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
     // }, [selectedUser]);
     
     useEffect(() => {
-        console.log('new analysisData - selectedDate', selectedDate)
-        console.log('new analysisData - selectedUser', selectedUser)
+        // console.log('new analysisData - selectedDate', selectedDate)
+        // console.log('new analysisData - selectedUser', selectedUser)
         if (selectedUser && selectedDate) {
         console.log('---?')
         const selectedDateFormatString = format(selectedDate, 'yyyy-MM-dd')
