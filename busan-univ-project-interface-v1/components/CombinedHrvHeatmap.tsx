@@ -18,7 +18,7 @@ const CombinedHrvHeatmap: React.FC<CombinedHrvHeatmapProps> = ({ hrvDayData, fir
     //const [startDate, setStartDate] = useState(() => subMonths(new Date(), 1));
     const [startDate, setStartDate] = useState(() => new Date(firstDate));
 
-    console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@in combinedhrvhratmap.tsx startdate : ', startDate)
+    //console.log('@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@in combinedhrvhratmap.tsx startdate : ', startDate)
 
     const handlePrevious = () => {
         setStartDate(prevDate => subMonths(prevDate, 1));
