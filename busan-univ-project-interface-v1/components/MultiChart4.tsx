@@ -807,10 +807,20 @@ useEffect(() => {
       const filledCalorieData = fillEmptyHours(hourlyCalorieData, startDate, endDate, ['calorie']);
       const filledHrvData = fillEmptyHours(hourlyHrvData, startDate, endDate, ['hour_rmssd', 'hour_sdnn']);
 
+      const validBpmValues = hourlyBpmData.filter(item => item.bpm !== null && !isNaN(item.bpm)).map(item => item.bpm);
+
+      console.log('hourlyBpmData : ', hourlyBpmData)
+
+      const hourBpmAverage = validBpmValues.length > 0 ? validBpmValues.reduce((sum, value) => sum + value, 0) / validBpmValues.length : null;
+
+      console.log('------------hourBpmAverage-----------')
+      console.log(hourBpmAverage?.toFixed(2))
+      console.log('------------hourBpmAverage-----------')
 
       filteredData = filledBpmData.map((item, index) => ({
         ...item,
         //timestamp: addHours(new Date(item.timestamp), 1).getTime(),
+        bpm_average: hourBpmAverage,
         step: filledStepData[index]?.step ?? 0,
         calorie: filledCalorieData[index]?.calorie ?? 0,
         hour_rmssd: filledHrvData[index]?.hour_rmssd ?? null,
@@ -818,11 +828,17 @@ useEffect(() => {
         hour_pred_bpm: predictHourData.find(p => new Date(p.ds).getTime() === item.timestamp)?.hour_pred_bpm ?? null
       }));
 
-
     } else {
       
       const allMinutes = eachMinuteOfInterval({ start: normalStartDate, end: normalEndDate });
       const aggregatedCalorieData = aggregateCalorieData(calorieData);
+
+      const validBpmValues = bpmData.filter(item => item.value !== null && !isNaN(item.value)).map(item => item.value);
+      const minuteBpmAverage = validBpmValues.length > 0 ? validBpmValues.reduce((sum, value) => sum + value, 0) / validBpmValues.length : null;
+
+      console.log('------------minuteBPpmAverage-----------')
+      console.log(minuteBpmAverage?.toFixed(2))
+      console.log('------------minuteBPpmAverage-----------')
 
       filteredData = allMinutes.map(minute => {
         //const adjustedAddNineMinute = adjustTimeZoneAddNine(minute);
@@ -843,6 +859,7 @@ useEffect(() => {
         return {
           timestamp,
           bpm: bpmItem ? bpmItem.value : null,
+          bpm_average: minuteBpmAverage,
           step: stepItem ? stepItem.value : 0,
           //calorie: calorieItem ? calorieItem.value : 0,
           calorie: calorieItem ? calorieItem.calorie : 0,
@@ -858,13 +875,13 @@ useEffect(() => {
       )
     );
 
-    //console.log('filteredData ; ',filteredData)
+    console.log('filteredData ; ',filteredData)
 
 
     return filteredData;
   }, [timeUnit, dateRange, dateWindow, hourlyBpmData, hourlyStepData, hourlyCalorieData, hourlyHrvData, 
       indexedBpmData, indexedStepData, indexedCalorieData, indexedSleepData, indexedPredictData, 
-      predictHourData, fillEmptyHours]);
+      predictHourData, fillEmptyHours, bpmData]);
 
 
   const filteredData = useMemo(() => {
@@ -963,10 +980,7 @@ useEffect(() => {
   const CustomTooltip: React.FC<TooltipProps<ValueType, NameType>> = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
 
-      console.log('IN CUSTOMTOOLTIP Label : ',label)
-      console.log('IN CUSTOMTOOLTIP convert1111 : ',new Date(label as number))
-      console.log('IN CUSTOMTOOLTIP convert2222 : ',formatInTimeZone(new Date(label as number), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'))
-      console.log('IN CUSTOMTOOLTIP convert3333 : ',new Date(formatInTimeZone(new Date(label as number), 'Asia/Seoul', 'yyyy-MM-dd HH:mm')))
+      
       const date = new Date(formatInTimeZone(new Date(label as number), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
       const currentChart = payload[0].dataKey as string;
 
@@ -983,13 +997,18 @@ useEffect(() => {
             {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
           {uniquePayload.map((pld, index) => {
-            if (pld.dataKey === currentChart || (currentChart === 'bpm' && (pld.dataKey === 'min_pred_bpm' || pld.dataKey === 'hour_pred_bpm'))) {
+            if (pld.dataKey === currentChart || (currentChart === 'bpm' && (pld.dataKey === 'min_pred_bpm' || pld.dataKey === 'hour_pred_bpm' || pld.dataKey === 'bpm_average'))) {
               let value = pld.value !== null ? 
                 (pld.dataKey === 'step' || pld.dataKey === 'calorie' ? 
                   Number(pld.value).toFixed(0) : 
                   Number(pld.value).toFixed(2)) 
                 : 'N/A';
               
+              let displayName = pld.name;
+              if (pld.dataKey === 'bpm_average') {
+                displayName = 'BPM Average'; // 평균값 표시 이름 설정
+              }
+
               let memoKey = `${pld.dataKey}_${date.getTime() - offsetMs}`;
   
               if (pld.dataKey === 'sleep_stage') {
@@ -1011,7 +1030,7 @@ useEffect(() => {
               return (
                 <React.Fragment key={`${pld.dataKey}-${index}`}>
                   <p style={{ color: pld.dataKey === 'sleep_stage' ? getSleepStageColor(pld.value as number) : pld.color }}>
-                    {pld.dataKey === 'sleep_stage' ? `Sleep Stage: ${value}` : `${pld.name}: ${value}`}
+                    {pld.dataKey === 'sleep_stage' ? `Sleep Stage: ${value}` : `${displayName}: ${value}`}
                   </p>
                   {memo && (
                     <p className="text-gray-600 italic">Memo: {typeof memo === 'string' ? memo : memo.content}</p>
@@ -1240,6 +1259,7 @@ useEffect(() => {
               
               </>
             ) : ChartType === LineChart ? (
+              <>
               <Line 
                 type="monotone" 
                 dataKey={dataKey} 
@@ -1266,6 +1286,19 @@ useEffect(() => {
                 connectNulls 
                 {...additionalProps} 
             />
+            {dataKey === 'bpm' && (
+              <Line
+                type="monotone"
+                dataKey="bpm_average"
+                stroke="#FFD700"
+                strokeWidth={2}
+                strokeDasharray="5 5"
+                dot={false}
+                name="BPM Average"
+                connectNulls
+              />
+            )}
+            </>
             ) : (
               <Bar 
                 dataKey={dataKey} 
@@ -1341,7 +1374,7 @@ useEffect(() => {
             <button
               key={count}
               onClick={() => setColumnCount(count)}
-              className={`px-4 py-2 rounded ml-2 ${columnCount === count ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+              className={`px-4 py-2 rounded ml-2 ${columnCount === count ? 'bg-blue-500 text-gray-300' : 'bg-gray-200 text-gray-500'}`}
             >
               {count} Column{count !== 1 ? 's' : ''}
             </button>
@@ -1425,4 +1458,3 @@ useEffect(() => {
 };
 
 export default MultiChart;
-

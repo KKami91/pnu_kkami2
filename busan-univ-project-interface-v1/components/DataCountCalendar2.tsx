@@ -446,7 +446,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
                 <Collapsible open={isOpen} onOpenChange={setIsOpen}>
                     <CollapsibleTrigger className='flex items-center gap-2 w-full justify-center text-[12px] text-white/70 hover:text-white'>
                     <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
-                    데이터 갯수
+                    데이터 개수
                     </CollapsibleTrigger>
                     <CollapsibleContent className='space-y-2 pt-2'>
                     <div className='grid grid-cols-1 gap-2'>
