@@ -61,7 +61,7 @@ async function getCountData(req: NextApiRequest, res: NextApiResponse) {
         }
   
         const results = await collection.aggregate(pipeline).toArray();
-        console.log('in getcoundData.ts , result', results)
+        //console.log('in getcoundData.ts , result', results)
         return { collection: collectionName, data: results };
       });
 
