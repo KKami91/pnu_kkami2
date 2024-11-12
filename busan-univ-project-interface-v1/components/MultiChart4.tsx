@@ -63,56 +63,6 @@ interface WeekData {
   hrvData: Array<{ ds: string; hour_rmssd: number; hour_sdnn: number }>;
 }
 
-interface MultiChartProps {
-  selectedUser: string;
-  bpmData: any[];
-  stepData: any[];
-  calorieData: any[];
-  sleepData: any[];
-  predictMinuteData: any[];
-  predictHourData: any[];
-  hrvHourData: any[];
-  globalStartDate: Date;
-  globalEndDate: Date;
-  onBrushChange: (domain: [number, number] | null) => void;
-  fetchAdditionalData: (startDate: Date, endDate: Date) => Promise<AdditionalData>;
-  initialDateWindow: { start: Date; end: Date; } | null;
-  selectedDate: string;
-  fetchHrvData: (user: string, start: Date, end: Date) => Promise<any[]>;
-  dbStartDate: Date | null;
-  dbEndDate: Date | null;
-  scrollToMultiChart: () => void;
-}
-
-interface AdditionalData {
-  bpmData: any[];
-  stepData: any[];
-  calorieData: any[];
-  sleepData: any[];
-  hrvData: any[];
-}
-
-type DateRange = '1' | '7';
-
-interface CachedDataType {
-  [key: string]: AdditionalData;
-}
-
-interface WeekRange {
-  start: Date;
-  end: Date;
-}
-
-
-
-interface WeekData {
-  bpmData: Array<{ timestamp: string; value: number }>;
-  stepData: Array<{ timestamp: string; value: number }>;
-  calorieData: Array<{ timestamp: string; value: number }>;
-  sleepData: Array<{ timestamp_start: string; timestamp_end: string; value: number }>;
-  hrvData: Array<{ ds: string; hour_rmssd: number; hour_sdnn: number }>;
-}
-
 const MultiChart: React.FC<MultiChartProps> = ({
   selectedUser,
   bpmData: initialBpmData,
