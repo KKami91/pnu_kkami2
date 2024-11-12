@@ -1353,8 +1353,8 @@ useEffect(() => {
 
   const charts = [
     { key: 'bpm', color: '#ff7300', label: 'BPM', type: LineChart },
-    { key: 'step', color: 'rgba(130, 202, 157)', label: 'Steps', type: BarChart },
-    { key: 'calorie', color: 'rgba(136, 132, 216)', label: 'Calories', type: BarChart },
+    { key: 'step', color: 'rgba(70, 222, 47)', label: 'Steps', type: BarChart },
+    { key: 'calorie', color: 'rgba(246, 132, 216)', label: 'Calories', type: BarChart },
   ];
   
   if (timeUnit === 'hour') {
