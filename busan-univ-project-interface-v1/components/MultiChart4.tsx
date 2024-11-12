@@ -1290,7 +1290,7 @@ useEffect(() => {
               <Line
                 type="monotone"
                 dataKey="bpm_average"
-                stroke="rgba(255, 180, 0)"
+                stroke="rgba(255, 170, 0)"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 dot={false}
@@ -1352,7 +1352,7 @@ useEffect(() => {
   };
 
   const charts = [
-    { key: 'bpm', color: '#ff7300', label: 'BPM', type: LineChart },
+    { key: 'bpm', color: 'rgba(255, 20, 80)', label: 'BPM', type: LineChart },
     { key: 'step', color: 'rgba(70, 222, 47)', label: 'Steps', type: BarChart },
     { key: 'calorie', color: 'rgba(246, 132, 216)', label: 'Calories', type: BarChart },
   ];
