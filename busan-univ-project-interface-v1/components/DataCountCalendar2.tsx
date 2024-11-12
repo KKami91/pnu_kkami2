@@ -93,7 +93,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
 
     const fetchData = async (collection: string, user: string, startDate: Date, endDate: Date) => {
         try {
-          console.log('fetch함???')
+          //console.log('fetch함???')
     
           const utcStartDate = formatInTimeZone(startDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
           const utcEndDate = formatInTimeZone(endDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -237,7 +237,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
         // console.log('in fetchDayData cachedData ', cachedData)
         // console.log('in fetchDayData cacheKey ', cacheKey)
         if (cachedData && (now - cachedData.timestamp) < CACHE_DURATION) {
-            console.log('Using cached data for:', date);
+            //console.log('Using cached data for:', date);
             rawData = cachedData;
         } else {
             // 캐시가 없거나 만료된 경우 새로 fetch
@@ -282,7 +282,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
         const calcCalorie = rawData.calorie.reduce((sum: number, item: { value: number }) =>
             sum + (item.value || 0), 0);
         
-        console.log('수면 raw data : ',rawData.sleep)
+        //console.log('수면 raw data : ',rawData.sleep)
         const calcSleep = rawData.sleep.reduce((totalMinutes: number, item: SleepData) => {
             if (!item.timestamp_start || !item.timestamp_end) return totalMinutes;
             
@@ -309,8 +309,8 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
             return totalMinutes + awakeDurationMinutes;
         }, 0)
 
-        console.log('이 날짜의 뒤척인 시간 ? ', totalAwakeMinutes)
-        console.log('이 날짜의 총 수면 시간 : ', calcSleep)
+        //console.log('이 날짜의 뒤척인 시간 ? ', totalAwakeMinutes)
+        //console.log('이 날짜의 총 수면 시간 : ', calcSleep)
 
         const calcSleepQuality = ((calcSleep - totalAwakeMinutes)/calcSleep) * 100
 

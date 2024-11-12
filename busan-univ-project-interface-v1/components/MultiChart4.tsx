@@ -485,7 +485,7 @@ useEffect(() => {
 
         }};
 
-        console.log(cachedData)
+        //console.log(cachedData)
 
       loadData();
     }
@@ -809,13 +809,13 @@ useEffect(() => {
 
       const validBpmValues = hourlyBpmData.filter(item => item.bpm !== null && !isNaN(item.bpm)).map(item => item.bpm);
 
-      console.log('hourlyBpmData : ', hourlyBpmData)
+      //console.log('hourlyBpmData : ', hourlyBpmData)
 
       const hourBpmAverage = validBpmValues.length > 0 ? validBpmValues.reduce((sum, value) => sum + value, 0) / validBpmValues.length : null;
 
-      console.log('------------hourBpmAverage-----------')
-      console.log(hourBpmAverage?.toFixed(2))
-      console.log('------------hourBpmAverage-----------')
+      // console.log('------------hourBpmAverage-----------')
+      // console.log(hourBpmAverage?.toFixed(2))
+      // console.log('------------hourBpmAverage-----------')
 
       filteredData = filledBpmData.map((item, index) => ({
         ...item,
@@ -836,9 +836,9 @@ useEffect(() => {
       const validBpmValues = bpmData.filter(item => item.value !== null && !isNaN(item.value)).map(item => item.value);
       const minuteBpmAverage = validBpmValues.length > 0 ? validBpmValues.reduce((sum, value) => sum + value, 0) / validBpmValues.length : null;
 
-      console.log('------------minuteBPpmAverage-----------')
-      console.log(minuteBpmAverage?.toFixed(2))
-      console.log('------------minuteBPpmAverage-----------')
+      // console.log('------------minuteBPpmAverage-----------')
+      // console.log(minuteBpmAverage?.toFixed(2))
+      // console.log('------------minuteBPpmAverage-----------')
 
       filteredData = allMinutes.map(minute => {
         //const adjustedAddNineMinute = adjustTimeZoneAddNine(minute);
@@ -875,7 +875,7 @@ useEffect(() => {
       )
     );
 
-    console.log('filteredData ; ',filteredData)
+    //console.log('filteredData ; ',filteredData)
 
 
     return filteredData;

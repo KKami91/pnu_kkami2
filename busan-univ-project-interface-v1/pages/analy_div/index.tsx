@@ -553,7 +553,7 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 }
 
 const shouldRenderMultiChart = useMemo(() => {
-  console.log('?aaaaaaaaaa???')
+  //console.log('?aaaaaaaaaa???')
   return (
     !isDataLoading &&
     selectedUser &&
