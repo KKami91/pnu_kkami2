@@ -63,6 +63,56 @@ interface WeekData {
   hrvData: Array<{ ds: string; hour_rmssd: number; hour_sdnn: number }>;
 }
 
+interface MultiChartProps {
+  selectedUser: string;
+  bpmData: any[];
+  stepData: any[];
+  calorieData: any[];
+  sleepData: any[];
+  predictMinuteData: any[];
+  predictHourData: any[];
+  hrvHourData: any[];
+  globalStartDate: Date;
+  globalEndDate: Date;
+  onBrushChange: (domain: [number, number] | null) => void;
+  fetchAdditionalData: (startDate: Date, endDate: Date) => Promise<AdditionalData>;
+  initialDateWindow: { start: Date; end: Date; } | null;
+  selectedDate: string;
+  fetchHrvData: (user: string, start: Date, end: Date) => Promise<any[]>;
+  dbStartDate: Date | null;
+  dbEndDate: Date | null;
+  scrollToMultiChart: () => void;
+}
+
+interface AdditionalData {
+  bpmData: any[];
+  stepData: any[];
+  calorieData: any[];
+  sleepData: any[];
+  hrvData: any[];
+}
+
+type DateRange = '1' | '7';
+
+interface CachedDataType {
+  [key: string]: AdditionalData;
+}
+
+interface WeekRange {
+  start: Date;
+  end: Date;
+}
+
+
+
+interface WeekData {
+  bpmData: Array<{ timestamp: string; value: number }>;
+  stepData: Array<{ timestamp: string; value: number }>;
+  calorieData: Array<{ timestamp: string; value: number }>;
+  sleepData: Array<{ timestamp_start: string; timestamp_end: string; value: number }>;
+  hrvData: Array<{ ds: string; hour_rmssd: number; hour_sdnn: number }>;
+}
+
 const MultiChart: React.FC<MultiChartProps> = ({
   selectedUser,
   bpmData: initialBpmData,
@@ -993,7 +1043,7 @@ useEffect(() => {
   
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
-          <p className="font-bold" style={{ color: '#ff7300', fontWeight: 'bold' }}>
+          <p className="font-bold" style={{ color: 'rgba(0,0,0)', fontWeight: 'bold' }}>
             {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
           {uniquePayload.map((pld, index) => {
@@ -1290,7 +1340,7 @@ useEffect(() => {
               <Line
                 type="monotone"
                 dataKey="bpm_average"
-                stroke="#FFD700"
+                stroke="rgba(255, 180, 0)"
                 strokeWidth={2}
                 strokeDasharray="5 5"
                 dot={false}
