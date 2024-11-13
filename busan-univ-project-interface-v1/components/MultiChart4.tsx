@@ -505,6 +505,17 @@ useEffect(() => {
     }
   };
 
+  const getSleepStageTickLabel = (value: number): string => {
+    switch (value) {
+      case -1: return 'Awake';
+      case -1.5: return 'Light1';
+      case -2: return 'Light2';
+      case -2.5: return 'REM';
+      case -3: return 'Deep';
+      default: return '';
+    }
+  };
+
   const sleepStageConfig = {
     0: { color: '#808080', label: 'Unused' },
     '-1': { color: '#FFA500', label: 'Awake' },
@@ -978,9 +989,7 @@ useEffect(() => {
 
 
   const CustomTooltip: React.FC<TooltipProps<ValueType, NameType>> = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-
-      
+    if (active && payload && payload.length && label) {
       const date = new Date(formatInTimeZone(new Date(label as number), 'Asia/Seoul', 'yyyy-MM-dd HH:mm'));
       const currentChart = payload[0].dataKey as string;
 
@@ -1087,8 +1096,11 @@ useEffect(() => {
               tickFormatter={formatDateForDisplay}
             />
             <YAxis 
-              label={{ value: yAxisLabel, angle: -90, position: 'insideLeft' }} 
-              tickFormatter={(value) => value.toFixed(1)}
+              //label={{ value: yAxisLabel, angle: -90, position: 'insideLeft' }} 
+              //tickFormatter={(value) => value.toFixed(1)}
+              tickFormatter={(value) => 
+                dataKey === 'sleep_stage' ? getSleepStageTickLabel(value) : value.toFixed(1)
+              }
               domain={dataKey === 'sleep_stage' ? [-3.5, 0.5] : ['auto', 'auto']}
               ticks={dataKey === 'sleep_stage' ? [-3, -2.5, -2, -1.5, -1] : undefined}
               //scale={isLogScale ? 'log' : 'auto'}
@@ -1458,3 +1470,5 @@ useEffect(() => {
 };
 
 export default MultiChart;
+
+
