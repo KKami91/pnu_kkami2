@@ -314,8 +314,8 @@ export default function Page() {
 
     //console.log('in index fetchAddtionalData start, end ', startDate, endDate)
 
+    const fetchAdditionalDataStartTime = performance.now()
     return Promise.all([
-
       fetchData('bpm', selectedUser, startDate, endDate),
       fetchData('step', selectedUser, startDate, endDate),
       fetchData('calorie', selectedUser, startDate, endDate),
@@ -323,9 +323,11 @@ export default function Page() {
       fetchHrvData(selectedUser, startDate, endDate),
     ])
       .then(([bpm, step, calorie, sleep, hrv]) => {
+      const fetchAdditionalDataEndTime = performance.now()
+      console.log('fetchAdditionalData fetchData 구간 및 최대 길이 및 걸린 시간 : ', startDate ,'~', endDate , Math.max(bpm.length, step.length, calorie.length, sleep.length, hrv.length) , '--->',fetchAdditionalDataEndTime - fetchAdditionalDataStartTime)
 
       //console.log('fetch BPM Data : ', bpm)
-
+      
       const processedBpmData = bpm.map((item: DataItem) => ({
         ...item,
         timestamp: formatInTimeZone(new Date(item.timestamp), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
@@ -400,7 +402,10 @@ export default function Page() {
       setIsInitialLoading(true)
       try {
         // checkDb 완료까지 대기
+        const checkDbStartTime = performance.now()
         await checkDb(user);
+        const checkDbEndTime = performance.now()
+        console.log('1. CheckDB 걸린 시간 : ', checkDbEndTime - checkDbStartTime)
       } catch (error) {
         console.error("checkDb에서 오류가 발생했습니다:", error);
         setMessage(`Error occurred in checkDb: ${error instanceof Error ? error.message : String(error)}`);
@@ -411,12 +416,20 @@ export default function Page() {
       try {
         // checkDb 완료 후에만 feature_day_div 호출
 
+        const featureStartDatesCountDataStartTime = performance.now()
         const [responseDay, userFirstDate, countDataResponse] = await Promise.all([
           axios.get(`${API_URL}/feature_day_div/${user}`),
           axios.get(`${API_URL}/get_start_dates/${user}`),
           axios.get('/api/getCountData', { params: { user_email: user }},)
         ])
+        const featureStartDatesCountDataEndTime = performance.now()
+        console.log('Day HRV, Start Date, CountData 걸린 시간 : ', featureStartDatesCountDataEndTime - featureStartDatesCountDataStartTime)
+        
+        const predictStartTime = performance.now()
         await fetchPredictionData(user)
+        const predictEndTime = performance.now()
+        console.log('Predict 걸린 시간 : ', predictEndTime - predictStartTime)
+
         const userStartDate = userFirstDate.data.start_date;
 
         // const responseDay = await axios.get(`${API_URL}/feature_day_div/${user}`);
@@ -430,7 +443,7 @@ export default function Page() {
         //console.log(countDataResponse.data);
         setCountData(countDataResponse.data);
   
-        await fetchSaveDates(user);
+        //await fetchSaveDates(user);
       } catch (error) {
         console.error("feature_day_div 또는 관련 API 호출 중 에러가 발생했습니다:", error);
         setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`);

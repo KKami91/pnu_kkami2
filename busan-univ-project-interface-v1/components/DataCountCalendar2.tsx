@@ -336,10 +336,13 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
         const selectedDateFormatString = format(selectedDate, 'yyyy-MM-dd')
         const fetchAnalysis = async () => {
             try {
-            const data = await fetchDayData(selectedUser, selectedDateFormatString);
-            setAnalysisDayData2(data);
+                const DataCountFetchDataStartTime = performance.now()
+                const data = await fetchDayData(selectedUser, selectedDateFormatString);
+                const DataCountFetchDataEndTime = performance.now()
+                console.log('In DataCountCalendar - fetchData 걸린 시간 : ', DataCountFetchDataEndTime - DataCountFetchDataStartTime)
+                setAnalysisDayData2(data);
             } catch (error) {
-            console.error('....', error)
+                console.error('....', error)
             }
         } 
         fetchAnalysis()
@@ -437,6 +440,8 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
                         <div className='mr-8 text-[16px]'>{analysisHrvData?.find(data => data.ds === selectedDateString)?.day_rmssd?.toFixed(2) || '0'}</div>
                     </div>
                     <div className='flex justify-between'>
+
+                        
                         <div className='ml-8 text-[16px]'>SDNN</div>
                         <div className='mr-8 text-[16px]'>{analysisHrvData?.find(data => data.ds === selectedDateString)?.day_sdnn?.toFixed(2) || '0'}</div>
                     </div>
