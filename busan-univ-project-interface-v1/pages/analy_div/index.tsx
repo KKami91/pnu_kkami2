@@ -43,6 +43,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 import { format, startOfWeek, endOfWeek, addDays, nextSunday, startOfDay, previousMonday} from 'date-fns';
 import DataAvailabilityCalendar2 from '../../components/DataCountCalendar2'
 import { ArrowRightIcon } from '../../components/ui/ArrowRight';
+import InputBox from '@/components/WriteInputBox';
 
 interface DataResult {
   collection: string;
@@ -543,6 +544,10 @@ function NavUser({
   )
 }
 
+const handleDateChange = (date: Date) => {
+  setSelectedDate(format(date, 'yyyy-MM-dd'));
+};
+
 
 function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -558,7 +563,10 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         selectedUser={selectedUser} 
         heatmapDate={heatmapSelectedDate}
         hrvDayData={hrvDayData}
+        onDateChange={handleDateChange}
         />
+      <SidebarSeparator className="mx-0 border-b" />
+      <InputBox selectedDate={selectedDate} selectedUser={selectedUser}/>
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

@@ -27,6 +27,7 @@ interface DataAvailabilityCalendarProps {
     selectedUser: string;
     heatmapDate: Date | null;
     hrvDayData: DayHrvData[];
+    onDateChange: (date: Date) => void;
 }
 
 interface LegendItem {
@@ -69,7 +70,13 @@ interface CachedRawData {
 }
   
 
-const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ countData, selectedUser, heatmapDate, hrvDayData }) => {
+const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ 
+    countData, 
+    selectedUser, 
+    heatmapDate, 
+    hrvDayData,
+    onDateChange,
+}) => {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [selectedDayData, setSelectedDayData] = useState<DayData | null>(null);
     const [isOpen, setIsOpen] = useState(true);
@@ -210,20 +217,39 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
         return data;
     };
 
-    const handleDateSelect = (date: Date | undefined) => {
-        if (!selectedUser) {
-            return;
-        }
+    // const handleDateSelect = (date: Date | undefined) => {
+    // const handleDateSelect = (date: Date) => {
+    //     if (!selectedUser) {
+    //         return;
+    //     }
         
-        setSelectedDate(date);
-        if (date) {
-            setCurrentMonth(startOfMonth(date));
+    //     setSelectedDate(date);
+    //     onDateChange(date);
+    //     if (date) {
+    //         setCurrentMonth(startOfMonth(date));
+    //         const dayData = getDataCountForDate(date);
+    //         setSelectedDayData(dayData);
+    //     } else {
+    //         setSelectedDayData(null);
+    //     }
+    // };
+        // handleDateSelect 수정
+        const handleDateSelect = useCallback((date: Date | undefined) => {
+            if (!selectedUser || !date) return;
+            
+            setSelectedDate(date);
             const dayData = getDataCountForDate(date);
             setSelectedDayData(dayData);
-        } else {
-            setSelectedDayData(null);
-        }
-    };
+            
+            // 부모 컴포넌트에 날짜 변경 알림
+            onDateChange(date);
+            
+            // 기존의 커스텀 이벤트도 유지
+            const event = new CustomEvent('dateSelect', {
+                detail: { date: format(date, 'yyyy-MM-dd') }
+            });
+            window.dispatchEvent(event);
+        }, [selectedUser, onDateChange]);
 
     const fetchDayData = useCallback(async (user: string, date: string): Promise<AnalyData> => {
         if (!selectedUser) return Promise.resolve({ meanBpm: 0, sumStep: 0, sumCalorie: 0, sumSleep: 0, sleepQuality: 0 });
@@ -365,9 +391,10 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
             <Calendar 
                 mode="single"
                 selected={selectedDate}
-                onSelect={(date: Date) => {
-                    handleDateSelect(date);
-                }}
+                // onSelect={(date: Date) => {
+                //     handleDateSelect(date);
+                // }}
+                onSelect={handleDateSelect}
                 locale={ko}
                 className={`p-0 ${styles.calendar}`}
                 modifiers={{
@@ -413,6 +440,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
             <div className='text-base grid place-items-center'>
                 {selectedDate && format(selectedDate, 'yyyy년 MM월 dd일')}
             </div>
+            
                 
                 <div className='grid grid-cols-1 gap-2'>
                     <div className='flex justify-between'>
@@ -474,9 +502,9 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({ co
                         </div>
                     </div>  
                     </CollapsibleContent>
-
                 </Collapsible>
-      
+                
+
             </>
         )}
 
