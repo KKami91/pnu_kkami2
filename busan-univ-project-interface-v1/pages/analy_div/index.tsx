@@ -565,8 +565,8 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         hrvDayData={hrvDayData}
         onDateChange={handleDateChange}
         />
-      <SidebarSeparator className="mx-0 border-b" />
-      <InputBox selectedDate={selectedDate} selectedUser={selectedUser}/>
+      {selectedUser && <SidebarSeparator className="mx-0 border-b" />}
+      {selectedUser && <InputBox selectedDate={selectedDate} selectedUser={selectedUser}/>}
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
