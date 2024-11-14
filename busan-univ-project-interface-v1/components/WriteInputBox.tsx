@@ -95,11 +95,12 @@ export default function InputBox({ selectedDate, selectedUser }: InputBoxProps){
             <Button 
             variant="outline"
             //onClick={handleSaveMemo}
-            onClick={isEditing ? handleSaveMemo : handleEditClick}
+            //onClick={isEditing ? handleSaveMemo : handleEditClick}
+            onClick={existingMemo ? (isEditing ? handleSaveMemo : handleEditClick) : handleSaveMemo}
             >
                 {/* {existingMemo ? "수정" : "등록"} */}
                 {/* {isLoading ? "저장 중..." : (existingMemo ? "수정" : "등록")} */}
-                {isEditing ? "저장" : (existingMemo ? "수정" : "등록")}
+                {existingMemo ? (isEditing ? "저장" : "수정") : "등록"}
             </Button>
           </div>
         </div>  
