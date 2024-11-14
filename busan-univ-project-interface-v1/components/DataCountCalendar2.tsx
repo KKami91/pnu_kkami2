@@ -66,7 +66,7 @@ timestamp: number;
 }
 
 interface CachedRawData {
-[key: string]: RawData;  // key는 'userId_yyyy-MM-dd' 형식
+[key: string]: RawData;  // key는 'userId_yyyy-MM-dd' 형식a
 }
   
 
