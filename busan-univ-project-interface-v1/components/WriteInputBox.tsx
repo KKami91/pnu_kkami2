@@ -84,7 +84,7 @@ export default function InputBox({ selectedDate, selectedUser }: InputBoxProps){
           id="textarea-11" 
           //className={existingMemo !== '' ? 'read-only:bg-muted' : ''}
           className={existingMemo !== '' && !isEditing ? 'read-only:bg-muted' : ''}
-          placeholder="Leave a comment2"
+          placeholder="Leave a memo"
           value={memo}
           onChange={(e) => setMemo(e.target.value)}
           //readOnly={existingMemo !== ''}
