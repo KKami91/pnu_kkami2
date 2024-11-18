@@ -6,7 +6,7 @@ import MultiChart from '../../components/MultiChart4';
 import { SkeletonLoader } from '../../components/SkeletonLoaders3';
 import {
   Check,
-  ChevronsUpDown,
+  ChevronDown,
 } from "lucide-react"
 import {
   Breadcrumb,
@@ -37,12 +37,19 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { 
+  Collapsible, 
+  CollapsibleContent, 
+  CollapsibleTrigger 
+} from "@/components/ui/collapsible"
 import CombinedHrvHeatmap from '../../components/CombinedHrvHeatmap';
 import dynamic from 'next/dynamic';
 import { formatInTimeZone } from 'date-fns-tz';
-import { format, startOfWeek, endOfWeek, addDays, nextSunday, startOfDay, previousMonday} from 'date-fns';
+import { format, startOfWeek, endOfWeek, addDays, nextSunday, startOfDay, endOfDay, previousMonday} from 'date-fns';
 import DataAvailabilityCalendar2 from '../../components/DataCountCalendar2'
+//import { MenuIcon } from '../../components/ui/MenuIcon';
 import { ArrowRightIcon } from '../../components/ui/ArrowRight';
+//import { Example } from '@/components/ui/test';
 import InputBox from '@/components/WriteInputBox';
 
 interface DataResult {
@@ -91,6 +98,27 @@ interface DataItem {
   //firstDate?: string;
 }
 
+interface UserData {
+  user_email: string;
+  user_name: string;
+  user_gender: string;
+  user_height: string;
+  user_weight: string;
+}
+
+interface UserInfoDisplayProps {
+  selectedUser: string;
+  users2: UserData[];
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+interface UserInfoSectionProps {
+  selectedUser: string;
+  users2: UserData[];
+}
+
+
 Page.getLayout = (page: React.ReactElement) => page;
 
 export default function Page() {
@@ -135,6 +163,9 @@ export default function Page() {
   const [countData, setCountData] = useState<DataResult[]>([]);
 
   const [heatmapSelectedDate, setHeatmapSelectedDate] = useState<Date | null>(null);
+
+  const [isUserInfoOpen, setIsUserInfoOpen] = useState(true);
+
 
   const scrollToMultiChart = useCallback(() => {
     if (multiChartRef.current) {
@@ -197,6 +228,8 @@ export default function Page() {
     try {
       const fetchStart = performance.now()
 
+      
+
       const utcStartDate = formatInTimeZone(startDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
       const utcEndDate = formatInTimeZone(endDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     
@@ -220,28 +253,6 @@ export default function Page() {
     }
   };
 
-
-  const data = {
-    user: {
-      name: "shadcn",
-      email: "m@example.com",
-      avatar: "/avatars/shadcn.jpg",
-    },
-    calendars: [
-      {
-        name: "My Calendars",
-        items: ["Personal", "Work", "Family"],
-      },
-      {
-        name: "Favorites",
-        items: ["Holidays", "Birthdays"],
-      },
-      {
-        name: "Other",
-        items: ["Travel", "Reminders", "Deadlines"],
-      },
-    ],
-  }
 
   const handleBrushChange = (domain: [number, number] | null) => {
     //console.log("Brush domain changed2:", domain);
@@ -486,16 +497,25 @@ const handleSelection = (email: string) => {
   handleUserSelect(event)
 }
 
-function NavUser({
-  user,
-}: {
-  user: {
-    name: string
-    email: string
-    avatar: string
-  }
-}) {
+const [users2, setUsers2] = useState<UserData[]>([]);
+
+useEffect(() => {
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.post(`${API_URL}/user_data`);
+      setUsers2(response.data)
+    } catch (error) {
+      console.error('error fetch user:', error);
+    }
+  };
+  console.log('..... in useEffect fetchUsers....', users2)
+  fetchUsers();
+}, []);
+
+
+function NavUser() {
   const { isMobile } = useSidebar()
+
 
   return (
     <SidebarMenu>
@@ -523,18 +543,18 @@ function NavUser({
         >
           <DropdownMenuLabel>사용자 계정 선택</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          {users.map((user) => (
+          {users2.map((user) => (
             <DropdownMenuItem
-              key={user}
-              onClick={() => handleSelection(user)}
+              key={user.user_email}
+              onClick={() => handleSelection(user.user_email)}
               className="cursor-pointer"
             >
               <Check
                 className={`mr-2 h-4 w-4 ${
-                  selectedUser === user ? "opacity-100" : "opacity-0"
+                  selectedUser === user.user_email ? "opacity-100" : "opacity-0"
                 }`}
               />
-              {user}
+              {user.user_email}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -548,25 +568,118 @@ const handleDateChange = (date: Date) => {
   setSelectedDate(format(date, 'yyyy-MM-dd'));
 };
 
+function UserInfoDisplay({ 
+  selectedUser, 
+  users2,
+  isOpen,
+  onOpenChange
+}: UserInfoDisplayProps) {
+  //const selectedUserInfo = users2.find(user => user.user_email === selectedUser)
+  const selectedUserInfo = useMemo(() => 
+    users2.find(user => user.user_email === selectedUser),
+    [users2, selectedUser]
+  );
+
+  if (!selectedUser || !selectedUserInfo) return null;
+
+  console.log(selectedUserInfo)
+
+  console.log('isOpen --> ', isOpen)
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={onOpenChange}>
+    <CollapsibleTrigger className='flex items-center gap-2 w-full justify-center text-[12px] text-white/70 hover:text-white'>
+    <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
+    사용자 정보
+    </CollapsibleTrigger>
+    <CollapsibleContent className='space-y-2 pt-2'>
+    <div className='grid grid-cols-1 gap-2'>
+        <div className='flex justify-between'>
+            <div className='ml-8 text-[16px]'>이름</div> 
+            <div className='mr-8 text-[16px]'>{selectedUserInfo.user_name}</div>
+        </div>
+        <div className='flex justify-between'>
+            <div className='ml-8 text-[16px]'>성별</div>
+            <div className='mr-8 text-[16px]'> {selectedUserInfo.user_gender}</div>
+        </div>
+        {/* <div className='flex justify-between'>
+            <div className='ml-8 text-[16px]'>키</div> 
+            <div className='mr-8 text-[16px]'>{selectedUserInfo.user_height}cm</div>
+        </div>
+        <div className='flex justify-between'>
+            <div className='ml-8 text-[16px]'>몸무게</div> 
+            <div className='mr-8 text-[16px]'> {selectedUserInfo.user_weight}kg</div>
+        </div> */}
+        {/* <div className='mr-8 mb-2 flex justify-end text-[12px]'> /96</div> */}
+    </div>  
+    </CollapsibleContent>
+</Collapsible>
+  )
+}
+
+const MemoizedSeparator = React.memo(function MemoizedSeparator() {
+  return <SidebarSeparator className="mx-0 border-b" />;
+})
+
+const UserInfoSection = React.memo(function UserInfoSection({
+  selectedUser,
+  users2
+}: UserInfoSectionProps){
+  const [isUserInfoOpen, setIsUserInfoOpen] = useState(true);
+  if (!selectedUser) return null;
+  return (
+    <>
+      <MemoizedSeparator />
+      <UserInfoDisplay
+        selectedUser={selectedUser}
+        users2={users2}
+        isOpen={isUserInfoOpen}
+        onOpenChange={setIsUserInfoOpen}
+        />
+    </>
+  )
+})
+
+const MemoizedDataAvailabilityCalendar = React.memo(DataAvailabilityCalendar2);
+const MemoizedInputBox = React.memo(InputBox);
+
 
 function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  console.log('리렌더링?')
   return (
     <Sidebar {...props}>
       <SidebarHeader className="h-16 border-b border-sidebar-border">
-        <NavUser user={data.user} />
+        <NavUser/>
       </SidebarHeader>
       <SidebarContent>
         {/* <DatePicker /> */}
-        <SidebarSeparator className="mx-0" />
-        <DataAvailabilityCalendar2 
+        {/* <SidebarSeparator className="mx-0" /> */}
+        <MemoizedSeparator />
+        {/* <DataAvailabilityCalendar2 
         countData={countData} 
         selectedUser={selectedUser} 
         heatmapDate={heatmapSelectedDate}
         hrvDayData={hrvDayData}
         onDateChange={handleDateChange}
+        /> */}
+        <MemoizedDataAvailabilityCalendar
+        countData={countData}
+        selectedUser={selectedUser}
+        heatmapDate={heatmapSelectedDate}
+        hrvDayData={hrvDayData}
+        onDateChange={handleDateChange}
         />
-      {selectedUser && <SidebarSeparator className="mx-0 border-b" />}
-      {selectedUser && <InputBox selectedDate={selectedDate} selectedUser={selectedUser}/>}
+      {/* {selectedUser && <SidebarSeparator className="mx-0 border-b" />}
+      {selectedUser && <UserInfoDisplay selectedUser={selectedUser} users2={users2}/>} */}
+      <UserInfoSection selectedUser={selectedUser} users2={users2} />
+      {/* {selectedUser && <SidebarSeparator className="mx-0 border-b" />} */}
+      {selectedUser && (
+        <>
+          <MemoizedSeparator />
+          <MemoizedInputBox selectedDate={selectedDate} selectedUser={selectedUser} />
+        </>
+      )}
+      {/* {selectedUser && <InputBox selectedDate={selectedDate} selectedUser={selectedUser}/>} */}
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
@@ -656,3 +769,4 @@ return (
       // </div>
   );
 }
+
