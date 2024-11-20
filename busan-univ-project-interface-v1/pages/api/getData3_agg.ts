@@ -166,7 +166,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       //if (collection === 'sleep_test3') {
       //if (collection === 'sleep') {
-      if (collection === 'sleep2') {
+      if (collection === 'sleep') {
         matchStage = {
           user_email,
           timestamp_start: { $gte: start, $lte: end }
