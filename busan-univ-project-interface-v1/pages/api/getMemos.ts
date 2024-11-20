@@ -58,12 +58,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         const collectionMemos = await collection.find(query).project(project).toArray();
-        //console.log('startDate & endDate', startDate, endDate)
-        //console.log('startDate & endDate', new Date(format(startDate as string, 'yyyy-MM-dd HH:mm:ss')), new Date(format(endDate as string, 'yyyy-MM-dd HH:mm:ss')))
-        //console.log('startDate & endDate', new Date(startDate as string), new Date(endDate as string))
-        //console.log('startDate & endDate', new Date(format(startDate as string, 'yyyy-MM-dd HH:mm:ssXXX')), new Date(format(endDate as string, 'yyyy-MM-dd HH:mm:ssXXX')))
-        //console.log('CONVERT startDate & endDate', new Date(formatInTimeZone(new Date(startDate as string), 'UTC', 'yyyy-MM-dd HH:mm:ss')), new Date(formatInTimeZone(new Date(endDate as string), 'UTC', 'yyyy-MM-dd HH:mm:ss')))
-        //console.log(`in getMemos.ts ---- collectionMemos ----`, collectionMemos)
+        // console.log('startDate & endDate', startDate, endDate)
+        // console.log('startDate & endDate', new Date(format(startDate as string, 'yyyy-MM-dd HH:mm:ss')), new Date(format(endDate as string, 'yyyy-MM-dd HH:mm:ss')))
+        // //console.log('startDate & endDate', new Date(startDate as string), new Date(endDate as string))
+        // //console.log('startDate & endDate', new Date(format(startDate as string, 'yyyy-MM-dd HH:mm:ssXXX')), new Date(format(endDate as string, 'yyyy-MM-dd HH:mm:ssXXX')))
+        // //console.log('CONVERT startDate & endDate', new Date(formatInTimeZone(new Date(startDate as string), 'UTC', 'yyyy-MM-dd HH:mm:ss')), new Date(formatInTimeZone(new Date(endDate as string), 'UTC', 'yyyy-MM-dd HH:mm:ss')))
+        // console.log(`in getMemos.ts ---- collectionMemos ----`, collectionMemos)
         memos.push(...collectionMemos);
       }
 

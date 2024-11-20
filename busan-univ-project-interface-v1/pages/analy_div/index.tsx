@@ -305,7 +305,9 @@ export default function Page() {
       const utcEnd = formatInTimeZone(end, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
       
-      const response = await axios.get(`${API_URL}/feature_hour_div/${user}/${new Date(utcStart).getTime()}/${new Date(utcEnd).getTime()}`);
+      const response = await axios.get(`${API_URL}/feature_hour_div2/${user}/${new Date(utcStart).getTime()}/${new Date(utcEnd).getTime()}`);
+
+      console.log('555555555555 fetchHrvData : ',response.data)
 
       if (response.data && response.data.hour_hrv) {
         return response.data.hour_hrv.map((item: any) => ({
@@ -415,7 +417,8 @@ export default function Page() {
       try {
         // checkDb 완료까지 대기
         const checkDbStartTime = performance.now()
-        await checkDb(user);
+        // 구조 변경에 의해 checkdb 필요없음
+        //await checkDb(user);
         const checkDbEndTime = performance.now()
         console.log('1. CheckDB 걸린 시간 : ', checkDbEndTime - checkDbStartTime)
       } catch (error) {
@@ -430,12 +433,15 @@ export default function Page() {
 
         const featureStartDatesCountDataStartTime = performance.now()
         const [responseDay, userFirstDate, countDataResponse] = await Promise.all([
-          axios.get(`${API_URL}/feature_day_div/${user}`),
+          axios.get(`${API_URL}/feature_day_div2/${user}`),
           axios.get(`${API_URL}/get_start_dates/${user}`),
           axios.get('/api/getCountData', { params: { user_email: user }},)
         ])
+        
         const featureStartDatesCountDataEndTime = performance.now()
         console.log('Day HRV, Start Date, CountData 걸린 시간 : ', featureStartDatesCountDataEndTime - featureStartDatesCountDataStartTime)
+
+        console.log('3333333333333333333333333333333in first getcountdata : ', countDataResponse.data)
         
         const predictStartTime = performance.now()
         await fetchPredictionData(user)
@@ -602,14 +608,14 @@ function UserInfoDisplay({
             <div className='ml-8 text-[16px]'>성별</div>
             <div className='mr-8 text-[16px]'> {selectedUserInfo.user_gender}</div>
         </div>
-        {/* <div className='flex justify-between'>
+        <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>키</div> 
             <div className='mr-8 text-[16px]'>{selectedUserInfo.user_height}cm</div>
         </div>
         <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>몸무게</div> 
             <div className='mr-8 text-[16px]'> {selectedUserInfo.user_weight}kg</div>
-        </div> */}
+        </div>
         {/* <div className='mr-8 mb-2 flex justify-end text-[12px]'> /96</div> */}
     </div>  
     </CollapsibleContent>
@@ -769,4 +775,3 @@ return (
       // </div>
   );
 }
-

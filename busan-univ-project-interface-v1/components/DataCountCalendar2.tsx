@@ -11,6 +11,7 @@ import axios from 'axios';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown } from "lucide-react"
 
+
 interface DataResult {
     collection: string;
     data: { _id: string; count: number }[];
@@ -66,7 +67,7 @@ timestamp: number;
 }
 
 interface CachedRawData {
-[key: string]: RawData;  // key는 'userId_yyyy-MM-dd' 형식a
+[key: string]: RawData;  // key는 'userId_yyyy-MM-dd' 형식
 }
   
 
@@ -101,6 +102,8 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({
     const fetchData = async (collection: string, user: string, startDate: Date, endDate: Date) => {
         try {
           //console.log('fetch함???')
+
+          console.log('Is in DataCountCalendar2 ... fetchData........... ', user, startDate, endDate)
     
           const utcStartDate = formatInTimeZone(startDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
           const utcEndDate = formatInTimeZone(endDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -144,6 +147,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({
             setCurrentMonth(startOfMonth(heatmapDate));
             setSelectedDate(heatmapDate);
             const dayData = getDataCountForDate(heatmapDate);
+            console.log('??????????????????????????', dayData)
             setSelectedDayData(dayData);
         }
     }, [heatmapDate, selectedUser]);
@@ -198,6 +202,8 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({
     const getDataCountForDate = (date: Date) => {
         const dateString = format(date, 'yyyy-MM-dd');
 
+        //console.log('!!!!!!!!!!!!', countData)
+
 
         const data = {
             bpm: countData.find((d) => d.collection === 'bpm')?.data.find((item) => 
@@ -213,6 +219,8 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({
                 item._id === dateString
             )?.count || 0,
         };
+
+        // console.log('in getDataCountForDate : ', countData)
 
         return data;
     };
@@ -279,6 +287,8 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({
                     fetchData('sleep', user, subHours(startDate, 12), subHours(endDate, 12)),
                 ]);
 
+                console.log('fetchDayData fetch 이후 sleep Data : ', sleep)
+
                 // 새로운 데이터를 캐시에 저장
                 rawData = {
                     bpm,
@@ -340,6 +350,8 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({
 
         const calcSleepQuality = ((calcSleep - totalAwakeMinutes)/calcSleep) * 100
 
+        console.log('@@@@@@@@@@@ : ',rawData.step)
+
         return {
             meanBpm: Number(calcBpm.toFixed(2)),
             sumStep: calcStep,
@@ -396,7 +408,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({
                 // }}
                 onSelect={handleDateSelect}
                 locale={ko}
-                className={`p-0 ${styles.calendar}`}
+                className={`p-0 flex items-center ${styles.calendar}`}
                 modifiers={{
                     warning: (date: Date) => {
                         const data = getDataCountForDate(date);
