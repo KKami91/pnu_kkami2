@@ -1006,7 +1006,9 @@ useEffect(() => {
             {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
           {uniquePayload.map((pld, index) => {
-            if (pld.dataKey === currentChart || (currentChart === 'bpm' && (pld.dataKey === 'min_pred_bpm' || pld.dataKey === 'hour_pred_bpm' || pld.dataKey === 'bpm_average'))) {
+            if (pld.dataKey === currentChart || 
+              ((currentChart === 'bpm' || currentChart === 'bpm_average') && 
+                (pld.dataKey === 'min_pred_bpm' || pld.dataKey === 'hour_pred_bpm' || pld.dataKey === 'bpm_average'))) {
               let value = pld.value !== null ? 
                 (pld.dataKey === 'step' || pld.dataKey === 'calorie' ? 
                   Number(pld.value).toFixed(0) : 
