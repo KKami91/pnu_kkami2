@@ -608,14 +608,14 @@ function UserInfoDisplay({
             <div className='ml-8 text-[16px]'>성별</div>
             <div className='mr-8 text-[16px]'> {selectedUserInfo.user_gender}</div>
         </div>
-        <div className='flex justify-between'>
+        {/* <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>키</div> 
             <div className='mr-8 text-[16px]'>{selectedUserInfo.user_height}cm</div>
         </div>
         <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>몸무게</div> 
             <div className='mr-8 text-[16px]'> {selectedUserInfo.user_weight}kg</div>
-        </div>
+        </div> */}
         {/* <div className='mr-8 mb-2 flex justify-end text-[12px]'> /96</div> */}
     </div>  
     </CollapsibleContent>
