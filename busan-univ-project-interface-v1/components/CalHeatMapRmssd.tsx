@@ -131,6 +131,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData, startDate
                 //ds: formatInTimeZone(new Date(item.ds).getTime() + offsetMs, 'Asia/Seoul', 'yyyy-MM-dd')
                 //ds: format(parseISO(item.ds), 'yyyy-MM-dd')
                 //ds: formatInTimeZone(addDays(new Date(item.ds), 1), 'UTC', 'yyyy-MM-dd')
+                day_rmssd: item.day_rmssd === null ? undefined : item.day_rmssd,
                 ds: format(formatInTimeZone(addHours(new Date(item.ds), 9), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
             }));
             

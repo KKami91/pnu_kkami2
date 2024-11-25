@@ -39,7 +39,7 @@ useEffect(() => {
 
 const fetchHrvData = async (user: string) => {
   try {
-    const response = await axios.get(`${API_URL}/feature_day_div/${user}`);
+    const response = await axios.get(`${API_URL}/feature_day_div2/${user}`);
     setHrvDayData(response.data.day_hrv);
   } catch (error) {
     console.error('Error fetching HRV data:', error);
