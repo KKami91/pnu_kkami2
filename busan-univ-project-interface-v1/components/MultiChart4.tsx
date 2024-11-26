@@ -11,6 +11,7 @@ import axios from 'axios'
 import { Memo } from './types'
 import { formatInTimeZone, fromZonedTime, toZonedTime } from 'date-fns-tz';
 import * as ReactDOM from 'react-dom';
+import NoonSleepChart from './NoonSleepChart';
 
 
 interface MultiChartProps {
@@ -91,6 +92,7 @@ const MultiChart: React.FC<MultiChartProps> = ({
   const [stepData, setStepData] = useState(initialStepData);
   const [calorieData, setCalorieData] = useState(initialCalorieData);
   const [sleepData, setSleepData] = useState(initialSleepData);
+
 
   // Memo
   const [memoModalOpen, setMemoModalOpen] = useState(false);
@@ -192,12 +194,16 @@ const MultiChart: React.FC<MultiChartProps> = ({
 
     const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
     const currentWeekKey = format(selectedWeekStart, 'yyyy-MM-dd');
+
+    console.log('before filtered data ', sleepData)
     
     const filteredBpmData = newCachedData[currentWeekKey].bpmData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr);
     const filteredStepData = newCachedData[currentWeekKey].stepData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr);
     const filteredCalorieData = newCachedData[currentWeekKey].calorieData.filter(d => format(new Date(d.timestamp), 'yyyy-MM-dd') === selectedDateStr);
     const filteredSleepData = newCachedData[currentWeekKey].sleepData.filter(d => format(new Date(d.timestamp_start), 'yyyy-MM-dd') === selectedDateStr);
     const filteredHrvData = newCachedData[currentWeekKey].hrvData.filter(d => format(new Date(d.ds), 'yyyy-MM-dd') === selectedDateStr);
+
+    console.log('multichart filtered sleep data : ',filteredSleepData)
 
     setBpmData(filteredBpmData);
     setStepData(filteredStepData);
@@ -324,9 +330,12 @@ useEffect(() => {
   const saveMemo = async (memo: string) => {
     if (selectedData && selectedUser) {
       try {
-        //console.log('zzzzzzzzzzz ',selectedData)
+        console.log('zzzzzzzzzzz ',selectedData, memo)
         if (selectedData.type === 'sleep') {
-          //console.log(`ha`)
+          console.log(`ha`)
+          console.log(selectedUser)
+          console.log(selectedData.type)
+          console.log(selectedData.timestamp)
           await axios.post('/api/saveMemo', {
             user_email: selectedUser,
             dataType: selectedData.type,
@@ -357,6 +366,7 @@ useEffect(() => {
 
 
   const handleChartClick = (data: any, dataKey: string) => {
+    console.log('in onmemoclick : ', data)
     if (dataKey === 'calorie') {
       const interval = 15 * 60 * 1000; // 15분을 밀리초로 표현
       const startOfInterval = Math.floor(data.timestamp / interval) * interval;
@@ -450,6 +460,8 @@ useEffect(() => {
           setCachedData(prev => ({ ...prev, [weekKey]: weekData }));
         }
 
+        console.log('in multi weekData :::::, ', weekData)
+
         if (dateRange === '7') {
           //console.log('설마?')
           setBpmData(weekData.bpmData);  // 전체 주간 데이터 사용
@@ -476,7 +488,7 @@ useEffect(() => {
           }));
           setSleepData(weekData.sleepData.filter(d => {
             const timestamp_start = new Date(d.timestamp_start);
-            return timestamp_start >= utcStartOfDay && timestamp_start <= utcEndOfDay;
+            return timestamp_start >= subDays(utcStartOfDay, 1) && timestamp_start <= utcEndOfDay;
           }));
           setLocalHrvData(weekData.hrvData.filter(d => {
             const ds = new Date(d.ds);
@@ -485,7 +497,7 @@ useEffect(() => {
 
         }};
 
-        //console.log(cachedData)
+        console.log(cachedData)
 
       loadData();
     }
@@ -496,11 +508,9 @@ useEffect(() => {
   const mapSleepStage = (stage: number | null): number => {
     switch(stage) {
       case 1: return -1;
-      case 2: return -1.5;
-      case 3: return 0;
       case 4: return -2;
-      case 5: return -3;
-      case 6: return -2.5;
+      case 5: return -4;
+      case 6: return -3;
       default: return 0;
     }
   };
@@ -508,10 +518,9 @@ useEffect(() => {
   const getSleepStageTickLabel = (value: number): string => {
     switch (value) {
       case -1: return 'Awake';
-      case -1.5: return 'Light1';
-      case -2: return 'Light2';
-      case -2.5: return 'REM';
-      case -3: return 'Deep';
+      case -2: return 'Light';
+      case -3: return 'REM';
+      case -4: return 'Deep';
       default: return '';
     }
   };
@@ -519,10 +528,9 @@ useEffect(() => {
   const sleepStageConfig = {
     0: { color: '#808080', label: 'Unused' },
     '-1': { color: '#FFA500', label: 'Awake' },
-    '-1.5': { color: '#90EE90', label: 'Light1' },
-    '-2': { color: '#32CD32', label: 'Light2' },
-    '-2.5': { color: '#4169E1', label: 'REM' },
-    '-3': { color: '#000080', label: 'Deep' },
+    '-2': { color: '#32CD32', label: 'Light' },
+    '-3': { color: '#4169E1', label: 'REM' },
+    '-4': { color: '#008080', label: 'Deep' },
   };
 
   const getSleepStageLabel = (value: number | null | undefined): string => {
@@ -744,6 +752,7 @@ useEffect(() => {
     }, {});
   }, [predictMinuteData]);
 
+  
 
   const aggregateCalorieData = (data: any[]) => {
     const aggregatedData: { [key: string]: number } = {};
@@ -838,6 +847,7 @@ useEffect(() => {
         hour_sdnn: filledHrvData[index]?.hour_sdnn ?? null,
         hour_pred_bpm: predictHourData.find(p => new Date(p.ds).getTime() === item.timestamp)?.hour_pred_bpm ?? null
       }));
+      console.log('in displayData filteredData : ', filteredData)
 
     } else {
       
@@ -999,6 +1009,8 @@ useEffect(() => {
       const uniquePayload = payload.filter((item, index, self) =>
         index === self.findIndex((t) => t.dataKey === item.dataKey)
       );
+
+
   
       return (
         <div className="bg-white p-2 border border-gray-300 rounded shadow">
@@ -1006,9 +1018,10 @@ useEffect(() => {
             {format(date, timeUnit === 'minute' ? 'yyyy-MM-dd HH:mm' : 'yyyy-MM-dd HH:00')}
           </p>
           {uniquePayload.map((pld, index) => {
+
             if (pld.dataKey === currentChart || 
               ((currentChart === 'bpm' || currentChart === 'bpm_average') && 
-                (pld.dataKey === 'min_pred_bpm' || pld.dataKey === 'hour_pred_bpm' || pld.dataKey === 'bpm_average'))) {
+               (pld.dataKey === 'min_pred_bpm' || pld.dataKey === 'hour_pred_bpm' || pld.dataKey === 'bpm_average'))) {
               let value = pld.value !== null ? 
                 (pld.dataKey === 'step' || pld.dataKey === 'calorie' ? 
                   Number(pld.value).toFixed(0) : 
@@ -1103,8 +1116,8 @@ useEffect(() => {
               tickFormatter={(value) => 
                 dataKey === 'sleep_stage' ? getSleepStageTickLabel(value) : value.toFixed(1)
               }
-              domain={dataKey === 'sleep_stage' ? [-3.5, 0.5] : ['auto', 'auto']}
-              ticks={dataKey === 'sleep_stage' ? [-3, -2.5, -2, -1.5, -1] : undefined}
+              domain={dataKey === 'sleep_stage' ? [-4.5, 0.5] : ['auto', 'auto']}
+              ticks={dataKey === 'sleep_stage' ? [-4, -3, -2, -1] : undefined}
               //scale={isLogScale ? 'log' : 'auto'}
               //allowDataOverflow={isLogScale}
             />
@@ -1143,7 +1156,7 @@ useEffect(() => {
                       key={`sleep-area-${index}`}
                       x1={sleepStart}
                       x2={sleepEnd}
-                      y1={-3.5}
+                      y1={-4.5}
                       y2={0.5}
                       fill={getSleepStageColor(entry.sleep_stage)}
                       fillOpacity={hasMemo ? 0.5 : 0.6}
@@ -1460,6 +1473,30 @@ useEffect(() => {
           </div>
         ))}
       </div>
+      {timeUnit === 'minute' && (
+          <div className="w-full h-full mt-5">
+            {/* <NoonSleepChart
+              sleepData={sleepData}
+              selectedDate={selectedDate}
+              memos={memos}
+              onMemoClick={(data: any) => {
+                if (data && data.activePayload) {
+                  handleChartClick(data.activePayload[0].payload, 'sleep');
+                }
+              }}
+            /> */}
+          <NoonSleepChart
+            sleepData={sleepData}
+            selectedDate={format(dateWindow?.end || new Date(), 'yyyy-MM-dd')}
+            memos={memos}
+            onMemoClick={(data: any) => {
+              if (data && data.activePayload) {
+                handleChartClick(data.activePayload[0].payload, 'sleep');
+              }
+            }}
+          />
+          </div>
+        )}
         <MemoModal
           isOpen={memoModalOpen}
           onClose={() => setMemoModalOpen(false)}

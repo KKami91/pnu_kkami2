@@ -340,6 +340,7 @@ export default function Page() {
       const fetchAdditionalDataEndTime = performance.now()
       console.log('fetchAdditionalData fetchData 구간 및 최대 길이 및 걸린 시간 : ', startDate ,'~', endDate , Math.max(bpm.length, step.length, calorie.length, sleep.length, hrv.length) , '--->',fetchAdditionalDataEndTime - fetchAdditionalDataStartTime)
 
+      console.log('in fetchAddional ;; sleep ; ;',  sleep)
       //console.log('fetch BPM Data : ', bpm)
       
       const processedBpmData = bpm.map((item: DataItem) => ({
@@ -364,6 +365,8 @@ export default function Page() {
         timestamp_start: formatInTimeZone(new Date(item.timestamp_start), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
         timestamp_end: formatInTimeZone(new Date(item.timestamp_end), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
       }));
+
+      console.log('in index after processedSleepData : ', processedSleepData)
 
       const processedHrvData = hrv.map((item: DataItem) => ({
         ...item,
@@ -456,6 +459,7 @@ export default function Page() {
   
         setFirstDate([userStartDate]);
         setHrvDayData(responseDay.data.day_hrv);
+        console.log('hadleUserSelect hrv data : ', responseDay.data.day_hrv)
   
         //const countDataResponse = await axios.get('/api/getCountData', { params: { user_email: user } });
         //console.log(countDataResponse.data);
@@ -608,14 +612,14 @@ function UserInfoDisplay({
             <div className='ml-8 text-[16px]'>성별</div>
             <div className='mr-8 text-[16px]'> {selectedUserInfo.user_gender}</div>
         </div>
-        {/* <div className='flex justify-between'>
+        <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>키</div> 
             <div className='mr-8 text-[16px]'>{selectedUserInfo.user_height}cm</div>
         </div>
         <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>몸무게</div> 
             <div className='mr-8 text-[16px]'> {selectedUserInfo.user_weight}kg</div>
-        </div> */}
+        </div>
         {/* <div className='mr-8 mb-2 flex justify-end text-[12px]'> /96</div> */}
     </div>  
     </CollapsibleContent>
@@ -713,6 +717,7 @@ const ErrorFallback = ({ error }: { error: Error }) => (
 
 return (
   // <div className={styles.container} h-auto max-h-fit>
+
   <SidebarProvider>
     <AppSidebar />
     <SidebarInset>

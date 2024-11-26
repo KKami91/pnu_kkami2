@@ -87,13 +87,12 @@ interface MemoModalProps {
 
 function getSleepStageLabel(value: number): string {
   console.log('-----value----', value)
-  switch(value) {
+  switch (value) {
     case -1: return 'Awake';
-    case -1.5: return 'Light1 Sleep';
-    case -2: return 'Light2 Sleep';
-    case -2.5: return 'REM';
-    case -3: return 'Deep Sleep';
-    default: return 'Unknown';
+    case -2: return 'Light';
+    case -3: return 'REM';
+    case -4: return 'Deep';
+    default: return '';
   }
 }
 
