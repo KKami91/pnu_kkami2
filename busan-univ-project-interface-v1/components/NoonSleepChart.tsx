@@ -224,7 +224,7 @@ const noonToNoonData = useMemo(() => {
 
       
       return (
-        <div className="bg-white p-3 border border-gray-300 rounded shadow">
+        <div className="bg-white/85 p-3 border border-gray-300 rounded shadow">
           <div className="font-semibold border-b border-gray-200 pb-2 mb-2 text-gray-600">
             수면 정보
           </div>
