@@ -102,7 +102,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const db = await MongoDBConnection.getDb();
+    const client = await MongoDBConnection.getClient();
+    const db = client.db('heart_rate_db');
     const collections = ['bpm', 'step', 'calorie', 'sleep'];
     const memos = [];
 
