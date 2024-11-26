@@ -108,7 +108,7 @@ class MongoDBConnection {
         uptime: status.uptime
       };
     } catch (error) {
-      return { status: 'error'};
+      console.error('Error closing MongoDB connection:', error);
     }
   }
 }
