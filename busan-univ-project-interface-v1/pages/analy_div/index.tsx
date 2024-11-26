@@ -58,7 +58,7 @@ interface DataResult {
 }
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'sueun4701@gmail.com', 'psy.suh.hg@gmail.com']
-const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
+const API_URL = 'https://heart-rate-app11-hotofhe3yq-du.a.run.app'
 
 const LoadingSpinner = () => (
   <div className="inline-block h-6 w-6 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite] ml-2">
