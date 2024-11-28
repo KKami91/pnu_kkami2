@@ -418,7 +418,12 @@ const noonToNoonData = useMemo(() => {
                 x2={entry.timestamp_end}
                 y1={(entry.sleep_stage ?? 0) - 0.4}
                 y2={(entry.sleep_stage ?? 0) + 0.4}
-                fill={sleepStageConfig[(entry.sleep_stage?.toString() || '0')].color}
+                //fill={sleepStageConfig[(entry.sleep_stage?.toString() || '0')].color}
+                fill={
+                  entry.value === 1 && entry.timestamp_end - entry.timestamp_start >= 20 * 60 * 1000
+                    ? 'red'
+                    : sleepStageConfig[(entry.sleep_stage?.toString() || '0')].color
+                }
                 fillOpacity={activeIndex === index ? 0.8 : 0.6}
                 stroke={activeIndex === index ? sleepStageConfig[(entry.sleep_stage?.toString() || '0')].color : undefined}
                 strokeWidth={activeIndex === index ? 2 : 0}
