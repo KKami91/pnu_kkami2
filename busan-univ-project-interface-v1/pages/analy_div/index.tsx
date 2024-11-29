@@ -51,6 +51,7 @@ import DataAvailabilityCalendar2 from '../../components/DataCountCalendar2'
 import { ArrowRightIcon } from '../../components/ui/ArrowRight';
 //import { Example } from '@/components/ui/test';
 import InputBox from '@/components/WriteInputBox';
+import SearchMemoData from '@/components/SearchMemo';
 
 interface DataResult {
   collection: string;
@@ -722,7 +723,8 @@ return (
     <AppSidebar />
     <SidebarInset>
       {/* <header className="sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4"> */}
-      <header className="sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b bg-background">
+      <header className="sticky top-0 flex h-16 shrink-0 items-center justify-between border-b bg-background">
+      <div className="flex items-center gap-2">
         <SidebarTrigger className="ml-2" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
@@ -731,8 +733,12 @@ return (
               <BreadcrumbPage>{selectedUser}</BreadcrumbPage>
               {isLoadingUser && <LoadingSpinner />}
             </BreadcrumbItem>
-          </BreadcrumbList>
+          </BreadcrumbList>          
         </Breadcrumb>
+        </div>
+        <div className="mr-4">
+          <SearchMemoData selectedUser={selectedUser}/>
+        </div>
       </header>
       <div className="flex flex-1 flex-col gap-4 p-4">
         <div className="auto-rows-min gap-4 md:grid-cols-5">
