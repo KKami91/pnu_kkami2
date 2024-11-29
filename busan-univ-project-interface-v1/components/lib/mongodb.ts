@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 
-const uri = 'mongodb+srv://ghkdth919:NDP08tR24zOD5OcX@prophetdb.77dodcp.mongodb.net/?appName=prophetDB';
+const uri = process.env.MONGODB_URI;
 
 class MongoDBConnection {
   private static instance: MongoDBConnection;
