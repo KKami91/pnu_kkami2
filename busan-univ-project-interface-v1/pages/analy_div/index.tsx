@@ -723,7 +723,7 @@ return (
     <AppSidebar />
     <SidebarInset>
       {/* <header className="sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4"> */}
-      <header className="sticky top-0 flex h-16 shrink-0 items-center justify-between border-b bg-background">
+      <header className="sticky top-0 flex h-16 shrink-0 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 z-50">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="ml-2" />
         <Separator orientation="vertical" className="mr-2 h-4" />
