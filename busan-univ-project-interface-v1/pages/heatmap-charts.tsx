@@ -52,7 +52,9 @@ if (error) {
 }
 
 return (
-  <div style={{ 
+  <div 
+  className="bg-blue-500"
+  style={{ 
     display: 'flex', 
     flexDirection: 'column', 
     alignItems: 'center', 
