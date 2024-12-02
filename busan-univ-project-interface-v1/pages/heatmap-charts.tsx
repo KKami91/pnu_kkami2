@@ -5,7 +5,7 @@ import SdnnCalendar from '../components/SdnnCalendar';
 import SdnnCalHeatmap from '../components/CalHeatMapSdnnMobile'
 import RmssdCalHeatmap from '../components/CalHeatMapRmssdMobile'
 
-const API_URL = 'https://heart-rate-app10-hotofhe3yq-du.a.run.app'
+const API_URL = 'https://heart-rate-app11-hotofhe3yq-du.a.run.app'
 
 interface HrvDayData {
   ds: string;
