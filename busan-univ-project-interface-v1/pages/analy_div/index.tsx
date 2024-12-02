@@ -513,13 +513,20 @@ const [users2, setUsers2] = useState<UserData[]>([]);
 useEffect(() => {
   const fetchUsers = async () => {
     try {
-      const response = await axios.post(`${API_URL}/user_data`);
-      setUsers2(response.data)
+      const userInfoUpdate = await axios.post(`${API_URL}/user_data`);
+      try {
+        //const response = await axios.post(`${API_URL}/user_data`);
+        const response = await axios.get(`/api/getUserInfo`);
+        console.log(response.data)
+        setUsers2(response.data)
+      } catch (error) {
+        console.error(error)
+      }     
     } catch (error) {
       console.error('error fetch user:', error);
     }
   };
-  console.log('..... in useEffect fetchUsers....', users2)
+  //console.log('..... in useEffect fetchUsers....', users2)
   fetchUsers();
 }, []);
 
@@ -615,11 +622,11 @@ function UserInfoDisplay({
         </div>
         <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>키</div> 
-            <div className='mr-8 text-[16px]'>{selectedUserInfo.user_height}cm</div>
+            <div className='mr-8 text-[16px]'>{selectedUserInfo.user_height === '정보 없음' ? '정보 없음' : `${selectedUserInfo.user_height}cm`}</div>
         </div>
         <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>몸무게</div> 
-            <div className='mr-8 text-[16px]'> {selectedUserInfo.user_weight}kg</div>
+            <div className='mr-8 text-[16px]'>{selectedUserInfo.user_weight === '정보 없음' ? '정보 없음' : `${selectedUserInfo.user_weight}kg`}</div>
         </div>
         {/* <div className='mr-8 mb-2 flex justify-end text-[12px]'> /96</div> */}
     </div>  
