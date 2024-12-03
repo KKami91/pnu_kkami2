@@ -105,6 +105,8 @@ interface UserData {
   user_gender: string;
   user_height: string;
   user_weight: string;
+  user_smoke: string;
+  user_birth: string;
 }
 
 interface UserInfoDisplayProps {
@@ -586,6 +588,17 @@ const handleDateChange = (date: Date) => {
   setSelectedDate(format(date, 'yyyy-MM-dd'));
 };
 
+const formatBirth = (user_birth: string) => {
+  const nowDate = new Date()
+  const userBirth = new Date(user_birth)
+  let age = nowDate.getFullYear() - userBirth.getFullYear()
+  const subMonth = nowDate.getMonth() - userBirth.getMonth()
+  if (subMonth < 0 || (subMonth === 0 && nowDate.getDate() < userBirth.getDate())) {
+    age = age - 1;
+  }
+  return <div>{Number.isNaN(age) ? '정보 없음' : age}</div>
+}
+
 function UserInfoDisplay({ 
   selectedUser, 
   users2,
@@ -600,9 +613,6 @@ function UserInfoDisplay({
 
   if (!selectedUser || !selectedUserInfo) return null;
 
-  console.log(selectedUserInfo)
-
-  console.log('isOpen --> ', isOpen)
 
   return (
     <Collapsible open={isOpen} onOpenChange={onOpenChange}>
@@ -615,6 +625,10 @@ function UserInfoDisplay({
         <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>이름</div> 
             <div className='mr-8 text-[16px]'>{selectedUserInfo.user_name}</div>
+        </div>
+        <div className='flex justify-between'>
+            <div className='ml-8 text-[16px]'>나이</div> 
+            <div className='mr-8 text-[16px]'>{formatBirth(selectedUserInfo.user_birth)}</div>
         </div>
         <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>성별</div>

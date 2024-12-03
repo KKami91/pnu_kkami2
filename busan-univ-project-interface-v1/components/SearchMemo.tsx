@@ -123,7 +123,7 @@ export default function SearchMemoData({ selectedUser }: SearchMemoDataProps) {
 
       {showResults && searchTerm.trim() && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-popover border rounded-md shadow-lg z-50">
-          <ScrollArea className="max-h-[calc(100vh-16rem)]">
+          <ScrollArea className="max-h-[calc(100vh-16rem)] overflow-y-auto">
             {results.length > 0 ? (
               <div className="p-2 space-y-2">
                 {results.map((result, index) => (
