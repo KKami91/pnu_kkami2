@@ -97,6 +97,17 @@ export default function SearchMemoData({ selectedUser }: SearchMemoDataProps) {
     };
   }, [debouncedSearch]);
 
+  const mapType = (type: string) => {
+    switch(type) {
+      case 'bpm': return 'BPM';
+      case 'step': return 'Step';
+      case 'calorie': return 'Calorie';
+      case 'sleep': return 'Sleep';
+      case 'day_memo': return 'Day';
+      default: return '';
+    }
+  }
+
   return (
     <div className="relative" ref={searchRef}>
       <div className="space-y-2">
@@ -136,7 +147,7 @@ export default function SearchMemoData({ selectedUser }: SearchMemoDataProps) {
                       {result.memo}
                     </div>
                     <div className="text-sm font-medium">
-                      ( {formatTime(result)} )
+                      ( {formatTime(result)} ) - {mapType(result.type)}
                     </div>
                   </div>
                 ))}
