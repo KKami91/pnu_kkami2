@@ -556,7 +556,7 @@ function NavUser() {
           </SidebarMenuButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent
-          className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
+          className="w-[--radix-dropdown-menu-trigger-width 100%] min-w-56 rounded-lg"
           side={isMobile ? "bottom" : "right"}
           align="start"
           sideOffset={4}
@@ -574,7 +574,7 @@ function NavUser() {
                   selectedUser === user.user_email ? "opacity-100" : "opacity-0"
                 }`}
               />
-              {user.user_email}
+              {user.user_email} ({user.user_name})
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
