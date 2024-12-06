@@ -247,7 +247,7 @@ const SdnnCalHeatmap: React.FC<SdnnCalHeatmapProps> = ({ hrvDayData, startDate }
                     }}
                 >
                     <p>{format(tooltip.date, 'yyyy-MM-dd')}</p>
-                    <p>RMSSD: {tooltip.sdnn !== null ? tooltip.sdnn.toFixed(2) : 'N/A'}</p>
+                    <p>SDNN: {tooltip.sdnn !== null ? tooltip.sdnn.toFixed(2) : 'N/A'}</p>
                 </div>
             )}
             <div className="flex justify-center" ref={calendarEl} style={{ height: '200px', width: '100%' }}></div>
