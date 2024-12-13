@@ -52,6 +52,7 @@ import { ArrowRightIcon } from '../../components/ui/ArrowRight';
 //import { Example } from '@/components/ui/test';
 import InputBox from '@/components/WriteInputBox';
 import SearchMemoData from '@/components/SearchMemo';
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DataResult {
   collection: string;
@@ -563,6 +564,7 @@ function NavUser() {
         >
           <DropdownMenuLabel>사용자 계정 선택</DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <ScrollArea className="h-[500px] overflow-y-auto">
           {users2.map((user) => (
             <DropdownMenuItem
               key={user.user_email}
@@ -577,6 +579,7 @@ function NavUser() {
               {user.user_email} ({user.user_name})
             </DropdownMenuItem>
           ))}
+          </ScrollArea>
         </DropdownMenuContent>
       </DropdownMenu>
     </SidebarMenuItem>
