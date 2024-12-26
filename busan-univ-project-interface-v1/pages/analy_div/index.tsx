@@ -76,13 +76,6 @@ interface AdditionalData {
   hrvData: any[];
 }
 
-interface SleepData {
-  timestamp_start: string;
-  timestamp_end: string;
-  type?: string;
-  stage: number;
-}
-
 interface DataItem {
   ds: string;
   timestamp: string;
@@ -97,7 +90,6 @@ interface DataItem {
   sdnn?: number;
   min_pred_bpm: number | null;
   pred_rmssd?: number;
-  //firstDate?: string;
 }
 
 interface UserData {
@@ -122,7 +114,6 @@ interface UserInfoSectionProps {
   users2: UserData[];
 }
 
-
 Page.getLayout = (page: React.ReactElement) => page;
 
 export default function Page() {
@@ -130,20 +121,18 @@ export default function Page() {
   const [message, setMessage] = useState('');
   const [isLoadingUser, setIsLoadingUser] = useState(false);
 
-  // 에러 처리를 위한 상태 추가
   const [dataError, setDataError] = useState<Error | null>(null);
 
-  // 데이터 유효성 검사를 위한 ref
   const isDataValid = useRef(false);
   const [isDataLoading, setIsDataLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // 분석 새창 로딩
+  const [isAnalysisLoading, setIsAnalysisLoading] = useState(false);
   const [firstSelectDate, setFirstSelectDate] = useState(true);
 
   const [selectedDate, setSelectedDate] = useState('');
-  const [showGraphs, setShowGraphs] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  const isFirstRender = useRef(true);
   const [saveDates, setSaveDates] = useState<string[]>([]);
 
   const [bpmData, setBpmData] = useState<DataItem[]>([]);
@@ -168,8 +157,7 @@ export default function Page() {
 
   const [heatmapSelectedDate, setHeatmapSelectedDate] = useState<Date | null>(null);
 
-  const [isUserInfoOpen, setIsUserInfoOpen] = useState(true);
-
+  console.log(new Date('2024-11-19T12:00:00'))
 
   const scrollToMultiChart = useCallback(() => {
     if (multiChartRef.current) {
@@ -191,7 +179,6 @@ export default function Page() {
 
   const fetchDataRanges = async (user: string) => {
     try {
-
       const collections = ['bpm', 'step', 'calorie'];
       const ranges = await Promise.all(collections.map(async (collection) => {
         const response = await axios.get('/api/getDataRange', {
@@ -220,19 +207,8 @@ export default function Page() {
     }
   }, [selectedUser]);
 
-  const getWeekRange = (date: Date) => {
-
-    const datePreviousMonday = previousMonday(startOfWeek(date, {weekStartsOn: 1}));
-    const dateNextSunday = nextSunday(endOfWeek(date, {weekStartsOn: 1}));
-
-    return { start: startOfDay(datePreviousMonday), end: dateNextSunday };
-  };
-
   const fetchData = async (collection: string, user: string, startDate: Date, endDate: Date) => {
     try {
-      const fetchStart = performance.now()
-
-      
 
       const utcStartDate = formatInTimeZone(startDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
       const utcEndDate = formatInTimeZone(endDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -241,22 +217,15 @@ export default function Page() {
         params: { 
           collection, 
           user_email: user, 
-
           startDate: utcStartDate,
           endDate: utcEndDate
-
         }
       });
-
-      const fetchEnd = performance.now()
-      //console.log(`In index ${collection} 걸린 시간 : ${fetchEnd - fetchStart} // ${startDate} ~ ${endDate}`)
       return response.data;
     } catch (error) {
-      console.error(`Error fetching ${collection} data:`, error);
       throw error;
     }
   };
-
 
   const handleBrushChange = (domain: [number, number] | null) => {
     //console.log("Brush domain changed2:", domain);
@@ -278,11 +247,9 @@ export default function Page() {
       setHeatmapSelectedDate(selectedDate);
       setSelectedDate(format(selectedDate, 'yyyy-MM-dd'));
 
-      // 데이터 유효성 확인
       isDataValid.current = true;
 
     } catch (error) {
-      console.error('Date selection error:', error);
       setDataError(error as Error);
       isDataValid.current = false;
     } finally {
@@ -298,20 +265,13 @@ export default function Page() {
     };
   }, [handleDateSelect]);
 
-  
-
-
-
   const fetchHrvData = useCallback(async (user: string, start: Date, end: Date) => {
     try {
 
       const utcStart = formatInTimeZone(start, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
       const utcEnd = formatInTimeZone(end, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
-      
       const response = await axios.get(`${API_URL}/feature_hour_div2/${user}/${new Date(utcStart).getTime()}/${new Date(utcEnd).getTime()}`);
-
-      console.log('555555555555 fetchHrvData : ',response.data)
 
       if (response.data && response.data.hour_hrv) {
         return response.data.hour_hrv.map((item: any) => ({
@@ -322,7 +282,6 @@ export default function Page() {
       return [];
 
     } catch (error) {
-      console.error('Error in fetchHrvData: ', error);
       return [];
     }
   }, [API_URL]);
@@ -330,9 +289,6 @@ export default function Page() {
   const fetchAdditionalData = useCallback((startDate: Date, endDate: Date): Promise<AdditionalData> => {
     if (!selectedUser) return Promise.resolve({ bpmData: [], stepData: [], calorieData: [], sleepData: [], hrvData: [] });
 
-    //console.log('in index fetchAddtionalData start, end ', startDate, endDate)
-
-    const fetchAdditionalDataStartTime = performance.now()
     return Promise.all([
       fetchData('bpm', selectedUser, startDate, endDate),
       fetchData('step', selectedUser, startDate, endDate),
@@ -341,18 +297,11 @@ export default function Page() {
       fetchHrvData(selectedUser, startDate, endDate),
     ])
       .then(([bpm, step, calorie, sleep, hrv]) => {
-      const fetchAdditionalDataEndTime = performance.now()
-      console.log('fetchAdditionalData fetchData 구간 및 최대 길이 및 걸린 시간 : ', startDate ,'~', endDate , Math.max(bpm.length, step.length, calorie.length, sleep.length, hrv.length) , '--->',fetchAdditionalDataEndTime - fetchAdditionalDataStartTime)
 
-      console.log('in fetchAddional ;; sleep ; ;',  sleep)
-      //console.log('fetch BPM Data : ', bpm)
-      
       const processedBpmData = bpm.map((item: DataItem) => ({
         ...item,
         timestamp: formatInTimeZone(new Date(item.timestamp), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
       }));
-
-      //console.log('precessed BPM Data : ', processedBpmData)
 
       const processedStepData = step.map((item: DataItem) => ({
         ...item,
@@ -369,8 +318,6 @@ export default function Page() {
         timestamp_start: formatInTimeZone(new Date(item.timestamp_start), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"),
         timestamp_end: formatInTimeZone(new Date(item.timestamp_end), 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
       }));
-
-      console.log('in index after processedSleepData : ', processedSleepData)
 
       const processedHrvData = hrv.map((item: DataItem) => ({
         ...item,
@@ -405,7 +352,6 @@ export default function Page() {
       setPredictMinuteData(minutePredictions);
       setPredictHourData(hourPredictions);
     } catch (error) {
-      console.error('Error in fetchPredictionData: ', error);
       setPredictMinuteData([]);
       setPredictHourData([]);
     }
@@ -414,7 +360,6 @@ export default function Page() {
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
-
     setSelectedUser(user)
     setSelectedDate('')
     setSaveDates([])
@@ -422,86 +367,29 @@ export default function Page() {
       setIsLoadingUser(true)
       setIsInitialLoading(true)
       try {
-        // checkDb 완료까지 대기
-        const checkDbStartTime = performance.now()
-        // 구조 변경에 의해 checkdb 필요없음
-        //await checkDb(user);
-        const checkDbEndTime = performance.now()
-        console.log('1. CheckDB 걸린 시간 : ', checkDbEndTime - checkDbStartTime)
-      } catch (error) {
-        console.error("checkDb에서 오류가 발생했습니다:", error);
-        setMessage(`Error occurred in checkDb: ${error instanceof Error ? error.message : String(error)}`);
-        setIsLoadingUser(false);
-        return; // 오류 발생 시 이후 코드 실행 중단
-      }
-
-      try {
-        // checkDb 완료 후에만 feature_day_div 호출
-
-        const featureStartDatesCountDataStartTime = performance.now()
         const [responseDay, userFirstDate, countDataResponse] = await Promise.all([
           axios.get(`${API_URL}/feature_day_div2/${user}`),
           axios.get(`${API_URL}/get_start_dates/${user}`),
           axios.get('/api/getCountData', { params: { user_email: user }},)
         ])
-        
-        const featureStartDatesCountDataEndTime = performance.now()
-        console.log('Day HRV, Start Date, CountData 걸린 시간 : ', featureStartDatesCountDataEndTime - featureStartDatesCountDataStartTime)
 
-        console.log('3333333333333333333333333333333in first getcountdata : ', countDataResponse.data)
-        
-        const predictStartTime = performance.now()
         await fetchPredictionData(user)
-        const predictEndTime = performance.now()
-        console.log('Predict 걸린 시간 : ', predictEndTime - predictStartTime)
 
         const userStartDate = userFirstDate.data.start_date;
-
-        // const responseDay = await axios.get(`${API_URL}/feature_day_div/${user}`);
-        // const userFirstDate = await axios.get(`${API_URL}/get_start_dates/${user}`);
-        // const userStartDate = userFirstDate.data.start_date;
   
         setFirstDate([userStartDate]);
         setHrvDayData(responseDay.data.day_hrv);
-        console.log('hadleUserSelect hrv data : ', responseDay.data.day_hrv)
-  
-        //const countDataResponse = await axios.get('/api/getCountData', { params: { user_email: user } });
-        //console.log(countDataResponse.data);
         setCountData(countDataResponse.data);
-  
-        //await fetchSaveDates(user);
+
       } catch (error) {
-        console.error("feature_day_div 또는 관련 API 호출 중 에러가 발생했습니다:", error);
         setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
         setIsLoadingUser(false);
       }
     }
   }
-  
-  const checkDb = async (user: string) => {
-    try {
-      await axios.post(`${API_URL}/check_db3_dynamodb`, { user_email: user })
-      
-    } catch (error) {
-      setMessage(`Error occurred: ${error instanceof Error ? error.message : String(error)}`)
-    }
-  }
-
-  const fetchSaveDates = async (user: string) => {
-    try {
-      const response = await axios.get(`${API_URL}/get_save_dates_div/${user}`);
-
-      setSaveDates(response.data.save_dates);
-
-    } catch (error) {
-      console.error('Error fetching save dates:', error);
-      setMessage(`Error fetching save dates: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
 
 const handleSelection = (email: string) => {
-  // HTMLSelectElement 이벤트를 시뮬레이션
   const event = {
     target: {
       value: email
@@ -516,9 +404,8 @@ const [users2, setUsers2] = useState<UserData[]>([]);
 useEffect(() => {
   const fetchUsers = async () => {
     try {
-      const userInfoUpdate = await axios.post(`${API_URL}/user_data`);
+      await axios.post(`${API_URL}/user_data`);
       try {
-        //const response = await axios.post(`${API_URL}/user_data`);
         const response = await axios.get(`/api/getUserInfo`);
         console.log(response.data)
         setUsers2(response.data)
@@ -529,15 +416,11 @@ useEffect(() => {
       console.error('error fetch user:', error);
     }
   };
-  //console.log('..... in useEffect fetchUsers....', users2)
   fetchUsers();
 }, []);
 
-
 function NavUser() {
   const { isMobile } = useSidebar()
-
-
   return (
     <SidebarMenu>
     <SidebarMenuItem>
@@ -552,7 +435,6 @@ function NavUser() {
                 {selectedUser || "계정 선택"}
               </span>
             </div>
-            {/* <ChevronsUpDown className="ml-auto size-4" /> */}
             <ArrowRightIcon />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
@@ -564,7 +446,10 @@ function NavUser() {
         >
           <DropdownMenuLabel>사용자 계정 선택</DropdownMenuLabel>
           <DropdownMenuSeparator />
+          {/* <ScrollArea className="max-h-[calc(100vh-16rem)] overflow-y-auto"> */}
+          
           <ScrollArea className="h-[500px] overflow-y-auto">
+
           {users2.map((user) => (
             <DropdownMenuItem
               key={user.user_email}
@@ -602,20 +487,21 @@ const formatBirth = (user_birth: string) => {
   return <div>{Number.isNaN(age) ? '정보 없음' : age}</div>
 }
 
+
+
+
 function UserInfoDisplay({ 
   selectedUser, 
   users2,
   isOpen,
   onOpenChange
 }: UserInfoDisplayProps) {
-  //const selectedUserInfo = users2.find(user => user.user_email === selectedUser)
   const selectedUserInfo = useMemo(() => 
     users2.find(user => user.user_email === selectedUser),
     [users2, selectedUser]
   );
 
   if (!selectedUser || !selectedUserInfo) return null;
-
 
   return (
     <Collapsible open={isOpen} onOpenChange={onOpenChange}>
@@ -645,7 +531,6 @@ function UserInfoDisplay({
             <div className='ml-8 text-[16px]'>몸무게</div> 
             <div className='mr-8 text-[16px]'>{selectedUserInfo.user_weight === '정보 없음' ? '정보 없음' : `${selectedUserInfo.user_weight}kg`}</div>
         </div>
-        {/* <div className='mr-8 mb-2 flex justify-end text-[12px]'> /96</div> */}
     </div>  
     </CollapsibleContent>
 </Collapsible>
@@ -665,12 +550,12 @@ const UserInfoSection = React.memo(function UserInfoSection({
   return (
     <>
       <MemoizedSeparator />
-      <UserInfoDisplay
+      <MemoizedUserInfoDisplay
         selectedUser={selectedUser}
         users2={users2}
         isOpen={isUserInfoOpen}
         onOpenChange={setIsUserInfoOpen}
-        />
+      />
     </>
   )
 })
@@ -678,25 +563,27 @@ const UserInfoSection = React.memo(function UserInfoSection({
 const MemoizedDataAvailabilityCalendar = React.memo(DataAvailabilityCalendar2);
 const MemoizedInputBox = React.memo(InputBox);
 
+const MemoizedUserInfoDisplay = React.memo(UserInfoDisplay, (prevProps, nextProps) => {
+  return (
+    prevProps.selectedUser === nextProps.selectedUser &&
+    prevProps.isOpen === nextProps.isOpen &&
+    prevProps.users2 === nextProps.users2
+  );
+});
+
+const MemoizedNavUser = React.memo(NavUser, (prevProps, nextProps) => {
+  // NavUser는 props가 없으므로 단순 React.memo만으로도 충분
+  return true;
+});
 
 function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  console.log('리렌더링?')
   return (
     <Sidebar {...props}>
       <SidebarHeader className="h-16 border-b border-sidebar-border">
-        <NavUser/>
+        <MemoizedNavUser/>
       </SidebarHeader>
       <SidebarContent>
-        {/* <DatePicker /> */}
-        {/* <SidebarSeparator className="mx-0" /> */}
         <MemoizedSeparator />
-        {/* <DataAvailabilityCalendar2 
-        countData={countData} 
-        selectedUser={selectedUser} 
-        heatmapDate={heatmapSelectedDate}
-        hrvDayData={hrvDayData}
-        onDateChange={handleDateChange}
-        /> */}
         <MemoizedDataAvailabilityCalendar
         countData={countData}
         selectedUser={selectedUser}
@@ -704,17 +591,13 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         hrvDayData={hrvDayData}
         onDateChange={handleDateChange}
         />
-      {/* {selectedUser && <SidebarSeparator className="mx-0 border-b" />}
-      {selectedUser && <UserInfoDisplay selectedUser={selectedUser} users2={users2}/>} */}
       <UserInfoSection selectedUser={selectedUser} users2={users2} />
-      {/* {selectedUser && <SidebarSeparator className="mx-0 border-b" />} */}
       {selectedUser && (
         <>
           <MemoizedSeparator />
           <MemoizedInputBox selectedDate={selectedDate} selectedUser={selectedUser} />
         </>
       )}
-      {/* {selectedUser && <InputBox selectedDate={selectedDate} selectedUser={selectedUser}/>} */}
       </SidebarContent>
       <SidebarRail />
     </Sidebar>
@@ -722,7 +605,6 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 }
 
 const shouldRenderMultiChart = useMemo(() => {
-  //console.log('?aaaaaaaaaa???')
   return (
     !isDataLoading &&
     selectedUser &&
@@ -740,13 +622,43 @@ const ErrorFallback = ({ error }: { error: Error }) => (
   </div>
 );
 
-return (
-  // <div className={styles.container} h-auto max-h-fit>
+const userDataImage = async (userEmail: string) => {
+  try {
+    setIsAnalysisLoading(true);
+    const response = await axios.post(
+      `${API_URL}/user_analysis/${userEmail}`,
+      {},
+      {
+        responseType: "blob",
+      }
+    );
+    const url = URL.createObjectURL(response.data);
+    const newWindow = window.open();
+    if (newWindow) {
+      newWindow.document.write(
+        `<html>
+          <head>
+            <title>User Analysis</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+          </head>
+          <body class="m-0 flex items-center justify-center h-screen bg-gray-100">
+            <img src="${url}" alt="User Analysis" class="max-w-full max-h-full mt-10"/>
+          </body>
+        </html>`
+      );
+      newWindow.document.close();
+    }
+  } catch (error) {
+    console.error("error : ", error);
+  } finally {
+    setIsAnalysisLoading(false);
+  }
+}
 
+return (
   <SidebarProvider>
     <AppSidebar />
     <SidebarInset>
-      {/* <header className="sticky top-0 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4"> */}
       <header className="sticky top-0 flex h-16 shrink-0 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 z-50">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="ml-2" />
@@ -754,8 +666,16 @@ return (
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbPage>{selectedUser}</BreadcrumbPage>
+              { selectedUser &&
+                <BreadcrumbPage>{selectedUser}</BreadcrumbPage>
+              }
               {isLoadingUser && <LoadingSpinner />}
+              { selectedUser &&
+                <div>
+                  <button className='text-sm bg-blue-500 text-white rounded px-3.5 py-1.5 ml-2' onClick={() => userDataImage(selectedUser)}>User Analysis Button</button>
+                </div>
+              }
+              {isAnalysisLoading  && <LoadingSpinner />}
             </BreadcrumbItem>
           </BreadcrumbList>          
         </Breadcrumb>
@@ -807,6 +727,5 @@ return (
       </div>
     </SidebarInset>
   </SidebarProvider>
-      // </div>
   );
 }
