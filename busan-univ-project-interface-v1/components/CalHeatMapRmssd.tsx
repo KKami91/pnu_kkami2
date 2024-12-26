@@ -80,7 +80,7 @@ const RmssdCalHeatmap: React.FC<RmssdCalHeatmapProps> = ({ hrvDayData, startDate
             const adjustedData = hrvDayData.map(item => ({
                 ...item,
                 day_rmssd: item.day_rmssd === null ? undefined : item.day_rmssd,
-                ds: format(formatInTimeZone(addDays(addHours(new Date(item.ds), 9), 1), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
+                ds: format(formatInTimeZone(addHours(new Date(item.ds), 9), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
             }));
 
             newCal.paint({
