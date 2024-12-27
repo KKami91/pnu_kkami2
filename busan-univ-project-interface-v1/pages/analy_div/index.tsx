@@ -622,11 +622,11 @@ const ErrorFallback = ({ error }: { error: Error }) => (
   </div>
 );
 
-const userDataImage = async (userEmail: string) => {
+const userBPMImage = async (userEmail: string) => {
   try {
     setIsAnalysisLoading(true);
     const response = await axios.post(
-      `${API_URL}/user_analysis/${userEmail}`,
+      `${API_URL}/user_analysis_bpm/${userEmail}`,
       {},
       {
         responseType: "blob",
@@ -638,12 +638,49 @@ const userDataImage = async (userEmail: string) => {
       newWindow.document.write(
         `<html>
           <head>
-            <title>User Analysis</title>
+            <title>${selectedUser} BPM Analysis</title>
             <script src="https://cdn.tailwindcss.com"></script>
           </head>
-          <body class="m-0 flex items-center justify-center h-screen bg-gray-100">
-            <img src="${url}" alt="User Analysis" class="max-w-full max-h-full mt-10"/>
-          </body>
+            <body class="m-0 bg-gray-100 p-4 overflow-auto">
+              <div class="flex justify-center">
+                <img src="${url}" alt="${selectedUser} Analysis BPM" class="w-auto"/>
+              </div>
+            </body>
+        </html>`
+      );
+      newWindow.document.close();
+    }
+  } catch (error) {
+    console.error("error : ", error);
+  } finally {
+    setIsAnalysisLoading(false);
+  }
+}
+
+const userSleepImage = async (userEmail: string) => {
+  try {
+    setIsAnalysisLoading(true);
+    const response = await axios.post(
+      `${API_URL}/user_analysis_sleep/${userEmail}`,
+      {},
+      {
+        responseType: "blob",
+      }
+    );
+    const url = URL.createObjectURL(response.data);
+    const newWindow = window.open();
+    if (newWindow) {
+      newWindow.document.write(
+        `<html>
+          <head>
+            <title>${selectedUser} Sleep Analysis</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+          </head>
+            <body class="m-0 bg-gray-100 p-4 overflow-auto">
+              <div class="flex justify-center">
+                <img src="${url}" alt="${selectedUser} Analysis Sleep" class="w-auto"/>
+              </div>
+            </body>
         </html>`
       );
       newWindow.document.close();
@@ -671,8 +708,24 @@ return (
               }
               {isLoadingUser && <LoadingSpinner />}
               { selectedUser &&
-                <div>
-                  <button className='text-sm bg-blue-500 text-white rounded px-3.5 py-1.5 ml-2' onClick={() => userDataImage(selectedUser)}>User Analysis Button</button>
+                <div className="flex items-center">
+                  {/* <ArrowRightIcon /> */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button className="text-sm bg-blue-500 text-white rounded px-3.5 py-1.5 ml-2 flex items-center">
+                        Analysis Options
+                        <ChevronDown className="ml-1 h-4 w-4" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => userBPMImage(selectedUser)}>
+                        BPM Analysis
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => userSleepImage(selectedUser)}>
+                        Sleep Analysis
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               }
               {isAnalysisLoading  && <LoadingSpinner />}
