@@ -692,6 +692,41 @@ const userSleepImage = async (userEmail: string) => {
   }
 }
 
+const userStepImage = async (userEmail: string) => {
+  try {
+    setIsAnalysisLoading(true);
+    const response = await axios.post(
+      `${API_URL}/user_analysis_step/${userEmail}`,
+      {},
+      {
+        responseType: "blob",
+      }
+    );
+    const url = URL.createObjectURL(response.data);
+    const newWindow = window.open();
+    if (newWindow) {
+      newWindow.document.write(
+        `<html>
+          <head>
+            <title>${selectedUser} step Analysis</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+          </head>
+            <body class="m-0 bg-gray-100 p-4 overflow-auto">
+              <div class="flex justify-center">
+                <img src="${url}" alt="${selectedUser} Analysis step" class="w-auto"/>
+              </div>
+            </body>
+        </html>`
+      );
+      newWindow.document.close();
+    }
+  } catch (error) {
+    console.error("error : ", error);
+  } finally {
+    setIsAnalysisLoading(false);
+  }
+}
+
 return (
   <SidebarProvider>
     <AppSidebar />
@@ -723,6 +758,9 @@ return (
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => userSleepImage(selectedUser)}>
                         Sleep Analysis
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => userStepImage(selectedUser)}>
+                        Step Analysis
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
