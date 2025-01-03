@@ -1,5 +1,5 @@
 import "../styles/globals.css";
-import { ReactElement, ReactNode, useState } from "react";
+import { ReactElement, ReactNode, useState, useEffect } from "react";
 import type { AppProps } from "next/app";
 import { NextPage } from "next";
 import { RecoilRoot, useRecoilValue } from "recoil";
@@ -27,35 +27,37 @@ const BubbleChat = dynamic(
 
 function ChatWrapper() {
   const selectedEmail = useRecoilValue(selectedUserState);
+  const [debugMessage, setDebugMessage] = useState<string>('');
+
+  useEffect(() => {
+    console.log('Selected Email changed:', selectedEmail);
+  }, [selectedEmail]);
 
   return (
-    <BubbleChat
-      chatflowid="f2866a89-adb8-4a52-b9e0-534b2be3e064"
-      apiHost="https://flowise-6pxd.onrender.com"
-      theme={{ 
-        chatWindow: { 
-          poweredByTextColor: "#fff", 
-          welcomeMessage: "사용자 데이터 분석 챗봇입니다. (사용 예시 : 사용자 정보, YYYY년 MM월 DD일 HH시 (BPM, Step, Calorie, Sleep) 데이터를 알려줘) ",
-          backgroundColor: "#192231",
-          height: 600,
-          width: 400,
-          fontSize: 14,
-          botMessage: {
-            backgroundColor: '#2D3748',
-            textColor: '#fff',
-            showAvatar: true
-          },
-          userMessage: {
-            backgroundColor: '#4A5568',
-            textColor: '#fff',
-            showAvatar: true
+    <>
+      {debugMessage && (
+        <div style={{ position: 'fixed', bottom: 100, right: 20, background: 'red', color: 'white', padding: '5px' }}>
+          {debugMessage}
+        </div>
+      )}
+      <BubbleChat
+        chatflowid="f2866a89-adb8-4a52-b9e0-534b2be3e064"
+        apiHost="https://flowise-6pxd.onrender.com"
+        theme={
+          { 
+            chatWindow: { 
+              poweredByTextColor: "#fff", 
+              welcomeMessage: "사용자 데이터 분석 챗봇입니다. (사용 예시 : 사용자 정보, YYYY년 MM월 DD일 HH시 (BPM, Step, Calorie, Sleep) 데이터를 알려줘) "
+            }
           }
         }
-      }}
-      chatflowConfig={{
-        systemMessage: selectedEmail ? `현재 선택된 사용자: ${selectedEmail}` : '사용자를 선택하지 않음..',
-      }}
-    />
+        chatflowConfig={{
+          systemMessage: selectedEmail ? `현재 선택된 사용자: ${selectedEmail}` : '사용자를 선택하지 않음..',
+          //predefinedMessages: selectedEmail ? [`Selected user email: ${selectedEmail}`] : [],
+        }}
+        
+      />
+    </>
   );
 }
 

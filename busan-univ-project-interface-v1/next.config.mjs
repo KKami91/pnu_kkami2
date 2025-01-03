@@ -68,6 +68,14 @@ const nextConfig = {
       },
     ];
   },
+  async rewrites() {
+    return [
+      {
+        source: '/flowise-api/:path*',
+        destination: 'https://flowise-6pxd.onrender.com/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
