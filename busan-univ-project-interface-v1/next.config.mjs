@@ -24,6 +24,7 @@ const nextConfig = {
         tls: false,
       }
     }
+    config.externals = [...(config.externals || []), { 'utf-8-validate': 'utf-8-validate' }];
     return config
   },
   experimental: {
@@ -54,7 +55,19 @@ const nextConfig = {
     '@radix-ui/react-use-layout-effect',
     'aria-hidden',
     'react-remove-scroll-bar'
-  ]
+  ],
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,DELETE,OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type' },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

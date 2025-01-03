@@ -1,5 +1,5 @@
 import "../styles/globals.css";
-import { ReactElement, ReactNode } from "react";
+import { ReactElement, ReactNode, useState } from "react";
 import type { AppProps } from "next/app";
 import { NextPage } from "next";
 import { RecoilRoot, useRecoilValue } from "recoil";
@@ -27,6 +27,7 @@ const BubbleChat = dynamic(
 
 function ChatWrapper() {
   const selectedEmail = useRecoilValue(selectedUserState);
+  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <BubbleChat
@@ -38,7 +39,18 @@ function ChatWrapper() {
           welcomeMessage: "사용자 데이터 분석 챗봇입니다. (사용 예시 : 사용자 정보, YYYY년 MM월 DD일 HH시 (BPM, Step, Calorie, Sleep) 데이터를 알려줘) ",
           backgroundColor: "#192231",
           height: '600px',
-          width: '400px'
+          width: '400px',
+          fontSize: '14px',
+          messageStyles: {
+            default: {
+              backgroundColor: '#2D3748',
+              color: '#fff',
+            },
+            user: {
+              backgroundColor: '#4A5568',
+              color: '#fff',
+            }
+          }
         }
       }}
       chatflowConfig={{
@@ -46,10 +58,17 @@ function ChatWrapper() {
       }}
       onError={(error) => {
         console.error('Flowise Chat Error:', error);
+        setIsLoading(false);
       }}
       onResponse={(response) => {
         console.log('Flowise Response:', response);
+        setIsLoading(false);
       }}
+      onLoading={(loading) => {
+        setIsLoading(loading);
+        console.log('Loading state:', loading);
+      }}
+      isStreaming={false}
     />
   );
 }
