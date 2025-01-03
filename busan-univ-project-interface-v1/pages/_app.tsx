@@ -38,9 +38,9 @@ function ChatWrapper() {
           poweredByTextColor: "#fff", 
           welcomeMessage: "사용자 데이터 분석 챗봇입니다. (사용 예시 : 사용자 정보, YYYY년 MM월 DD일 HH시 (BPM, Step, Calorie, Sleep) 데이터를 알려줘) ",
           backgroundColor: "#192231",
-          height: '600px',
-          width: '400px',
-          fontSize: '14px',
+          height: 600,
+          width: 400,
+          fontSize: 14,
           messageStyles: {
             default: {
               backgroundColor: '#2D3748',
@@ -56,15 +56,15 @@ function ChatWrapper() {
       chatflowConfig={{
         systemMessage: selectedEmail ? `현재 선택된 사용자: ${selectedEmail}` : '사용자를 선택하지 않음..',
       }}
-      onError={(error) => {
+      onError={(error: unknown) => {
         console.error('Flowise Chat Error:', error);
         setIsLoading(false);
       }}
-      onResponse={(response) => {
+      onResponse={(response: unknown) => {
         console.log('Flowise Response:', response);
         setIsLoading(false);
       }}
-      onLoading={(loading) => {
+      onLoading={(loading: boolean) => {
         setIsLoading(loading);
         console.log('Loading state:', loading);
       }}
@@ -84,7 +84,7 @@ function MyApp({ Component, pageProps, router }: AppPropsWithLayout) {
 
   const getLayout = isPageWithoutLayout(Component.name)
     ? (page: ReactElement) => page
-    : Component.getLayout ?? ((page) => <DefaultLayout>{page}</DefaultLayout>);
+    : Component.getLayout ?? ((page: ReactElement) => <DefaultLayout>{page}</DefaultLayout>);
 
   return (
     <RecoilRoot>
