@@ -41,15 +41,15 @@ function ChatWrapper() {
           height: 600,
           width: 400,
           fontSize: 14,
-          messageStyles: {
-            default: {
-              backgroundColor: '#2D3748',
-              color: '#fff',
-            },
-            user: {
-              backgroundColor: '#4A5568',
-              color: '#fff',
-            }
+          botMessage: {
+            backgroundColor: '#2D3748',
+            textColor: '#fff',
+            showAvatar: true
+          },
+          userMessage: {
+            backgroundColor: '#4A5568',
+            textColor: '#fff',
+            showAvatar: true
           }
         }
       }}
