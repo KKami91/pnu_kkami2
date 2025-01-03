@@ -27,7 +27,6 @@ const BubbleChat = dynamic(
 
 function ChatWrapper() {
   const selectedEmail = useRecoilValue(selectedUserState);
-  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <BubbleChat
@@ -56,19 +55,6 @@ function ChatWrapper() {
       chatflowConfig={{
         systemMessage: selectedEmail ? `현재 선택된 사용자: ${selectedEmail}` : '사용자를 선택하지 않음..',
       }}
-      onError={(error: unknown) => {
-        console.error('Flowise Chat Error:', error);
-        setIsLoading(false);
-      }}
-      onResponse={(response: unknown) => {
-        console.log('Flowise Response:', response);
-        setIsLoading(false);
-      }}
-      onLoading={(loading: boolean) => {
-        setIsLoading(loading);
-        console.log('Loading state:', loading);
-      }}
-      isStreaming={false}
     />
   );
 }
