@@ -1,5 +1,3 @@
-"use client"
-
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import axios from 'axios'
 import MultiChart from '../../components/MultiChart4';
@@ -43,21 +41,23 @@ import {
   CollapsibleTrigger 
 } from "@/components/ui/collapsible"
 import CombinedHrvHeatmap from '../../components/CombinedHrvHeatmap';
-import dynamic from 'next/dynamic';
 import { formatInTimeZone } from 'date-fns-tz';
-import { format, startOfWeek, endOfWeek, addDays, nextSunday, startOfDay, endOfDay, previousMonday} from 'date-fns';
+import { format, addDays } from 'date-fns';
 import DataAvailabilityCalendar2 from '../../components/DataCountCalendar2'
-//import { MenuIcon } from '../../components/ui/MenuIcon';
 import { ArrowRightIcon } from '../../components/ui/ArrowRight';
-//import { Example } from '@/components/ui/test';
 import InputBox from '@/components/WriteInputBox';
 import SearchMemoData from '@/components/SearchMemo';
 import { ScrollArea } from "@/components/ui/scroll-area";
+
+// 전역상태
+import { useRecoilState } from 'recoil';
+import { selectedUserState } from '@/state/useState';
 
 interface DataResult {
   collection: string;
   data: { _id: string; count: number }[];
 }
+
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'sueun4701@gmail.com', 'psy.suh.hg@gmail.com']
 const API_URL = 'https://heart-rate-app11-hotofhe3yq-du.a.run.app'
@@ -117,7 +117,9 @@ interface UserInfoSectionProps {
 Page.getLayout = (page: React.ReactElement) => page;
 
 export default function Page() {
-  const [selectedUser, setSelectedUser] = useState('');
+  // const [selectedUser, setSelectedUser] = useState('');
+  // 전역
+  const [selectedUser, setSelectedUser] = useRecoilState(selectedUserState)
   const [message, setMessage] = useState('');
   const [isLoadingUser, setIsLoadingUser] = useState(false);
 
