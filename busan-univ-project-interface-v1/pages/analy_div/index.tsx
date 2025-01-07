@@ -341,15 +341,37 @@ export default function Page() {
   }, [selectedUser, fetchData, fetchHrvData]);
   
 
+  // const fetchPredictionData = async (user: string) => {
+  //   try {
+  //     const [minuteResponse, hourResponse] = await Promise.all([
+  //       axios.get(`${API_URL}/predict_minute_div/${user}`),
+  //       axios.get(`${API_URL}/predict_hour_div/${user}`)
+  //     ]);
+
+  //     const minutePredictions = minuteResponse.data.min_pred_bpm || [];
+  //     const hourPredictions = hourResponse.data.hour_pred_bpm || [];
+
+  //     setPredictMinuteData(minutePredictions);
+  //     setPredictHourData(hourPredictions);
+  //   } catch (error) {
+  //     setPredictMinuteData([]);
+  //     setPredictHourData([]);
+  //   }
+  // }
+
   const fetchPredictionData = async (user: string) => {
     try {
       const [minuteResponse, hourResponse] = await Promise.all([
-        axios.get(`${API_URL}/predict_minute_div/${user}`),
-        axios.get(`${API_URL}/predict_hour_div/${user}`)
+        axios.get('api/getPredBpm', { params: { user_email: user, collection: 'min_pred_bpm'} }),
+        axios.get('api/getPredBpm', { params: { user_email: user, collection: 'hour_pred_bpm'} }),
       ]);
 
-      const minutePredictions = minuteResponse.data.min_pred_bpm || [];
-      const hourPredictions = hourResponse.data.hour_pred_bpm || [];
+      console.log('In fetchPredictionData : ', minuteResponse);
+
+      const minutePredictions = minuteResponse.data || [];
+      const hourPredictions = hourResponse.data || [];
+
+      console.log('In fetchPredictionData : ', minutePredictions);
 
       setPredictMinuteData(minutePredictions);
       setPredictHourData(hourPredictions);
