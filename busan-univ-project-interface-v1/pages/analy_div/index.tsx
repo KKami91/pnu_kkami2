@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/collapsible"
 import CombinedHrvHeatmap from '../../components/CombinedHrvHeatmap';
 import { formatInTimeZone } from 'date-fns-tz';
-import { format, addDays } from 'date-fns';
+import { format, addDays, startOfDay, endOfDay, subDays, addHours } from 'date-fns';
 import DataAvailabilityCalendar2 from '../../components/DataCountCalendar2'
 import { ArrowRightIcon } from '../../components/ui/ArrowRight';
 import InputBox from '@/components/WriteInputBox';
@@ -50,13 +50,21 @@ import SearchMemoData from '@/components/SearchMemo';
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 // 전역상태
-import { useRecoilState } from 'recoil';
-import { selectedUserState } from '@/state/useState';
+import { useRecoilState, useRecoilValue } from 'recoil';
+import { selectedUserState, analysisDataState } from '@/state/useState';
+
+// html2canvas
+import html2canvas from 'html2canvas';
+import { Card } from '@/components/ui/card';
+{/* <CaptureContainer>
+
+</CaptureContainer> */}
 
 interface DataResult {
   collection: string;
   data: { _id: string; count: number }[];
 }
+
 
 
 const users = ['hswchaos@gmail.com', 'subak63@gmail.com', '27hyobin@gmail.com', 'skdlove1009@gmail.com', 'sueun4701@gmail.com', 'psy.suh.hg@gmail.com']
@@ -114,6 +122,32 @@ interface UserInfoSectionProps {
   users2: UserData[];
 }
 
+interface AnalyData {
+  meanBpm: number;
+  sumStep: number;
+  sumCalorie: number;
+  sumSleep: number;
+  sleepQuality: number;
+}
+
+interface DayAnalysisData {
+  date: string;
+  analysis: AnalyData;
+}
+
+interface SleepData {
+  timestamp_start: string;
+  timestamp_end: string;
+  type?: string;
+  value: number;
+}
+
+interface DayHrvData {
+  ds: string;
+  day_rmssd: number;
+  day_sdnn: number;
+}
+
 Page.getLayout = (page: React.ReactElement) => page;
 
 export default function Page() {
@@ -148,7 +182,7 @@ export default function Page() {
 
   const [viewMode, setViewMode] = useState<'combined' | 'multi' | 'echarts'>('multi');
 
-  const [hrvHourData, setHrvHourData] = useState<any[]>([]);
+  const [hrvHourData, setHrvHourData] = useState<DayHrvData[]>([]);
   const [hrvDayData, setHrvDayData] = useState<any[]>([]);
 
   const [initialDateWindow, setInitialDateWindow] = useState<{ start: Date; end: Date } | null>(null);
@@ -159,7 +193,16 @@ export default function Page() {
 
   const [heatmapSelectedDate, setHeatmapSelectedDate] = useState<Date | null>(null);
 
-  console.log(new Date('2024-11-19T12:00:00'))
+  const analysisData = useRecoilValue(analysisDataState);
+
+  const [dailyAnalysis, setDailyAnalysis] = useState<DayAnalysisData[]>([]);
+
+  const [analysisHrvData, setAnalysisHrvData] = useState<DayHrvData[] | null>(null);
+
+  const [userInfoData, setUserInfoData] = useState<UserData | null>(null);
+
+  const [analysisResult, setAnalysisResult] = useState<string>('');
+  
 
   const scrollToMultiChart = useCallback(() => {
     if (multiChartRef.current) {
@@ -233,39 +276,9 @@ export default function Page() {
     //console.log("Brush domain changed2:", domain);
   };
 
-  const handleDateSelect = useCallback(async (event: Event) => {
-    const customEvent = event as CustomEvent<{ date: string }>;
-    const { date } = customEvent.detail;
 
-    try {
-      setIsDataLoading(true);
-      setDataError(null);
 
-      if (!selectedUser) {
-        throw new Error('사용자가 선택되지 않았습니다.');
-      }
 
-      const selectedDate = new Date(date);
-      setHeatmapSelectedDate(selectedDate);
-      setSelectedDate(format(selectedDate, 'yyyy-MM-dd'));
-
-      isDataValid.current = true;
-
-    } catch (error) {
-      setDataError(error as Error);
-      isDataValid.current = false;
-    } finally {
-      setIsDataLoading(false);
-      setFirstSelectDate(false);
-    }
-}, [selectedUser]);
-
-  useEffect(() => {
-    window.addEventListener('dateSelect', handleDateSelect);
-    return () => {
-      window.removeEventListener('dateSelect', handleDateSelect);
-    };
-  }, [handleDateSelect]);
 
   const fetchHrvData = useCallback(async (user: string, start: Date, end: Date) => {
     try {
@@ -340,6 +353,7 @@ export default function Page() {
     });
   }, [selectedUser, fetchData, fetchHrvData]);
   
+  
 
   // const fetchPredictionData = async (user: string) => {
   //   try {
@@ -348,8 +362,12 @@ export default function Page() {
   //       axios.get(`${API_URL}/predict_hour_div/${user}`)
   //     ]);
 
+  //     console.log('In fetchPredictionData : ', minuteResponse);
+
   //     const minutePredictions = minuteResponse.data.min_pred_bpm || [];
   //     const hourPredictions = hourResponse.data.hour_pred_bpm || [];
+
+  //     console.log('In fetchPredictionData : ', minutePredictions);
 
   //     setPredictMinuteData(minutePredictions);
   //     setPredictHourData(hourPredictions);
@@ -381,6 +399,30 @@ export default function Page() {
     }
   }
 
+  /////
+//   useEffect(() => {
+
+//     if (selectedUser && !selectedDate) {
+//       console.log('------------------------------------->>>>>>>> ', hrvDayData.map(item => ({
+//         ...item,
+//         ds: format(formatInTimeZone(addHours(new Date(item.ds), 9), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
+//     })))
+//         const adjustedData = hrvDayData.map(item => ({
+//             ...item,
+//             ds: format(formatInTimeZone(addHours(new Date(item.ds), 9), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
+//         }))
+//         console.log('<<<<<<<-----------------2222', adjustedData)
+//         console.log('<<<<<<<-----------------4444444', analysisHrvData)
+//         setAnalysisHrvData(adjustedData)
+//         console.log('<<<<<<<-----------------', adjustedData)
+//         console.log('<<<<<<<----------------3333333-', analysisHrvData)
+//         // console.log('??aaaaaaaaaaaa?',analysisHrvData)
+//         // console.log('??bbbbbbbbbbbbb?',adjustedData)
+//         const lastDate = selectedDate || new Date();
+        
+//     }
+// }, [selectedUser]);
+////
 
   const handleUserSelect = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const user = e.target.value
@@ -397,12 +439,34 @@ export default function Page() {
           axios.get('/api/getCountData', { params: { user_email: user }},)
         ])
 
+        console.log('in index get start date : ',userFirstDate)
+
+
+        const dayHrvData = responseDay.data.day_hrv as DayHrvData[];
+
         await fetchPredictionData(user)
+
+        console.log('in handleUserSelect responseDay.data.day_hrv ---> ', responseDay.data.day_hrv)
+        
 
         const userStartDate = userFirstDate.data.start_date;
   
         setFirstDate([userStartDate]);
-        setHrvDayData(responseDay.data.day_hrv);
+
+      
+        setHrvDayData(dayHrvData);
+        console.log('in handleUserSelecte hrvDayData ---> ', dayHrvData)
+
+        const adjustedData = dayHrvData.map(item => ({
+          ...item,
+          ds: format(formatInTimeZone(addHours(new Date(item.ds), 9), 'UTC', 'yyyy-MM-dd HH:mm:ssXXX'), 'yyyy-MM-dd')
+        }))
+        console.log('in handleUserSelecte222 adjustedData ---> ', adjustedData)
+
+        
+        setAnalysisHrvData(adjustedData)
+        console.log('in handleUserSelecte222 analysisHrvData ---> ', analysisHrvData)
+
         setCountData(countDataResponse.data);
 
       } catch (error) {
@@ -412,6 +476,10 @@ export default function Page() {
       }
     }
   }
+
+useEffect(() => {
+  console.log('후 ', analysisHrvData)
+}, [selectedDate])
 
 const handleSelection = (email: string) => {
   const event = {
@@ -524,6 +592,9 @@ function UserInfoDisplay({
     users2.find(user => user.user_email === selectedUser),
     [users2, selectedUser]
   );
+  if (selectedUserInfo) {
+    setUserInfoData(selectedUserInfo);
+  }
 
   if (!selectedUser || !selectedUserInfo) return null;
 
@@ -541,7 +612,9 @@ function UserInfoDisplay({
         </div>
         <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>나이</div> 
-            <div className='mr-8 text-[16px]'>{formatBirth(selectedUserInfo.user_birth)}</div>
+            <div className='mr-8 text-[16px]'>
+              {userInfoData?.user_birth ? formatBirth(userInfoData.user_birth) : '정보 없음'}
+            </div>
         </div>
         <div className='flex justify-between'>
             <div className='ml-8 text-[16px]'>성별</div>
@@ -600,7 +673,31 @@ const MemoizedNavUser = React.memo(NavUser, (prevProps, nextProps) => {
   return true;
 });
 
+const fetchDataForCalc = async (collection: string, user: string, startDate: Date, endDate: Date) => {
+  try {
+    const utcStartDate = formatInTimeZone(startDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    const utcEndDate = formatInTimeZone(endDate, 'UTC', "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    const response = await axios.get('/api/getData3_agg', {
+      params: {
+        collection,
+        user_email: user,
+        startDate: utcStartDate,
+        endDate: utcEndDate
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error(error)
+    throw error;
+  }
+}
+
+
+
 function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  console.log('--APPSIDEBAR--')
+  console.log(selectedDate)
+  console.log('--APPSIDEBAR--')
   return (
     <Sidebar {...props}>
       <SidebarHeader className="h-16 border-b border-sidebar-border">
@@ -614,7 +711,9 @@ function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         heatmapDate={heatmapSelectedDate}
         hrvDayData={hrvDayData}
         onDateChange={handleDateChange}
+        dailyAnalysis={dailyAnalysis}
         />
+
       <UserInfoSection selectedUser={selectedUser} users2={users2} />
       {selectedUser && (
         <>
@@ -751,8 +850,261 @@ const userStepImage = async (userEmail: string) => {
   }
 }
 
+// 테스트 스크린샷 //
+interface AnalysisResponse {
+  analysis: string;
+  imageData?: string;
+  error?: string;
+}
+
+//const { GoogleGenerativeAI } = require("@google/generative-ai");
+
+
+const analyzeFullDashboard = async (): Promise<AnalysisResponse> => {
+  try {
+    const dashboardElement = document.querySelector<HTMLElement>('#dashboard-container');
+    
+    if (!dashboardElement) {
+      throw new Error('대시보드 요소를 찾을 수 없습니다.');
+    }
+
+    const canvas = await html2canvas(dashboardElement);
+    const imageData: string = canvas.toDataURL('image/png');
+
+    try {
+      const response = await axios.post('/api/analyzeImage', {
+        image: imageData
+      });
+      
+      return { 
+        analysis: response.data.analysis,
+        imageData: imageData
+      };
+    } catch (error) {
+      console.error('Gemini 분석 중 에러:', error);
+      throw error;
+    }
+  }
+  catch (error) {
+    console.error(error);
+    return { 
+      analysis: '', 
+      error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.' 
+    };
+  }
+}
+
+// const CaptureButton = () => {
+//   const handleCapture = async () => {
+//     try {
+//       const { analysis: imageData, error } = await analyzeFullDashboard();
+      
+//       if (error) {
+//         console.error(error);
+//         return;
+//       }
+
+//       const newWindow = window.open('', '_blank');
+//       if (newWindow) {
+//         newWindow.document.write(`
+//           <html>
+//             <head>
+//               <title>캡처된 이미지</title>
+//               <style>
+//                 body {
+//                   margin: 0;
+//                   padding: 20px;
+//                   background: #f5f5f5;
+//                   display: flex;
+//                   justify-content: center;
+//                   align-items: center;
+//                   min-height: 100vh;
+//                 }
+//                 img {
+//                   max-width: 100%;
+//                   height: auto;
+//                   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+//                   border-radius: 8px;
+//                 }
+//               </style>
+//             </head>
+//             <body>
+//               <img src="${imageData}" alt="Captured Dashboard" />
+//             </body>
+//           </html>
+//         `);
+//         newWindow.document.close();
+//       }
+//     } catch (err) {
+//       console.error('캡처 중 에러 발생:', err);
+//     }
+//   };
+
+//   return (
+//     <button
+//       onClick={handleCapture}
+//       className="flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+//     >
+//       화면 캡처
+//     </button>
+//   );
+// };
+
+const CaptureButton = () => {
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const handleCapture = async () => {
+    try {
+      setIsAnalyzing(true);
+      const { analysis, error } = await analyzeFullDashboard();
+      
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      setAnalysisResult(analysis); // 분석 결과를 상태에 저장
+
+    } catch (err) {
+      console.error('캡처 및 분석 중 에러 발생:', err);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleCapture}
+      disabled={isAnalyzing}
+      className="flex items-center px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+    >
+      {isAnalyzing ? (
+        <>
+          <span className="mr-2">분석 중...</span>
+          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+        </>
+      ) : (
+        '대시보드 분석'
+      )}
+    </button>
+  );
+};
+
+const calculateDailyData = useCallback(async (date: string) => {
+  try {
+    const startDate = startOfDay(new Date(date));
+    const endDate = endOfDay(new Date(date));
+    
+    const data = await fetchAdditionalData(startDate, endDate);
+    
+    // 데이터 계산
+    const meanBpm = data.bpmData.reduce((sum, item) => sum + item.value, 0) / data.bpmData.length;
+    const sumStep = data.stepData.reduce((sum, item) => sum + item.value, 0);
+    const sumCalorie = data.calorieData.reduce((sum, item) => sum + item.value, 0);
+        
+    
+    const sumSleep = data.sleepData.reduce((totalMinutes: number, item: SleepData) => {
+        if (!item.timestamp_start || !item.timestamp_end) return totalMinutes;
+        const startTime = new Date(item.timestamp_start);
+        const endTime = new Date(item.timestamp_end);
+        const durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+    
+        return totalMinutes + durationMinutes;
+    }, 0);
+
+    const totalAwakeMinutes = data.sleepData.reduce((totalMinutes: number, item: SleepData) => {
+      if (!item.timestamp_start || !item.timestamp_end) return totalMinutes;
+      let awakeStartTime: Date | null = null;
+      let awakeEndTime: Date | null = null;
+      if (item.value === 1) {
+          awakeStartTime = new Date(item.timestamp_start);
+          awakeEndTime = new Date(item.timestamp_end);
+      }
+      const awakeDurationMinutes = awakeStartTime && awakeEndTime ? (awakeEndTime.getTime() - awakeStartTime.getTime()) / (1000 * 60) : 0;
+      return totalMinutes + awakeDurationMinutes;
+  }, 0)
+    const sleepQuality = ((sumSleep - totalAwakeMinutes)/sumSleep) * 100
+    // ... 기타 계산
+
+    const analysisData: AnalyData = {
+      meanBpm,
+      sumStep,
+      sumCalorie,
+      sumSleep: Number((sumSleep / 60).toFixed(1)), // 수면 데이터 계산 필요
+      sleepQuality: Number(sleepQuality.toFixed(2))
+    };
+
+    setDailyAnalysis(prev => {
+      const exists = prev.find(item => item.date === date);
+      if (exists) {
+        return prev.map(item => 
+          item.date === date ? { ...item, analysis: analysisData } : item
+        );
+      }
+      return [...prev, { date, analysis: analysisData }];
+    });
+
+    return analysisData;
+  } catch (error) {
+    console.error('Error calculating daily data:', error);
+    return null;
+  }
+}, [fetchAdditionalData]);
+
+const handleDateSelect = useCallback(async (event: Event) => {
+  const customEvent = event as CustomEvent<{ date: string }>;
+  const { date } = customEvent.detail;
+
+  try {
+    setIsDataLoading(true);
+    setDataError(null);
+
+    if (!selectedUser) {
+      throw new Error('사용자가 선택되지 않았습니다.');
+    }
+
+    const selectedDate = new Date(date);
+    setHeatmapSelectedDate(selectedDate);
+    setSelectedDate(format(selectedDate, 'yyyy-MM-dd'));
+
+    await calculateDailyData(format(selectedDate, 'yyyy-MM-dd'));
+
+    isDataValid.current = true;
+  } catch (error) {
+    setDataError(error as Error);
+    isDataValid.current = false;
+  } finally {
+    setIsDataLoading(false);
+    setFirstSelectDate(false);
+  }
+}, [selectedUser, calculateDailyData]);
+
+useEffect(() => {
+  window.addEventListener('dateSelect', handleDateSelect);
+  return () => {
+    window.removeEventListener('dateSelect', handleDateSelect);
+  };
+}, [handleDateSelect]);
+
+const selectedDateString = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : '';
+
+
+
+// 현재 선택된 날짜의 분석 데이터를 가져오는 useMemo 추가
+const currentDayAnalysis = useMemo(() => {
+  if (!selectedDate) return null;
+  
+  return dailyAnalysis.find(item => item.date === selectedDate)?.analysis;
+}, [selectedDate, dailyAnalysis]);
+
+
+
+
+
 return (
+<div id='dashboard-container'>
   <SidebarProvider>
+  
     <AppSidebar />
     <SidebarInset>
       <header className="sticky top-0 flex h-16 shrink-0 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 z-50">
@@ -786,15 +1138,22 @@ return (
                       <DropdownMenuItem onClick={() => userStepImage(selectedUser)}>
                         Step Analysis
                       </DropdownMenuItem>
+
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
+
               }
               {isAnalysisLoading  && <LoadingSpinner />}
             </BreadcrumbItem>
           </BreadcrumbList>          
         </Breadcrumb>
         </div>
+
+          <div>
+            <CaptureButton />
+          </div>
+
         <div className="mr-4">
           <SearchMemoData selectedUser={selectedUser}/>
         </div>
@@ -813,6 +1172,7 @@ return (
             ) : shouldRenderMultiChart ? (
               <div className="grid-cols-1 md:grid-cols-2 gap-4">
                 <div ref={multiChartRef}>
+                  {/* <div id='dashboard-container'> */}
                   <MultiChart
                     selectedUser={selectedUser}
                     bpmData={bpmData}
@@ -833,7 +1193,81 @@ return (
                     dbEndDate={dbEndDate}
                     scrollToMultiChart={scrollToMultiChart}
                   />
+                  {/* </div> */}
                 </div>
+              <div className="flex gap-4">
+              <Card className='w-[300px]'>
+                <div className='grid grid-cols-1 gap-2'>
+                      <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>이름</div> 
+                        <div className='mr-8 text-[16px]'>{userInfoData?.user_name}</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>나이</div> 
+                        <div className='mr-8 text-[16px]'>
+                          {userInfoData?.user_birth ? formatBirth(userInfoData.user_birth) : '정보 없음'}
+                        </div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>성별</div>
+                        <div className='mr-8 text-[16px]'> {userInfoData?.user_gender}</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>키</div> 
+                        <div className='mr-8 text-[16px]'>{userInfoData?.user_height === '정보 없음' ? '정보 없음' : `${userInfoData?.user_height}cm`}</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>몸무게</div> 
+                        <div className='mr-8 text-[16px]'>{userInfoData?.user_weight === '정보 없음' ? '정보 없음' : `${userInfoData?.user_weight}kg`}</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>BPM 평균</div>
+                        <div className='mr-8 text-[16px]'>{currentDayAnalysis?.meanBpm.toFixed(2)}</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>Step 합계</div>
+                        <div className='mr-8 text-[16px]'>{currentDayAnalysis?.sumStep}</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>Calorie 합계</div>
+                        <div className='mr-8 text-[16px]'>{currentDayAnalysis?.sumCalorie.toFixed(2)}</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>Sleep 합계</div>
+                        <div className='mr-8 text-[16px]'>{currentDayAnalysis?.sumSleep} 시간</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>Sleep Quality</div>
+                        <div className='mr-8 text-[16px]'>{currentDayAnalysis?.sleepQuality || 0} 점</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>RMSSD</div>
+                        <div className='mr-8 text-[16px]'>{analysisHrvData?.find(data => data.ds === selectedDateString)?.day_rmssd?.toFixed(2) || '0'}</div>
+                    </div>
+                    <div className='flex justify-between'>
+                        <div className='ml-8 text-[16px]'>SDNN</div>
+                        <div className='mr-8 text-[16px]'>{analysisHrvData?.find(data => data.ds === selectedDateString)?.day_sdnn?.toFixed(2) || '0'}</div>
+                    </div>
+                </div>
+              </Card>
+              {/* 분석 결과 Card */}
+              <Card className='flex-1 h-fit'>
+              <div className='p-4'>
+                <h3 className='text-lg font-semibold mb-4'>대시보드 분석 결과</h3>
+                <ScrollArea className='h-[400px]'>
+                  {analysisResult ? (
+                    <div className='text-sm whitespace-pre-wrap pr-4'>
+                      {analysisResult}
+                    </div>
+                  ) : (
+                    <div className='text-gray-500 text-sm'>
+                      '대시보드 분석' 버튼을 클릭하여 분석을 시작하세요.
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
+            </Card>
+            </div>
               </div>
             ) : (
               <div></div>
@@ -841,6 +1275,8 @@ return (
         </div>
       </div>
     </SidebarInset>
+    
   </SidebarProvider>
+  </div>
   );
 }
