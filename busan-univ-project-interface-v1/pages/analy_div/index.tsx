@@ -1261,7 +1261,7 @@ return (
                     </div>
                   ) : (
                     <div className='text-gray-500 text-sm'>
-                      '대시보드 분석' 버튼을 클릭하여 분석을 시작하세요.
+                      대시보드 분석 버튼을 클릭하여 분석을 시작하세요.
                     </div>
                   )}
                 </ScrollArea>
