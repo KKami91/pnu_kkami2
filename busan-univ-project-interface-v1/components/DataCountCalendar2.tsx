@@ -462,6 +462,7 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({
             </div>
         </div>
     ));
+    AnalysisDisplay.displayName = 'AnalysisDisplay'; 
     
 
     if (!mounted) {
@@ -570,5 +571,5 @@ const DataAvailabilityCalendar2: React.FC<DataAvailabilityCalendarProps> = ({
       );
 
 }
-
+DataAvailabilityCalendar2.displayName = 'DataAvailabilityCalendar2';
 export default DataAvailabilityCalendar2;
