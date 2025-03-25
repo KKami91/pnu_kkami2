@@ -47,7 +47,7 @@ function ChatWrapper() {
           { 
             chatWindow: { 
               poweredByTextColor: "#fff", 
-              welcomeMessage: "사용자 데이터 분석 챗봇입니다. (사용 예시 : 사용자 정보, YYYY년 MM월 DD일 HH시 (BPM, Step, Calorie, Sleep) 데이터를 알려줘) "
+              welcomeMessage: "사용자 데이터 분석 챗봇입니다. (사용 예시 : 사용자 정보 / 2024년 12월 25일 데이터 분석 해줘) "
             }
           }
         }
